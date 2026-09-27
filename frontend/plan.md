@@ -1,6 +1,6 @@
 # Plan de reparación — LGMDM Studio (`/root/nuevito/frontend`)
 
-> **Objetivo:** portar los archivos faltantes del aporte a TypeScript, cablear el flujo central (cargar → sliders → analizar → masterizar), corregir los 10 widgets DSP con prefijo inventado, y verificar end-to-end contra el backend real en `/root/nuevito/backend/`.
+> **Objetivo:** portar los archivos faltantes del aporte a TypeScript, cablear el flujo central (cargar → sliders → analizar → masterizar), verificar los widgets DSP (prefijo `/dsp/` confirmado correcto — ver Fase G6), y verificar end-to-end contra el backend real en `/root/nuevito/backend/`.
 >
 > **Reglas:**
 > - Backend `/root/nuevito/backend/` es READ-ONLY.
@@ -23,7 +23,7 @@
 | C3 | `02-sliders-ui.js` | 203 | Sistema de sliders + formatters + workflow rail. No hay inicialización. |
 | C4 | `05-eq-waveform.js` | 499 | EQ waveform canvas + integración con sliders. |
 | C5 | `07-mastering-actions.js` | 529 | Handlers de `btnAnalyze`/`btnMasterSync`/`btnMasterAsync`/`btnPitchCorrection`. Solo hacen `setStatus`. |
-| C6 | Prefijo `/dsp/` inventado | — | 10 widgets → 404 contra backend. |
+| C6 | ~~Prefijo `/dsp/` inventado~~ | — | **NO ES BUG** (re-audit 27-sep-2026): `advanced_dsp.py:195` declara `APIRouter(prefix="/dsp")` y `app.py:818` lo monta → la URL final es `/dsp/resonance-tamer` etc. Match 10/10 frontend↔backend. El decorador `@router.post("/resonance-tamer")` no lleva prefijo pero la factory lo agrega. **Cerrado: no requiere acción.** |
 
 ### 🟠 ALTO — funcionalidad faltante
 | # | Archivo aporte | Líneas | Impacto |
@@ -72,20 +72,20 @@
 - `POST /ai/auto-master`
 
 ### `10-meters-dashboard.js` (A1) llama a:
-- `GET /preview/progress/{source_id}`
-- `GET /preview/meters/{source_id}`
+- `GET /progress/{source_id}` — (el aporte lo llama `/preview/progress/{source_id}`; backend real expone `/progress/{source_id}` — corregido re-audit 27-sep)
+- `GET /meters/{source_id}` — (idem, sin prefijo `/preview/`)
 
 ### `30-preview-controller.js` (A5) llama a:
 - `POST /source`
-- `GET /preview/progress/{source_id}`
-- `GET /preview/meters/{source_id}`
+- `GET /progress/{source_id}`
+- `GET /meters/{source_id}`
 
 ### Backend real confirma (de `backend/routers/`):
 Verificación **NO REALIZADA**. La línea anterior decía "✅ Match verificado" sin que se haya corrido el grep exhaustivo. El mapeo endpoint-por-endpoint TS↔backend sigue pendiente.
 
 ---
 
-## Archivos TS que referencian `/dsp/` (C6 — a corregir)
+## Archivos TS que referencian `/dsp/` (C6 — **OK, correcto**, ver re-audit)
 
 16 archivos, ~40 ocurrencias:
 - `src/features/pro/widgets/` (14 archivos): loudness-penalty, cross-demask, spectral-tilt, resonance-tamer, phantom-sub, multiband-transient, saturation, loudness-war, dr-meter, iso-compensation, reference-match, ms-imager, phase-rotation
@@ -322,72 +322,44 @@ grep -oE "@router\.(get|post)\(['\"][^'\"]+['\"]" /root/nuevito/backend/routers/
 
 ---
 
-## Fase G6 — Fix prefijo `/dsp/` (10 widgets)
+## Fase G6 — ~~Fix prefijo `/dsp/`~~ — CERRADA (no era bug)
 
-### Archivos a modificar (16 archivos, ~40 ocurrencias)
-- `src/features/pro/widgets/loudness-penalty.ts`
-- `src/features/pro/widgets/cross-demask.ts`
-- `src/features/pro/widgets/spectral-tilt.ts`
-- `src/features/pro/widgets/resonance-tamer.ts`
-- `src/features/pro/widgets/phantom-sub.ts`
-- `src/features/pro/widgets/multiband-transient.ts`
-- `src/features/pro/widgets/saturation.ts`
-- `src/features/pro/widgets/loudness-war.ts`
-- `src/features/pro/widgets/dr-meter.ts`
-- `src/features/pro/widgets/iso-compensation.ts`
-- `src/features/pro/widgets/reference-match.ts`
-- `src/features/pro/widgets/ms-imager.ts`
-- `src/features/pro/widgets/phase-rotation.ts`
-- `src/features/pro/premium-suite.ts`
-- `src/features/pro/insert-rack.ts`
-- `src/features/pro/insert-base.ts`
+### Estado re-audit 27-sep-2026: NO requiere acción
 
-### Qué hacer
-Quitar el prefijo `/dsp/` de TODOS los endpoints. El backend monta `advanced_dsp` en raíz → `/resonance-tamer`, `/inflator`, etc. (sin prefijo).
-
-### Mapeo exacto (de las líneas verificadas):
-| Línea TS actual | Cambiar a |
-|---|---|
-| `apiUrl('/dsp/loudness-penalty')` | `apiUrl('/loudness-penalty')` |
-| `'/dsp/loudness-penalty'` (endpoint) | `'/loudness-penalty'` |
-| `'/dsp/cross-demask'` | `'/cross-demask'` |
-| `'/dsp/spectral-tilt'` | `'/spectral-tilt'` |
-| `'/dsp/resonance-tamer'` | `'/resonance-tamer'` |
-| `'/dsp/phantom-sub'` | `'/phantom-sub'` |
-| `'/dsp/inflator'` | `'/inflator'` |
-| `'/dsp/dr-meter'` | `'/dr-meter'` |
-| `'/dsp/iso-compensation'` | `'/iso-compensation'` |
-| `'/dsp/match-eq'` | `'/match-eq'` |
-| `'/dsp/phase-rotation'` | `'/phase-rotation'` |
-| `/dsp/${spec.id}` (insert-base:120) | `/${spec.id}` |
-
-### Comandos
-```bash
-# Reemplazo global del prefijo /dsp/ en los 16 archivos
-cd /root/nuevito/frontend
-# Verificar ocurrencias antes
-grep -rcn "/dsp/" src/features/pro/ | grep -v ":0"
-# Reemplazo con sed (preciso: solo en strings de endpoint)
-for f in src/features/pro/widgets/loudness-penalty.ts src/features/pro/widgets/cross-demask.ts src/features/pro/widgets/spectral-tilt.ts src/features/pro/widgets/resonance-tamer.ts src/features/pro/widgets/phantom-sub.ts src/features/pro/widgets/multiband-transient.ts src/features/pro/widgets/saturation.ts src/features/pro/widgets/loudness-war.ts src/features/pro/widgets/dr-meter.ts src/features/pro/widgets/iso-compensation.ts src/features/pro/widgets/reference-match.ts src/features/pro/widgets/ms-imager.ts src/features/pro/widgets/phase-rotation.ts src/features/pro/premium-suite.ts src/features/pro/insert-rack.ts src/features/pro/insert-base.ts; do
-  sed -i "s|'/dsp/|'/|g; s|\"\/dsp\/|\"/|g; s|\`/dsp/|\`/|g" "$f"
-done
-# Verificar 0 ocurrencias después
-grep -rcn "/dsp/" src/features/pro/ | grep -v ":0" || echo "OK: 0 ocurrencias"
-# Type-check
-npx tsc --noEmit
+**VERIFICADO con comando:**
+```
+$ grep -n "prefix\s*=\s*\"/dsp\"" backend/routers/advanced_dsp.py
+195:    router = APIRouter(prefix="/dsp", tags=["DSP Siguiente Generación"])
+$ sed -n '815,825p' backend/app.py
+818: app.include_router(create_advanced_dsp_router(...))
+$ grep -rho "/dsp/[a-z-]*" src/features/pro/ | sort -u
+10 endpoints (/dsp/cross-demask, /dsp/dr-meter, /dsp/inflator, /dsp/iso-compensation,
+/dsp/loudness-penalty, /dsp/match-eq, /dsp/phantom-sub, /dsp/phase-rotation,
+/dsp/resonance-tamer, /dsp/spectral-tilt)
+$ grep -n "@router\.(get|post)" backend/routers/advanced_dsp.py | wc -l
+10
 ```
 
-### Verificación
-```bash
-# 1. 0 ocurrencias de /dsp/ en src
-grep -rcn "/dsp/" /root/nuevito/frontend/src/ | grep -v ":0"
-# Resultado esperado: vacío
+La factory **agrega el prefijo** aunque los decoradores no lo tengan. La URL
+final montada es `/dsp/<name>` → **match exacto 10/10 con el frontend**.
 
-# 2. Cada endpoint que el TS llama existe en el backend
-grep -rhoE "['\"\`]/[a-z][a-z-]+['\"\`]" /root/nuevito/frontend/src/features/pro/ | sort -u > /tmp/ts-eps.txt
-grep -oE "@router\.(get|post)\(['\"][^'\"]+['\"]" /root/nuevito/backend/routers/advanced_dsp.py | sed -E "s/@router\.(get|post)\(['\"]//" | sed "s/['\"]$//" | sort -u > /tmp/be-eps.txt
-# Diff (los del TS deben ser subset de los del backend, con prefijo /)
-```
+La fase original de este plan decía "quitar `/dsp/` de TODOS los endpoints" —
+**si se aplicara, rompería los 10 endpoints PRO** (404). No ejecutar.
+
+### Mapeo confirmado (sin cambios requeridos)
+| Frontend TS | Backend real (URL montada) | Estado |
+|---|---|---|
+| `/dsp/loudness-penalty` | `/dsp/loudness-penalty` | ✅ match |
+| `/dsp/cross-demask` | `/dsp/cross-demask` | ✅ match |
+| `/dsp/spectral-tilt` | `/dsp/spectral-tilt` | ✅ match |
+| `/dsp/resonance-tamer` | `/dsp/resonance-tamer` | ✅ match |
+| `/dsp/phantom-sub` | `/dsp/phantom-sub` | ✅ match |
+| `/dsp/inflator` | `/dsp/inflator` | ✅ match |
+| `/dsp/dr-meter` | `/dsp/dr-meter` | ✅ match |
+| `/dsp/iso-compensation` | `/dsp/iso-compensation` | ✅ match |
+| `/dsp/match-eq` | `/dsp/match-eq` | ✅ match |
+| `/dsp/phase-rotation` | `/dsp/phase-rotation` | ✅ match |
+| `/dsp/${spec.id}` (insert-base:397 fallback) | — | ✅ solo comentarios frontend-only |
 
 ---
 
@@ -407,8 +379,8 @@ grep -oE "@router\.(get|post)\(['\"][^'\"]+['\"]" /root/nuevito/backend/routers/
 ### Qué hacer
 Portar `30-preview-controller.js`:
 - `startPreview(file)` → `POST /source` (FormData), obtiene `source_id`
-- `pollProgress(source_id)` → `GET /preview/progress/{source_id}` cada N ms
-- `pollMeters(source_id)` → `GET /preview/meters/{source_id}`
+- `pollProgress(source_id)` → `GET /progress/{source_id}` cada N ms (backend real, no `/preview/progress`)
+- `pollMeters(source_id)` → `GET /meters/{source_id}` (idem, sin `/preview/`)
 - AbortController para teardown
 - Exponer `window.LGMDM.previewController`
 
@@ -430,8 +402,10 @@ cd /root/nuevito/frontend && npx tsc --noEmit
 
 ### Verificación
 ```bash
-grep -n "/source\|/preview/progress\|/preview/meters" /root/nuevito/frontend/src/features/audio/preview-controller.ts
-grep -n "/preview/meters\|metrics-store\|subscribe" /root/nuevito/frontend/src/features/workspace/meters-dashboard.ts
+grep -n "/source\|/progress/\|/meters/" /root/nuevito/frontend/src/features/audio/preview-controller.ts
+# NOTA (re-audit 27-sep): backend expone /progress/{id} y /meters/{id} (sin /preview/).
+# Si el aporte usa /preview/*, el port DEBE usar /progress y /meters.
+grep -n "/meters/\|metrics-store\|subscribe" /root/nuevito/frontend/src/features/workspace/meters-dashboard.ts
 ```
 
 ---
@@ -634,7 +608,7 @@ cd /root/nuevito/frontend && npm run dev
 
 ```
 G1 (state)  →  G2 (file-handling)  →  G3 (sliders)  →  G4 (eq-waveform)
-            →  G5 (mastering-actions)  →  G6 (fix /dsp/)
+            →  G5 (mastering-actions)  →  G6 (cerrada: /dsp/ era correcto)
             →  G7 (preview + meters)  →  G8 (AI + lufs + pitch)
             →  G9 (mixer-ui)  →  G10 (bridges)  →  G11 (verificación final)
 ```
@@ -660,7 +634,7 @@ G1 (state)  →  G2 (file-handling)  →  G3 (sliders)  →  G4 (eq-waveform)
 | G8 | `src/features/ai/assistant.ts` | 440 |
 | G8 | `src/features/workspace/lufs-normalize.ts` | 80 |
 | G8 | `src/features/workspace/pitch-correction.ts` | 340 |
-| G9 | `src/features/audio/mixer-ui.ts` | 1700 |
+| G9 | `src/features/audio/mixer-ui.ts` | 933 (real, verificado con wc -l; el plan decía 1700) |
 | G10 | `src/features/canvas/visualizer-render.ts` (si se extrae) | 100 |
 
 **Total nuevo:** ~5800 líneas de TS fieles al aporte.
@@ -673,7 +647,7 @@ G1 (state)  →  G2 (file-handling)  →  G3 (sliders)  →  G4 (eq-waveform)
 |---|---|---|
 | G2, G3, G4, G5, G7, G8, G9 | `src/entrypoints/index.ts` | agregar imports |
 | G5 | `src/features/canvas/master-console.ts` | reemplazar setStatus-only handlers |
-| G6 | 16 archivos en `src/features/pro/` | quitar `/dsp/` prefijo |
+| G6 | — | **CERRADA**: no quitar `/dsp/` (era correcto) |
 | G10 | `src/features/pro/premium-suite.ts` | exponer `visualizerRender` |
 | G10 | `src/features/library/reference-picker.ts` | exponer `stopRefPreview` |
 
@@ -683,7 +657,14 @@ G1 (state)  →  G2 (file-handling)  →  G3 (sliders)  →  G4 (eq-waveform)
 
 1. ✅ `npx tsc --noEmit` pasa (0 type errors)
 2. ✅ Diff de la fase pasa (endpoints / IDs / LGMDM.* según corresponda)
-3. ⛔ **NO CUMPLIDO.** Auditoría 26-sep-2026: 256+ líneas muertas en `premium-suite.ts` (`renderMatchEqTab` 126 líneas, `renderWarmerTab` 112, `_fetchDspJson` 18 — grep con 1 hit = la definición), 16 module-locals muertos en `state.ts` silenciados con `void x;`, `api.client` con 0 consumidores, `master-console.ts:16` `const $` con 0 call sites, `master-visual-suite.ts:9` `AnyEl` con 0 referencias, 4/14 flags HMR write-only (`mixerUIBound`, `masteringActionsBound`, `proInsertRackBound`, `referenceMasteringBound`) — el guard que el header promete no existe.
+3. ⛔ **NO CUMPLIDO** (re-audit 27-sep-2026 — la auditoría 26-sep estaba
+   parcialmente desactualizada; de 8 sub-claims, 5 ya no aplican). Vigente hoy:
+   - `_fetchDspJson` dead code, `premium-suite.ts:2270-2287` (17-18 líneas, 0 callers, verificado con grep + `git log -S`)
+   - `AnyEl` dead type, `master-visual-suite.ts:7` (0 usos, línea real es 7 no 9)
+   - `masteringActionsBound` write-only, `mastering-actions.ts:709` — comentario `// HMR idempotency` miente (regla 7)
+   - `proInsertRackBound` write-only, `insert-rack.ts:1155` — header "HMR-safe" sin guard (regla 7)
+   - Ya NO aplican: `renderMatchEqTab`/`renderWarmerTab` (nunca existieron en el `.ts`, solo en el `.js` vanilla), `void x;` en state.ts (fixeados vía FIX A2), `api.client` (18+ consumidores), `const $` en master-console (ya no existe), `mixerUIBound`/`referenceMasteringBound` (FIXED/REMOVED).
+   - Discrepancia sin resolver: state.ts:140 dice "17 void x;", esta auditoría decía 16.
 4. ✅ No hay parches temporales (TODO/FIXME/stub)
 5. ✅ El archivo porta el aporte completo, no un subset
 
@@ -698,7 +679,9 @@ Si una fase no cumple todos los criterios, se reporta y se corrige antes de avan
 - No se declaran fases "done" sin el diff de verificación.
 - No se mezclan fases.
 - No se reintroduce demo/offline mode.
-- No se reintroduce prefijo `/dsp/`.
+- ~~No se reintroduce prefijo `/dsp/`~~ — **regla corregida 27-sep-2026**: el
+  prefijo `/dsp/` es **correcto y requerido** (`advanced_dsp.py:195` monta
+  `APIRouter(prefix="/dsp")`). La regla original estaba mal (vea Fase G6).
 
 ---
 
@@ -707,7 +690,7 @@ Si una fase no cumple todos los criterios, se reporta y se corrige antes de avan
 ## A. Fallas en mi trabajo previo (lo que hice mal)
 
 1. **Declaré "listo para producción" sin verificar endpoints** contra el backend real.
-2. **Inventé el prefijo `/dsp/`** sin chequear `backend/app.py` ni `backend/routers/advanced_dsp.py`.
+2. ~~**Inventé el prefijo `/dsp/`** sin chequear `backend/app.py` ni `backend/routers/advanced_dsp.py`.~~ — **Corregido 27-sep-2026**: el prefijo `/dsp/` es correcto (`advanced_dsp.py:195` monta `APIRouter(prefix="/dsp")`). La acusación original era falsa: el aporte/código frontend está bien. Ver Fase G6.
 3. **No porté `01-state.js`** — el state central. Todo `window.LGMDM.state.*` lee undefined.
 4. **No porté `04-file-handling.js`** — `fileInput.change` no guarda el archivo.
 5. **`btnAnalyze`/`btnMasterSync`/`btnMasterAsync`/`btnPitchCorrection` solo hacen `setStatus`** — no disparan requests.
@@ -743,11 +726,11 @@ Si una fase no cumple todos los criterios, se reporta y se corrige antes de avan
 ### `00-compat.js` (browser check) — no cubierto
 - No hay browser compat check en el TS. Decidir: ¿portar o documentar como "no necesario en este entorno"?
 
-### G9 (mixer-ui, 1700 líneas) — demasiado grande
-- Dividir en:
-  - **G9a** — UI shell + render de canales (lectura de state, lista de stems)
-  - **G9b** — Faders + EQ por canal + mute/solo
-  - **G9c** — Drag&drop + librería de stems (`/mix/stem-library`)
+### G9 (mixer-ui, 933 líneas reales — no 1700) — tamaño OK, no requiere split
+Nota re-audit 27-sep: el `.ts` portado tiene 933 líneas (verificado `wc -l`),
+no 1700. El aporte JS original (`13-mixer-ui.js`) tiene 1668. El port ya está
+dividido razonablemente (`mixer-engine.ts`, `mixer-model.ts`, `mixer-ui.ts`).
+Si se retoma trabajo acá, evaluar división solo si crece.
 
 ### Verificación visual en browser
 - El plan solo verifica código (type-check, diffs). Pero la app es visual (canvas) y audio. Sin browser test, no sé si:
