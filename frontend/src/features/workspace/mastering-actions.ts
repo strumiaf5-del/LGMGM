@@ -4,9 +4,6 @@
 // (sliders alimentan params), `canvas/eq-waveform.ts` (no requiere), y `canvas/params-builder.ts`
 // (params.build() y params.renderPreview()).
 //
-// FIX vs aporte: tipos TS en todo el port.
-// FIX vs aporte: HMR-safe (`window.LGMDM.masteringActionsBound`).
-// FIX vs aporte: AbortController + cleanup de intervals.
 // FIX vs aporte: todos los bridges a módulos no portados (`LGMDM.ai.*`, `renderPerceptualStandalone`,
 // `renderFFT`, `renderAnalysisComparison`, `setupABPlayer`, `aiShowTyping`, `aiHideTyping`,
 // `aiAppendMessage`, `aiAppendNote`, `LGMDM.reference.renderAdvicePanel`) son opcionales.
@@ -47,9 +44,6 @@ interface MetricsShape {
 interface ApiShape {
   apiBase: () => string;
   apiFetch: <T>(endpoint: string, options?: RequestInit) => Promise<T>;
-  // FIX K4: client.get/post/... retornan Promise<Response> real (a diferencia
-  // de apiFetch que retorna el body JSON parseado). Usado por los callers que
-  // hacen res.ok / res.blob() / res.headers / res.json() sobre la Response.
   client: {
     get: (endpoint: string, options?: RequestInit) => Promise<Response>;
     post: (endpoint: string, options?: RequestInit) => Promise<Response>;

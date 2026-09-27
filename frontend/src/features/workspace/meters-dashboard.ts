@@ -5,9 +5,6 @@
 // El live meters en tiempo real está separado en `features/audio/timeline-meters.ts`
 // (sigue el patrón del dist: 10-meters-dashboard.js + 44-timeline-meters.js).
 //
-// FIX vs dist: tipos TS en todo el port.
-// FIX vs dist: HMR-safe (`window.LGMDM.metersDashboardBound`).
-// FIX vs dist: AbortController + cleanup para listeners y timers.
 
 interface MetricsShape {
   subscribe?: (cb: (data: { metrics: Record<string, unknown> }) => void) => () => void;
@@ -17,7 +14,6 @@ interface MetricsShape {
 interface ApiShape {
   apiBase: () => string;
   apiFetch: <T>(endpoint: string, options?: RequestInit) => Promise<T>;
-  // FIX K4: client.* retorna Promise<Response> real (para res.ok/.status/.blob).
   client: {
     get: (endpoint: string, options?: RequestInit) => Promise<Response>;
     post: (endpoint: string, options?: RequestInit) => Promise<Response>;
@@ -132,7 +128,6 @@ function startDashboardPolling(): void {
 }
 
 function stopDashboard(): void {
-  // FIX M10: bloque de dashboardWS removido (era dead code).
   if (dashboardPollTimer) {
     clearInterval(dashboardPollTimer);
     dashboardPollTimer = null;

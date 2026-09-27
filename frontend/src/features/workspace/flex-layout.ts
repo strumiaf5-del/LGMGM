@@ -62,7 +62,6 @@ function setCollapsed(collapsed: boolean): void {
   if (collapseBtn) {
     collapseBtn.textContent = collapsed ? '▶' : '◀';
     collapseBtn.title = collapsed ? 'Expandir sidebar' : 'Colapsar sidebar';
-    // FIX A2-a11y: exponer el estado expandido/colapsado a screen readers.
     collapseBtn.setAttribute('aria-expanded', String(!collapsed));
   }
   if (uncollapseBtn) {
@@ -165,7 +164,6 @@ function initFlexLayout(): void {
 }
 
 export function teardownFlexLayout(): void {
-  // FIX M3: abort the controller to remove all listeners at once.
   if (flexController) { flexController.abort(); flexController = null; }
   layoutRoot = sidebar = handle = collapseBtn = uncollapseBtn = null;
   const w = window as Window & { LGMDM?: { flexLayoutBound?: boolean } };

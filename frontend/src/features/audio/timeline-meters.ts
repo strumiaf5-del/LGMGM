@@ -5,10 +5,6 @@
 // Indexa un timeline pre-computado por el backend (compute_meters_timeline)
 // usando audio.currentTime como índice. Sin AnalyserNode, sin biquads,
 // sin getFloatFrequencyData. Los valores son exactos del backend.
-//
-// FIX vs dist: tipos TS en todo el port.
-// FIX vs dist: HMR-safe (`window.LGMDM.timelineMetersBound`).
-// FIX vs dist: AbortController para cleanup de RAF.
 
 interface MetricsShape {
   publish?: (data: Record<string, unknown>, opts: { source: string }) => void;

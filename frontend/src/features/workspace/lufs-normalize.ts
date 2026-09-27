@@ -1,8 +1,5 @@
 // features/workspace/lufs-normalize.ts — Normalización pura por LUFS (sin pipeline).
 //
-// FIX vs aporte: tipos TS.
-// FIX vs aporte: HMR-safe (`window.LGMDM.lufsNormalizeBound`).
-// FIX vs aporte: AbortController + cleanup.
 
 interface StateShape {
   selectedFile?: File | null;
@@ -12,7 +9,6 @@ interface StateShape {
 interface ApiShape {
   apiBase: () => string;
   apiFetch: <T>(endpoint: string, options?: RequestInit) => Promise<T>;
-  // FIX K4: client.* retorna Promise<Response> real (para res.ok/.blob/.headers).
   client: {
     get: (endpoint: string, options?: RequestInit) => Promise<Response>;
     post: (endpoint: string, options?: RequestInit) => Promise<Response>;

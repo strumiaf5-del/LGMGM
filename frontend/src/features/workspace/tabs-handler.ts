@@ -167,7 +167,6 @@ function initTabs(): void {
 }
 
 export function teardownTabsHandler(): void {
-  // FIX M3: abort the controller to remove all listeners at once.
   if (controller) { controller.abort(); controller = null; }
   boundTabs = [];
   const w = window as Window & { LGMDM?: { tabsHandlerBound?: boolean } };

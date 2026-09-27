@@ -128,7 +128,6 @@ function initWorkspaceTabs(): void {
 }
 
 export function teardownWorkspaceTabs(): void {
-  // FIX M3: abort the controller to remove all listeners at once.
   if (wsController) { wsController.abort(); wsController = null; }
   if (analysisRedrawRaf) { cancelAnimationFrame(analysisRedrawRaf); analysisRedrawRaf = null; }
   const w = window as Window & { LGMDM?: { workspaceTabsBound?: boolean } };

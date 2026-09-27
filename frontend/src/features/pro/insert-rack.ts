@@ -1113,7 +1113,6 @@ export const proInsertRack: ProInsertRackApi = {
     const root = byId<HTMLElement>('proInsertRack');
     if (root) {
       root.dataset.hidden = 'false';
-      // FIX A2-a11y: reflejar el estado del rack en el botón del header.
       const headerBtn = byId<HTMLElement>('btnToggleInsertRack');
       if (headerBtn) headerBtn.setAttribute('aria-expanded', 'true');
       persistFromDom();

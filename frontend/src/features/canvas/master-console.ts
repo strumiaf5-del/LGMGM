@@ -235,7 +235,6 @@ function lgmdm(): any {
     const w = Math.max(320, Math.floor(rect.width * dpr)), h = Math.max(80, Math.floor(rect.height * dpr));
     if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
     const ctx = canvas.getContext('2d');
-    // FIX M11: reset the transform so we operate in device pixels.
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     const playing = isSignalPlaying();
     const tap = playing ? ensureScopeTap() : null;
@@ -448,7 +447,6 @@ function lgmdm(): any {
     const w = Math.max(320, Math.floor(rect.width * dpr)), h = Math.max(120, Math.floor(rect.height * dpr));
     if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
     const ctx = canvas.getContext('2d');
-    // FIX M11: reset the transform so we operate in device pixels.
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, w, h);
     if (!bands || bands.length === 0) return;
@@ -714,12 +712,10 @@ function lgmdm(): any {
     // FIX A5: limpiar previewTimer (línea 572) que antes no se cancelaba en
     // teardown → podía disparar previewController.request() post-teardown.
     if(root.masterConsole.previewTimer){ clearTimeout(root.masterConsole.previewTimer); root.masterConsole.previewTimer=null; }
-    // FIX A5: abortar los window listeners (lgmdm:preview-ready/state).
     if(state._windowListeners){ try { state._windowListeners.abort(); } catch (_) {} state._windowListeners=null; }
     if(state._fileNameObserver){ state._fileNameObserver.disconnect(); state._fileNameObserver=null; }
     if(state._waveformCleanup){ state._waveformCleanup(); state._waveformCleanup=null; }
     if(state._waterfallCleanup){ state._waterfallCleanup(); state._waterfallCleanup=null; }
-    // FIX C7: cleanup the EQ chain ResizeObserver and the metrics subscription.
     if(state._eqChainCleanup){ state._eqChainCleanup(); state._eqChainCleanup=null; }
     if(state.unsubscribeMetrics){ state.unsubscribeMetrics(); state.unsubscribeMetrics=null; }
     state.timeBuf = null; state.wfBuf = null; state.waveHistory = [];

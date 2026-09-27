@@ -1,17 +1,8 @@
 // premium-suite.ts — 23 pro modules
-// FIX B2: el conteo era "22" (línea 1 y línea 3128) pero hay 23 data-premium-tab
-// (verificado con grep). Off-by-one en el comentario.
 // Pragma TS REMOVIDO 2026-09-27 (FIX FINAL): tipar los 323 errores TS restantes.
 // drawWaterfallFrame fuera del IIFE) ya fixeado el 26-sep-2026. Resto de types
 // pendiente de migración gradual. Ver AGENTS.md regla 2.
 
-// FIX M6: el import `getPrefersReducedMotion` no se usa (se usa
-// `window.matchMedia('(prefers-reduced-motion: reduce)')` inline en 3 lugares).
-// Import muerto = dead code (regla 7).
-// (import original: `import { getPrefersReducedMotion } from '../../core/utils';`)
-
-// FIX FINAL 2026-09-27: type-only import para tipar `_bandSpecs` (TS7006 en
-// lambdas `.map((spec, i) => ...)`). Erased at runtime — no behavior change.
 import type { BandSpec } from '../../core/audio-tap';
 
 (function (global) {
@@ -20,13 +11,6 @@ import type { BandSpec } from '../../core/audio-tap';
   const LG: any = global.LGMDM = global.LGMDM || {};
   const el = (id: string): HTMLElement | null => document.getElementById(id) || document.querySelector(`[data-status-id="${id}"]`);
 
-  // FIX FINAL 2026-09-27: helpers para castear elementos a su tipo correcto.
-  // Mismo patrón que master-visual-suite.ts. El `el` original retorna
-  // HTMLElement|null, pero muchos elementos son HTMLCanvasElement
-  // (width/height/getContext), HTMLInputElement (value/checked),
-  // HTMLSelectElement (value) o HTMLButtonElement (disabled/click). Sin estos
-  // casts, tsc reporta TS2339 "Property X does not exist on type HTMLElement".
-  // Se preserva el fallback `data-status-id` de `el` (ver línea 2420).
   const $canvas = (id: string): HTMLCanvasElement | null => (document.getElementById(id) || document.querySelector(`[data-status-id="${id}"]`)) as HTMLCanvasElement | null;
   const $input = (id: string): HTMLInputElement | null => (document.getElementById(id) || document.querySelector(`[data-status-id="${id}"]`)) as HTMLInputElement | null;
   const $select = (id: string): HTMLSelectElement | null => (document.getElementById(id) || document.querySelector(`[data-status-id="${id}"]`)) as HTMLSelectElement | null;
@@ -85,9 +69,6 @@ import type { BandSpec } from '../../core/audio-tap';
   const _audioTap = LGMDM.proFeatures.audioTap;
   const ensureAudioTap = _audioTap.ensure;
   const teardownAudioTap = _audioTap.teardown;
-  // FIX FINAL 2026-09-27: cast a BandSpec[] para que los `.map((spec, i) => ...)`
-  // infieran `spec: BandSpec` y `i: number` (TS7006). `_audioTap` es `any`
-  // (vía LGMDM:any) — el cast no cambia runtime.
   const _bandSpecs: BandSpec[] = _audioTap.bandSpecs;
 
   // Correlación Pearson sobre vectores de [-1..1]. Barata: O(n) con n ≤ 512.
@@ -114,7 +95,7 @@ import type { BandSpec } from '../../core/audio-tap';
     const c = document.createElement('canvas');
     c.width = 256; c.height = 1;
     const g = c.getContext('2d');
-    if (!g) return c; // FIX FINAL 2026-09-27: TS18047 — getContext puede retornar null
+    if (!g) return c;
     const grd = g.createLinearGradient(0, 0, 256, 0);
     grd.addColorStop(0.00, '#070c24');
     grd.addColorStop(0.20, '#1a3f8a');
@@ -129,7 +110,6 @@ import type { BandSpec } from '../../core/audio-tap';
   function colorForMagnitude(mag: number) {
     // Mantenido por compatibilidad con consumidores que esperan [r,g,b].
     const idx = Math.max(0, Math.min(255, Math.round(mag * 255)));
-    // FIX FINAL 2026-09-27: TS2531 — _WATERFALL_LUT.getContext('2d') puede ser null
     const gctx = _WATERFALL_LUT.getContext('2d');
     if (!gctx) return [0, 0, 0];
     const px = gctx.getImageData(idx, 0, 1, 1).data;
@@ -396,9 +376,6 @@ import type { BandSpec } from '../../core/audio-tap';
 
   function close() {
     const modal = el('premiumSuiteModal');
-    // FIX FINAL 2026-09-27: usar el `LGMDM` local (`any`) en lugar de
-    // `window.LGMDM` (cuyo tipo global no declara `ui`). Misma referencia:
-    // `LG === LGMDM === window.LGMDM` (ver línea 16-21).
     if (modal && LGMDM?.ui?.isModalOpen?.(modal)) {
       LGMDM.ui.closeModal(modal);
     } else {
@@ -428,8 +405,6 @@ import type { BandSpec } from '../../core/audio-tap';
     const container = el('premiumTabContent');
     if (!container) return;
 
-    // FIX FINAL 2026-09-27: `window.analysisData` no está en el tipo global
-    // Window; cast a `any` para preservar el fallback de runtime.
     const analysis = getLastAnalysis() || LG.state?.analysis || (window as any).analysisData || null;
     const isLive = Boolean(analysis && (
       Number.isFinite(Number(analysis.lufs)) ||
@@ -639,9 +614,6 @@ import type { BandSpec } from '../../core/audio-tap';
       if (status) status.textContent = `✓ Re-análisis OK · LUFS ${lufs.toFixed(1)} · TP ${tp.toFixed(1)} dBTP`;
       LGMDM.ui?.showToast?.(`Re-análisis completado · LUFS ${lufs.toFixed(1)} · TP ${tp.toFixed(1)} dBTP`, 'success', 3500);
     } catch (err: unknown) {
-      // FIX FINAL 2026-09-27: TS18046 — err es unknown bajo strict. Cast a any
-      // preserva el comportamiento original (que asumía err.message accesible,
-      // incluyendo throws de objetos con .message — ver AGENTS.md regla 3).
       const e = err as any;
       if (status) status.textContent = `❌ Error en re-análisis: ${e.message || e}`;
       const safeMessage = (e.message && e.message.length < 200 && !e.message.includes("\n"))
@@ -660,8 +632,6 @@ import type { BandSpec } from '../../core/audio-tap';
       const res = await LGMDM.api.apiFetch('/presets', { method: 'GET' });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      // FIX FINAL 2026-09-27: tipar `conf` para que `conf?.label` etc. no
-      // tiren TS2339 (Object.entries returns [string, unknown][]).
       const presets = Object.entries(data || {}).map(([name, conf]: [string, any]) => ({
         name,
         label: conf?.label || name,
@@ -803,9 +773,6 @@ import type { BandSpec } from '../../core/audio-tap';
         ? (state.abx.hiddenX === 'A' ? 'original' : 'master')
         : (slot === 'A' ? 'original' : 'master');
 
-      // FIX FINAL 2026-09-27: usar el `LGMDM` local (`any`) en lugar de
-      // `window.LGMDM` (cuyo tipo global no declara `ab.setMode` ni
-      // `console.setAB`). Misma referencia (ver línea 16-21).
       if (typeof LGMDM?.ab?.setMode === 'function') {
         try { LGMDM.ab.setMode(targetMode); } catch (_) {}
       }
@@ -833,9 +800,6 @@ import type { BandSpec } from '../../core/audio-tap';
       const scoreEl = el('abxScore');
       const confEl = el('abxConfidence');
       if (scoreEl) scoreEl.textContent = `${state.abx.score} / ${state.abx.trials}`;
-      // FIX FINAL 2026-09-27: TS2365 — `pct` era string (de .toFixed(1)), pero
-      // se comparaba con `>= 80` (number). Calcular pctNum numérico para la
-      // comparación; el display sigue usando el string formateado.
       const pctNum = state.abx.trials > 0 ? (state.abx.score / state.abx.trials) * 100 : 0;
       const pct = pctNum.toFixed(1);
       if (confEl) confEl.textContent = `${pct}% ${state.abx.trials >= 5 && pctNum >= 80 ? '✓ (Significativo)' : ''}`;
@@ -850,8 +814,6 @@ import type { BandSpec } from '../../core/audio-tap';
       gainMatchCb.checked = !!state.abx.gainMatch;
       ['change', 'input'].forEach((evt) => {
         gainMatchCb.addEventListener(evt, (e) => {
-          // FIX FINAL 2026-09-27: TS18047/TS2339 — e.target es EventTarget|null,
-          // castear a HTMLInputElement para acceder a `.checked`.
           state.abx.gainMatch = (e.target as HTMLInputElement).checked;
         });
       });
@@ -2204,7 +2166,6 @@ import type { BandSpec } from '../../core/audio-tap';
               if (status) status.textContent = `❌ Error: ${jobData.error || 'Fallo en la separación'}`;
             }
           } catch (err) {
-            // FIX M-NEW-13: captura json() y otros errores inesperados.
             clearInterval(pollInterval); _proIntervals.delete(pollInterval);
             if (btn) btn.disabled = false;
             if (status) status.textContent = `❌ Error: ${(err as Error).message || 'fallo inesperado'}`;
@@ -2273,16 +2234,13 @@ import type { BandSpec } from '../../core/audio-tap';
   function teardownProFeatures() {
     _proObjectUrls.forEach(url => { try { URL.revokeObjectURL(url); } catch (_) {} });
     _proObjectUrls.clear();
-    // FIX A8: cancelar intervals activos (stemsep polling, etc.).
     _proIntervals.forEach(id => { try { clearInterval(id); } catch (_) {} });
     _proIntervals.clear();
-    // FIX M-NEW-5: remover el listener analysis-updated (guardado en _analysisUpdatedHandler).
     if (_analysisUpdatedHandler) {
       try { window.removeEventListener('analysis-updated', _analysisUpdatedHandler); } catch (_) {}
       _analysisUpdatedHandler = null;
     }
     LGMDM.proFeatures.audioTap.teardown();
-    // FIX M7: cancel stereo + waterfall RAFs that survive tab-switch otherwise.
     if (state.stereo && state.stereo.rafId) { cancelAnimationFrame(state.stereo.rafId); state.stereo.rafId = 0; }
     if (state.waterfall && state.waterfall.rafId) { cancelAnimationFrame(state.waterfall.rafId); state.waterfall.rafId = 0; }
     if (state.waterfall) state.waterfall.animating = false;
@@ -3147,8 +3105,6 @@ import type { BandSpec } from '../../core/audio-tap';
   }
 
   let _initDone = false;
-  // FIX M-NEW-5: guardamos la referencia del handler analysis-updated para
-  // poder removerlo en teardownProFeatures (antes era anónimo → no removable).
   let _analysisUpdatedHandler: (() => void) | null = null;
   function init() {
     if (_initDone) return;

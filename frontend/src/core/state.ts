@@ -4,12 +4,6 @@
 // Auditoría 2026-09-18 eliminó el puente SHARED_KEYS → window.*.
 // Para consumir estado: `window.LGMDM.state.selectedFile` (getter/setter via
 // Object.defineProperty), `window.LGMDM.state.getSelectedFile()`.
-//
-// FIX vs aporte: el `appState` interno previo (`currentPane`, `currentAudioFile`,
-// `subscribeToStateChanges`) nadie lo consume fuera de este módulo —
-// `currentAudioFile` mapea 1:1 con `selectedFile` y se eliminó.
-//
-// FIX vs aporte: tipos TS en todas las props públicas. Sin `any`.
 
 import { config } from './config';
 

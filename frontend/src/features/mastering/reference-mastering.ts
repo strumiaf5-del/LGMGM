@@ -1,13 +1,6 @@
 // features/mastering/reference-mastering.ts — Master con referencia, EQ dinámica, preview en vivo, análisis.
 // (PRODUCTION reference, NO del aporte experimental).
 //
-// FIX vs dist: tipos TS en todo el port.
-// FIX M-NEW-1: HMR-safe comment era falso (flag era decorativo) — ahora honesto.
-// FIX vs dist: cleanup de WS (stopRefPreview) e intervals (referencePollInterval,
-// ahora también en beforeunload — FIX A9). NOTA: no hay AbortController en este
-// módulo (el comentario original "AbortController + cleanup" mentía).
-// FIX vs dist: optional chaining en todos los bridges (LGMDM.*) — si no existen, no rompe.
-
 // FIX: NO declaramos `LGMDM` ni `setupABPlayer` aquí — core/state.ts y otros
 // módulos ya los declaran. Si redeclaramos con tipos diferentes, TS se queja.
 // Usamos `lg()` helper con Record<string, unknown> y accedemos via casting.
@@ -603,10 +596,6 @@ async function submitReferenceMasterJob(): Promise<void> {
       if (status) status.textContent = 'Error de conexión WebSocket.';
     };
     refWs.onclose = () => {
-      // FIX M7: `if (refWs === refWs)` era identidad siempre-true (leftover
-      // de un intent de comparar contra una var local que nunca se capturó).
-      // El handler onclose solo se dispara para el ws que lo registró, así
-      // que refWs es el correcto a nullificar.
       refWs = null;
       if (status && status.textContent === '▶ Reproduciendo preview…') status.textContent = '';
       if (!previewActive) return;
@@ -652,8 +641,6 @@ async function submitReferenceMasterJob(): Promise<void> {
     refRefSessionId = null;
     updateRefPreviewBtn();
   };
-  // FIX A9: cleanup en beforeunload — cancela el interval de polling de
-  // referencia si el usuario cierra la pestaña con un job en 'processing'.
   window.addEventListener('beforeunload', () => {
     try { stopRefPreview(); } catch (_) { /* ignore */ }
   }, { once: true });

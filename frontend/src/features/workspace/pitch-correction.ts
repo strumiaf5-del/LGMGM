@@ -1,10 +1,5 @@
 // features/workspace/pitch-correction.ts — Pitch Correction UI modal.
 //
-// FIX vs aporte: tipos TS.
-// FIX vs aporte: HMR-safe (`window.LGMDM.pitchCorrectionBound`).
-// FIX vs aporte: AbortController para cleanup de listeners.
-// FIX vs aporte: modal overlay se crea una sola vez (singleton).
-
 interface StateShape {
   selectedFile?: File | null;
   _previewLibraryId?: string | null;
@@ -13,7 +8,6 @@ interface StateShape {
 interface ApiShape {
   apiBase: () => string;
   apiFetch: <T>(endpoint: string, options?: RequestInit) => Promise<T>;
-  // FIX K4: client.* retorna Promise<Response> real (para res.ok/.json/.blob).
   client: {
     get: (endpoint: string, options?: RequestInit) => Promise<Response>;
     post: (endpoint: string, options?: RequestInit) => Promise<Response>;

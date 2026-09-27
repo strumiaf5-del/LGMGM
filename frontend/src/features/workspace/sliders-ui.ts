@@ -3,12 +3,6 @@
 // Carga tras `core/state.ts` (necesita el state) y antes de `mastering-actions.ts`
 // (los sliders alimentan el payload de mastering).
 //
-// FIX vs aporte: los metadatos de sliders se importan desde `data/sliders-meta.ts`
-// (antes venían de `<script id="sliders-meta">` inline en el HTML). El upstream
-// upstream-frontend/dist/index.html los expone; los extrajimos a TS.
-// FIX vs aporte: tipos TS en los formatters.
-// FIX vs aporte: HMR-safe (`window.LGMDM.slidersBound`).
-// FIX vs aporte: AbortController + cleanup.
 
 import { SLIDERS_META, type SliderMetaEntry } from '../../data/sliders-meta';
 

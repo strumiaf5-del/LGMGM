@@ -2,12 +2,9 @@
 //
 // Carga tras `core/state.ts` (state central) — file-handling escribe en `state.selectedFile`.
 //
-// FIX vs aporte: `audioEngine.decode` se importa del ESM (`core/audio-engine`).
 // FIX vs aporte: bridges a `LGMDM.ai`, `LGMDM.previewController`, `LGMDM.spectrum`,
 // `LGMDM.meters`, `drawWaveform`, `setPreviewStatus` son todos opcionales (módulos
 // no portados aún). El módulo no rompe si no existen.
-// FIX vs aporte: HMR-safe (`window.LGMDM.fileHandlingBound`).
-// FIX vs aporte: AbortController para teardown de listeners.
 
 import { audioEngine } from '../../core/audio-engine';
 import { config } from '../../core/config';
@@ -55,7 +52,6 @@ const lgmdm = () => window.LGMDM as Record<string, unknown> & {
   api?: {
     authToken?: () => string;
     apiFetch: <T>(endpoint: string, options?: RequestInit) => Promise<T>;
-    // FIX K4: client.* retorna Promise<Response> real (para res.ok/.blob/.json).
     client: {
       get: (endpoint: string, options?: RequestInit) => Promise<Response>;
       post: (endpoint: string, options?: RequestInit) => Promise<Response>;
@@ -381,8 +377,6 @@ async function uploadCurrentFileToLibrary(f: File): Promise<void> {
 }
 
 async function useLibraryFile(fileId: string, filename: string): Promise<void> {
-  // FIX cleanup bloque 2: 'void document.getElementById('libraryList');' era un perk
-  // (regla 7 AGENTS.md) que no hacía nada — listEl se gestiona en refreshLibraryList.
   const api = lgmdm().api;
   if (!api) return;
   try {
@@ -549,10 +543,6 @@ if (typeof (library as { saveLocalFile?: unknown }).saveLocalFile !== 'function'
     return payload;
   };
 }
-
-// FIX cleanup bloque 2: 'void refState;' era un perk (regla 7 AGENTS.md) para
-// silenciar el unused. refState se define línea 448 y se usa en el accessor
-// pattern de state.reference (líneas 451-456). Sin el void, tsc sigue EXIT 0.
 
 // Marcar como inicializado (HMR-safe)
 (window.LGMDM as Record<string, unknown>).fileHandlingBound = true;

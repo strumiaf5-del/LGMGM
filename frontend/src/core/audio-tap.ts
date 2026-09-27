@@ -1,8 +1,6 @@
 // Audio routing tap — single Splitter/AnalyserNode connected to the active
 // audio source (mixer master out, A/B node, or preview <audio> element).
 // Reused by goniometer, waterfall, aurora and multiband visualizers.
-//
-// FIX vs aporte: source candidate resolution is explicit (no `?` on globals).
 
 import { audioEngine } from './audio-engine';
 

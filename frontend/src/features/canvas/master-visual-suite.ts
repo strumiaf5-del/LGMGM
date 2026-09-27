@@ -10,11 +10,6 @@ function $(id: string): HTMLElement | null {
   return document.getElementById(id);
 }
 
-// FIX FINAL 2026-09-27: helpers para castear elementos a su tipo correcto.
-// El $() original retorna HTMLElement|null, pero muchos elementos son
-// HTMLCanvasElement (width/height/getContext), HTMLInputElement (value/checked),
-// HTMLSelectElement (value) o HTMLButtonElement (click). Sin estos casts,
-// tsc reporta TS2339 "Property X does not exist on type HTMLElement/Element".
 function $canvas(id: string): HTMLCanvasElement | null {
   return document.getElementById(id) as HTMLCanvasElement | null;
 }
@@ -737,7 +732,6 @@ interface MetricsShape {
   }
 
   let activeSpecView: "2d" | "3d" = "2d";
-  // FIX FINAL 2026-09-27: tipar waterfallHistory como array de Float32Array (slices del waterfall 3D).
   const waterfallHistory: Float32Array[] = [];
   const WATERFALL_SLICES = 30;
   const WATERFALL_BINS = 64;
@@ -1519,7 +1513,6 @@ interface MetricsShape {
     }
   }
 
-  // FIX FINAL 2026-09-27: tipar roomWaves como array de ondas circulares que emiten los speakers.
   interface RoomWave { r: number; alpha: number; amp: number; isLeft: boolean; }
   const roomWaves: RoomWave[] = [];
   let roomWaveSpawnCounter = 0;
@@ -1662,7 +1655,6 @@ interface MetricsShape {
   }
 
   // Module-scope state (so teardown at the end of the file can access them).
-  // FIX FINAL 2026-09-27: tipar explícitamente lastMetricsRef y metricsUnsub.
   let lastMetricsRef: MetricsShape | null = null;
   let animFrameId = 0;
   let metricsUnsub: (() => void) | null = null;

@@ -2,10 +2,6 @@
 // Port de /root/nuevito/frontend/upstream-frontend/dist/js/30-preview-controller.js
 // (PRODUCTION reference, no del aporte experimental).
 //
-// FIX vs dist: tipos TS en todo el port.
-// FIX vs dist: HMR-safe (`window.LGMDM.previewControllerBound`).
-// FIX vs dist: AbortController para render + source sessions.
-// FIX vs dist: AbortController + cleanup para metrics polling.
 // FIX vs dist: `_spectrumToArray()` portada del dist (backend devuelve 7 bandas,
 // dashboard espera 6 — upper_mid + presence → highmid).
 
@@ -20,7 +16,6 @@ const METRICS_POLL_MS = 10000;
 interface ApiShape {
   apiBase: () => string;
   apiFetch: <T>(endpoint: string, options?: RequestInit & { timeoutMs?: number; maxRetries?: number }) => Promise<T>;
-  // FIX K4: client.* retorna Promise<Response> real (para res.ok/.json/.blob).
   // Acepta timeoutMs/maxRetries (RequestOptions internos de api.ts) igual que apiFetch.
   client: {
     get: (endpoint: string, options?: RequestInit & { timeoutMs?: number; maxRetries?: number }) => Promise<Response>;
@@ -439,7 +434,6 @@ async function start(): Promise<boolean> {
       }
       if (!isRenderActive(current)) return false;
 
-      // FIX BUG: leer preview ID con fallback a source ID.
       const previewId = res.headers.get('X-Preview-ID')
         || res.headers.get('X-Preview-Source-Id')
         || previewSourceId;
@@ -633,9 +627,3 @@ window.addEventListener('beforeunload', () => {
   stopMetricsPolling();
   controller.abort();
 }, { once: true });
-
-// FIX A2: había `void config;` (variable inexistente → habría sido
-// ReferenceError en runtime, tree-shakeado por Rollup) y `void spectrumToArray;`
-// (la función SÍ se usa dentro de flattenTelemetry, no necesita este perk).
-// El comentario original "Silenciar warning de variable no usada" mentía:
-// tsconfig tiene noUnusedLocals: false, no hay warning que silenciar.

@@ -1,8 +1,5 @@
 // features/ai/assistant.ts — Asistente de IA (estilo LANDR AI).
 //
-// FIX vs aporte: tipos TS.
-// FIX vs aporte: HMR-safe (`window.LGMDM.aiAssistantBound`).
-// FIX vs aporte: AbortController + cleanup.
 // FIX vs aporte: `/analysis/analyze` corregido a `/analysis` (matchea backend).
 
 interface StateShape {
@@ -14,7 +11,6 @@ interface StateShape {
 interface ApiShape {
   apiBase: () => string;
   apiFetch: <T>(endpoint: string, options?: RequestInit) => Promise<T>;
-  // FIX K4: client.* retorna Promise<Response> real (para res.ok/.json/.blob/.headers).
   client: {
     get: (endpoint: string, options?: RequestInit) => Promise<Response>;
     post: (endpoint: string, options?: RequestInit) => Promise<Response>;

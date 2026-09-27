@@ -3,11 +3,6 @@
 // Carga tras `core/state.ts` (necesita themeColors) y `workspace/sliders-ui.ts`
 // (los sliders de EQ disparan el redraw).
 //
-// FIX vs aporte: tipos TS en todo el port.
-// FIX vs aporte: el worker se crea una sola vez (singleton) y se libera en teardown.
-// FIX vs aporte: el throttle usa RAF coalescing.
-// FIX vs aporte: HMR-safe (`window.LGMDM.eqWaveformBound`).
-// FIX vs aporte: AbortController + cleanup de ResizeObserver y worker.
 
 import { setupCanvasResize } from '../../core/utils';
 // FIX bug runtime: importar core/dom explícitamente. eq-waveform se carga en
@@ -165,8 +160,6 @@ let eqCallback: ((result: EqCurveResult) => void) | null = null;
 let eqRequestId = 0;
 let eqPendingCallback: ((result: EqCurveResult) => void) | null = null;
 let eqPendingId = 0;
-// FIX A6: handle del setTimeout que revoca el Worker URL (para cancelarlo
-// en teardown si todavía no disparó).
 let _eqWorkerUrlTimer: number | null = null;
 
 function getWorker(): Worker {
@@ -174,9 +167,6 @@ function getWorker(): Worker {
   const blob = new Blob([workerCode], { type: 'application/javascript' });
   eqWorkerUrl = URL.createObjectURL(blob);
   eqWorker = new Worker(eqWorkerUrl);
-  // FIX A6: guardamos el handle del setTimeout para poder cancelarlo en
-  // teardown (antes no se guardaba → orphan timer si teardown corría antes
-  // de 1s, con doble revoke inofensivo pero no cancelable).
   _eqWorkerUrlTimer = window.setTimeout(() => {
     _eqWorkerUrlTimer = null;
     if (eqWorkerUrl) {
@@ -185,8 +175,6 @@ function getWorker(): Worker {
     }
   }, 1000);
   eqWorker.onmessage = (e: MessageEvent<EqCurveResult>) => {
-    // FIX M-NEW-11: usar eqPendingId para correlacionar. Si el request
-    // actual coincide con el que disparó este onmessage, invocar el callback.
     if (eqPendingCallback && eqPendingId === eqRequestId) {
       const cb = eqPendingCallback;
       eqPendingCallback = null;
@@ -197,9 +185,6 @@ function getWorker(): Worker {
 }
 
 function computeEQCurve(params: EqParams & { SR: number; W: number }, callback: (result: EqCurveResult) => void): void {
-  // FIX M-NEW-11: incrementar el requestId y guardar el callback. Si llega
-  // un nuevo computeEQCurve antes de que responda el anterior, el onmessage
-  // del anterior se skipea (eqPendingId !== eqRequestId).
   eqRequestId++;
   eqPendingId = eqRequestId;
   eqPendingCallback = callback;
@@ -619,11 +604,8 @@ function showLoudnessMeter(lufsValue: number | null | undefined): void {
 
 function teardown(): void {
   controller.abort();
-  // FIX A6: cancelar el RAF pendiente (si scheduleEQCurve se llamó justo
-  // antes de teardown, evita que drawEQCurve re-creé el Worker).
   if (_eqRafId !== null) { cancelAnimationFrame(_eqRafId); _eqRafId = null; }
   _eqRafPending = false;
-  // FIX A6: cancelar el timer de revoke del Worker URL.
   if (_eqWorkerUrlTimer !== null) { clearTimeout(_eqWorkerUrlTimer); _eqWorkerUrlTimer = null; }
   if (_eqResizeCleanup) _eqResizeCleanup();
   if (eqWorker) {

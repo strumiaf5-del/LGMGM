@@ -2,8 +2,6 @@
 //
 // Carga tras `features/audio/mixer-engine.ts` (necesita `window.LGMDM.mixerEngine`).
 //
-// FIX vs aporte: tipos TS en todo el port.
-// FIX M-NEW-1: HMR-safe (`window.LGMDM.mixerUIBound`) — ahora el guard es efectivo.
 // FIX M-NEW-3: el comentario "AbortController + cleanup de listeners" era misleading
 // — el AbortController (línea 124) solo cubre el listener de DOMContentLoaded
 // (línea 922). Los listeners de bindMixerEvents se protegen con guards en los
