@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import os
 import uuid
 
@@ -7,6 +8,11 @@ import librosa
 import numpy as np
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from fastapi.concurrency import run_in_threadpool
+
+# FIX ruff F821: _analyze_from_file (línea 37) usa logger pero es una función
+# top-level, mientras que el logger inyectado solo está en create_analysis_router.
+# Agregamos un logger del módulo para el fallback.
+logger = logging.getLogger(__name__)
 
 try:
     from ..audio_service import AudioService

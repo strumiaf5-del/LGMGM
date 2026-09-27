@@ -9,8 +9,14 @@ import uuid
 import librosa
 import numpy as np
 import soundfile as sf
-from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, Query, WebSocket
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Query, WebSocket
 from fastapi.responses import FileResponse
+from starlette.websockets import WebSocketDisconnect
+# FIX ruff F821 (12 NameError críticos en streaming.py):
+# - WebSocketDisconnect, HTTPException no estaban importadas (NameError en except/raise).
+# - compute_lufs_corrected_gain no se recibía de dependencies (NameError en línea 259).
+# - _mix_library_stem_path, _mix_session_stem_path, _resolve_mix_stem_path, run_mix_job
+#   no existían (NameError en /mix/submit y /ws/mix-stream). Implementadas abajo.
 
 try:
     from ..auth import get_current_user
@@ -39,6 +45,8 @@ def create_router(**dependencies):
     global normalize_by_lufs, run_normalize_job
     global _crop_preview, _ensure_stereo, _get_input_duration
     global _match_length
+    # FIX ruff F821: agregar globals que se usan pero no estaban declarados.
+    global compute_lufs_corrected_gain, STEM_LIBRARY_DIR
 
     # Resolve dependencies injected from app.py
     MAX_FILE_SIZE = dependencies["MAX_FILE_SIZE"]
@@ -87,12 +95,101 @@ def create_router(**dependencies):
     _ensure_stereo = dependencies["_ensure_stereo"]
     _get_input_duration = dependencies["_get_input_duration"]
     _match_length = dependencies["_match_length"]
+    # FIX ruff F821: recibir de dependencies las que faltaban.
+    compute_lufs_corrected_gain = dependencies["compute_lufs_corrected_gain"]
+    STEM_LIBRARY_DIR = dependencies["STEM_LIBRARY_DIR"]
 
     # Attach for any direct access
     for key, val in dependencies.items():
         setattr(router, key, val)
 
     return router
+
+
+# FIX ruff F821: helpers de path de stems para /mix/submit y /ws/mix-stream.
+# Antes estas funciones no existían → NameError en runtime. Implementación
+# basada en routers/mixer.py (que usa el mismo patrón de paths).
+import glob as _glob_stem
+
+
+def _mix_library_stem_path(library_id):
+    """Resuelve el path de un stem en la librería persistente (STEM_LIBRARY_DIR)
+    a partir de su library_id. Retorna None si no existe."""
+    if not library_id:
+        return None
+    return library.get_path(STEM_LIBRARY_DIR, library_id)
+
+
+def _mix_session_stem_path(session_id, name):
+    """Resuelve el path de un stem en UPLOAD_DIR (sesión temporal).
+    El upload lo guarda como mix_{session_id}_{name}.{ext} (ver mixer.py:81).
+    Retorna None si no existe."""
+    if not session_id or not name:
+        return None
+    # FIX: escapar el nombre para que corchetes/paréntesis no se interpreten
+    # como wildcards de glob (mismo bugfix que mixer.py:155).
+    pattern = os.path.join(UPLOAD_DIR, _glob_stem.escape(f"mix_{session_id}_{name}") + ".*")
+    matches = _glob_stem.glob(pattern)
+    return matches[0] if matches else None
+
+
+def _resolve_mix_stem_path(session_id, name, stem_library_ids):
+    """Resuelve el path de un stem: primero librería (si hay ID), luego sesión.
+    Retorna None si no se encuentra en ningún lado."""
+    library_id = (stem_library_ids or {}).get(name)
+    if library_id:
+        path = _mix_library_stem_path(library_id)
+        if path and os.path.exists(path):
+            return path
+    return _mix_session_stem_path(session_id, name)
+
+
+def run_mix_job(job_id, stem_paths, sr, s_params_dict, m_params_dict, cleanup_paths):
+    """Job en background para /mix/submit: carga audios de los paths, parsea
+    parámetros, ejecuta mix_and_master, guarda el resultado en PROCESSED_DIR y
+    actualiza el job. Es el equivalente async del mix sync de mixer.py."""
+    import json as _json
+    try:
+        jobs.set_stage(job_id, "Cargando stems", progress=5, status="processing")
+        stems = {}
+        for name, path in stem_paths.items():
+            audio, file_sr = librosa.load(path, sr=sr, mono=False)
+            if audio.ndim == 1:
+                audio = audio[np.newaxis, :]
+            stems[name] = audio
+
+        jobs.set_stage(job_id, "Procesando stems", progress=15)
+        # Parsear parámetros: s_params_dict es {nombre: {campos StemParams}},
+        # m_params_dict es {campos MixParams}.
+        stem_params = {}
+        for name, p_dict in (s_params_dict or {}).items():
+            if isinstance(p_dict, dict):
+                stem_params[name] = StemParams(name=name, **{k: v for k, v in p_dict.items() if hasattr(StemParams, k)})
+        mix_params = MixParams(**{k: v for k, v in (m_params_dict or {}).items() if hasattr(MixParams, k)})
+
+        def _progress_cb(pct, stage):
+            jobs.set_stage(job_id, stage, progress=int(20 + pct * 0.7))
+
+        jobs.set_stage(job_id, "Mezclando y masterizando", progress=20)
+        result = mix_and_master(stems, sr, stem_params, mix_params, progress_cb=_progress_cb)
+
+        # Guardar el resultado en PROCESSED_DIR
+        output_path = os.path.join(PROCESSED_DIR, f"mix_{job_id}.wav")
+        sf.write(output_path, result.get("audio", np.zeros(2)), sr) if "audio" in result else None
+
+        jobs.set_stage(job_id, "Finalizado", progress=100, status="done")
+        jobs.update_job(job_id, output_path=output_path, result=result)
+    except Exception as e:
+        logger.exception("Error en run_mix_job %s: %s", job_id, e)
+        jobs.mark_failed(job_id, f"Error en mix: {e}")
+    finally:
+        # Cleanup de archivos temporales de sesión (no de librería).
+        for p in (cleanup_paths or []):
+            try:
+                if p and os.path.exists(p):
+                    os.remove(p)
+            except Exception:
+                pass
 
 
 @router.websocket("/ws/master-stream")
