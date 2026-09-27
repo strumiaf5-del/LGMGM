@@ -30,7 +30,13 @@ interface UiShape {
   closeModal?: (el: HTMLElement) => void;
   showStatus?: (container: unknown, msg: string, kind: string) => void;
   showToast?: (msg: string, kind: string, ms?: number) => void;
-  requireById: (id: string, owner?: string) => HTMLElement;
+}
+
+// FIX A2: requireById vive en lg().dom (core/dom.ts:118), NO en lg().ui.
+interface DomShape {
+  requireById: <T extends HTMLElement = HTMLElement>(id: string, owner?: string) => T;
+  byId?: <T extends HTMLElement = HTMLElement>(id: string) => T | null;
+  cachedEl?: <T extends HTMLElement = HTMLElement>(id: string) => T | null;
 }
 
 interface AiShape {
@@ -52,6 +58,7 @@ const lg = () => (window.LGMDM = window.LGMDM || {}) as Record<string, unknown> 
   state?: StateShape;
   api?: ApiShape;
   ui?: UiShape;
+  dom?: DomShape;
   ai?: AiShape;
   analysis?: AnalysisShape;
 };
@@ -85,9 +92,11 @@ function aiEl(id: string): HTMLElement | null {
 }
 
 function aiRequired(id: string, owner = '11-ai-assistant-ux'): HTMLElement {
-  const ui = lg().ui;
-  if (!ui?.requireById) throw new Error('UI bridge no inicializada');
-  return ui.requireById(id, owner);
+  // FIX A2: requireById vive en lg().dom (core/dom.ts:118), NO en lg().ui.
+  // Antes usaba lg().ui.requireById → "UI bridge no inicializada" al abrir el panel IA.
+  const dom = lg().dom;
+  if (!dom?.requireById) throw new Error('DOM bridge no inicializada');
+  return dom.requireById(id, owner);
 }
 
 function setContext(analysisData: Record<string, unknown> | null): void {
