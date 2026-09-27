@@ -243,7 +243,10 @@ app = FastAPI(title="Audio Mastering API", version="7.0.1", lifespan=lifespan)
 FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN", "https://masteringstudio.duckdns.org").rstrip("/")
 CORS_ORIGINS = [origin.strip().rstrip("/") for origin in os.getenv("CORS_ORIGINS", FRONTEND_ORIGIN).split(",") if origin.strip()]
 
-limiter = Limiter(key_func=get_remote_address)
+# FIX testing: si TESTING=1, desactivar el rate limiter (slowapi limita logins
+# a 5/min y los tests hacen >8 logins). En producción TESTING no está seteado.
+_TESTING = os.getenv("TESTING", "").strip() in ("1", "true", "True")
+limiter = Limiter(key_func=get_remote_address, enabled=not _TESTING)
 
 app.add_middleware(
     CORSMiddleware,

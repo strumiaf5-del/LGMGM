@@ -1,0 +1,546 @@
+- generic [active] [ref=f1e1]:
+  - link "Saltar al contenido principal" [ref=f1e2] [cursor=pointer]:
+    - /url: "#main"
+  - generic [ref=f1e3]:
+    - banner [ref=f1e4]:
+      - generic [ref=f1e6]:
+        - generic [aria-hidden] [ref=f1e7]: LG
+        - generic [ref=f1e8]:
+          - heading "LGMDM" [level=1] [ref=f1e9]
+          - generic [ref=f1e10]: INTELLIGENT MASTERING CONSOLE
+      - generic: ENGINE READY
+      - generic [ref=f1e14]:
+        - button "SUITE PRO" [ref=f1e15] [cursor=pointer]
+        - button "RACK" [ref=f1e20] [cursor=pointer]
+        - button "Mostrar historial de cambios (Ctrl+H)" [ref=f1e29] [cursor=pointer]
+        - button "Cambiar tema visual" [ref=f1e34] [cursor=pointer]
+    - generic [ref=f1e38]:
+      - complementary "Panel de control lateral" [ref=f1e39]:
+        - tablist "Flujo de trabajo" [ref=f1e40]:
+          - tab "Mastering-Ref" [selected] [ref=f1e41] [cursor=pointer]
+          - tab "Cadena" [ref=f1e45] [cursor=pointer]
+          - tab "Salida" [ref=f1e48] [cursor=pointer]
+          - tab "Mixer" [ref=f1e53] [cursor=pointer]
+        - generic [ref=f1e64]:
+          - tabpanel "Mastering-Ref" [ref=f1e65]:
+            - generic "Paso 1 Carga y contexto ▾" [ref=f1e66] [cursor=pointer]:
+              - generic [ref=f1e67]: Paso 1
+              - generic [ref=f1e68]: Carga y contexto
+              - text: ▾
+            - generic [ref=f1e69]:
+              - generic [ref=f1e70]:
+                - heading "Archivo de audio" [level=3] [ref=f1e71]
+                - generic [ref=f1e72] [cursor=pointer]:
+                  - button "Archivo de audio principal" [ref=f1e73]
+                  - paragraph [ref=f1e79]:
+                    - text: Arrastrá tu audio aquí
+                    - generic [ref=f1e80]: WAV · MP3 · FLAC · OGG · AIFF — máx 200 MB
+                - generic [ref=f1e81]:
+                  - button "Analizar" [ref=f1e82] [cursor=pointer]
+                  - button "Recomendaciones" [ref=f1e83] [cursor=pointer]
+                - generic [ref=f1e84]:
+                  - button "Master (sync)" [ref=f1e85] [cursor=pointer]
+                  - button "Master (enqueue)" [ref=f1e86] [cursor=pointer]
+                - button "Pitch Correction" [ref=f1e88] [cursor=pointer]:
+                  - generic [ref=f1e93]: Pitch Correction & Tuning
+                - generic [ref=f1e94]:
+                  - generic [ref=f1e95]:
+                    - generic [ref=f1e96]: LUFS
+                    - text: Normalizar por LUFS (sin procesar nada más)
+                  - generic [ref=f1e97]:
+                    - generic [ref=f1e98]: LUFS objetivo
+                    - generic [ref=f1e99]: "-14.0"
+                    - slider "LUFS objetivo" [ref=f1e100] [cursor=pointer]: "-14"
+                    - paragraph [ref=f1e101]: Solo ganancia — sin EQ, sin dinámica, sin referencia. -14 = streaming (Spotify/YouTube) · -23 = broadcast (EBU R128) · -6 = muy hot.
+                  - button "Normalizar" [ref=f1e102] [cursor=pointer]
+                  - status
+                - generic [ref=f1e103] [cursor=pointer]:
+                  - checkbox "Guardar en mi librería del servidor" [checked] [ref=f1e104]: ✓
+                  - text: Guardar en mi librería del servidor
+              - generic [ref=f1e105]:
+                - heading "Mi librería actualizar" [level=3] [ref=f1e106]:
+                  - generic [ref=f1e107]: Mi librería
+                  - button "actualizar" [ref=f1e108] [cursor=pointer]
+                - generic "Cargando librería" [ref=f1e114]
+              - generic [ref=f1e118]:
+                - heading "Presets profesionales" [level=3] [ref=f1e119]
+                - generic [ref=f1e120]:
+                  - button "Preset Rock" [ref=f1e121] [cursor=pointer]:
+                    - generic [ref=f1e123]: Rock
+                  - button "Preset Metal" [ref=f1e124] [cursor=pointer]:
+                    - generic [ref=f1e126]: Metal
+                  - button "Preset Trap" [ref=f1e127] [cursor=pointer]:
+                    - generic [ref=f1e129]: Trap
+                  - button "Preset Rap" [ref=f1e130] [cursor=pointer]:
+                    - generic [ref=f1e132]: Hip-Hop / Rap
+                  - button "Preset Reggaeton" [ref=f1e133] [cursor=pointer]:
+                    - generic [ref=f1e135]: Reggaeton
+                  - button "Preset Pop" [ref=f1e136] [cursor=pointer]:
+                    - generic [ref=f1e138]: Pop
+                  - button "Preset CD" [ref=f1e139] [cursor=pointer]:
+                    - generic [ref=f1e141]: CD Master
+                  - button "Preset EDM" [ref=f1e142] [cursor=pointer]:
+                    - generic [ref=f1e144]: EDM / House
+                  - button "Preset Techno" [ref=f1e145] [cursor=pointer]:
+                    - generic [ref=f1e147]: Techno
+                  - button "Preset R&B" [ref=f1e148] [cursor=pointer]:
+                    - generic [ref=f1e150]: R&B / Soul
+                  - button "Preset Jazz" [ref=f1e151] [cursor=pointer]:
+                    - generic [ref=f1e153]: Jazz
+                  - button "Preset Clásica" [ref=f1e154] [cursor=pointer]:
+                    - generic [ref=f1e156]: Clásica
+                  - button "Preset Lo-Fi" [ref=f1e157] [cursor=pointer]:
+                    - generic [ref=f1e159]: Lo-Fi
+                  - button "Preset Acústico" [ref=f1e160] [cursor=pointer]:
+                    - generic [ref=f1e162]: Acústico
+                  - button "Preset Indie" [ref=f1e163] [cursor=pointer]:
+                    - generic [ref=f1e165]: Indie
+                  - button "Preset Cumbia" [ref=f1e166] [cursor=pointer]:
+                    - generic [ref=f1e168]: Cumbia
+                  - button "Preset Funk" [ref=f1e169] [cursor=pointer]:
+                    - generic [ref=f1e171]: Funk
+                  - button "Preset Ambient" [ref=f1e172] [cursor=pointer]:
+                    - generic [ref=f1e174]: Ambient
+                  - button "Preset Podcast" [ref=f1e175] [cursor=pointer]:
+                    - generic [ref=f1e177]: Podcast / Voice
+                - button "Cargar preset (JSON)" [ref=f1e178] [cursor=pointer]
+                - status [ref=f1e181]
+                - generic [ref=f1e182]: Objetivo de loudness (plataforma)
+                - combobox "Plataforma o destino de loudness" [ref=f1e184] [cursor=pointer]:
+                  - option "— Manual —" [selected]
+                  - option "Spotify (−14 LUFS)"
+                  - option "YouTube (−14 LUFS)"
+                  - option "Apple Music (−16 LUFS)"
+                  - option "Tidal (−14 LUFS)"
+                  - option "Club / DJ (−9 LUFS)"
+                  - option "CD (−9 LUFS)"
+              - group [ref=f1e185]:
+                - generic "Match Mastering (referencia) ▾" [ref=f1e186] [cursor=pointer]:
+                  - text: Match Mastering (referencia)
+                  - generic [ref=f1e189]: ▾
+                - text: ✓ ✓ ✓ ✓ ✓ ✓ ✓ ✓ ✓
+                - option "Heurístico (rápido)" [selected]
+                - option "DDSP (descenso de gradiente)"
+                - option "Balanceado / streaming" [selected]
+                - option "Club punchy"
+                - option "Audiophile transparente"
+                - option "Broadcast seguro"
+                - text: ✓ ✓ ✓ ✓ ✓
+                - option "Tape (3er armónico)" [selected]
+                - option "Analog (2do+3er)"
+                - option "Tube (2do armónico)"
+                - text: ✓
+          - tablist "Familias de procesamiento" [ref=f1e190]:
+            - tab "INPUT" [selected] [ref=f1e191] [cursor=pointer]
+            - tab "EQ / TONE" [ref=f1e192] [cursor=pointer]
+            - tab "DINÁMICA" [ref=f1e193] [cursor=pointer]
+            - tab "STEREO / COLOR" [ref=f1e194] [cursor=pointer]
+            - tab "OUTPUT" [ref=f1e195] [cursor=pointer]
+          - generic [ref=f1e196]:
+            - checkbox "Vista 2 columnas (R2)" [ref=f1e197] [cursor=pointer]
+            - text: Vista 2 columnas (R2)
+          - text: ▾ ✓ ✓ ✓ ✓ ✓ ✓ ✓ ✓ ✓ ✓ ✓ ✓ ✓ ✓ ✓ ✓ ✓ ▾
+      - main [ref=f1e198]:
+        - generic "Contenido principal" [ref=f1e199]:
+          - generic [ref=f1e201]:
+            - tablist "Espacios de trabajo LGMDM" [ref=f1e202]:
+              - tab "Console" [selected] [ref=f1e203] [cursor=pointer]
+              - tab "Analysis" [ref=f1e209] [cursor=pointer]
+              - tab "Presets" [ref=f1e211] [cursor=pointer]
+            - generic [ref=f1e216]:
+              - generic [ref=f1e217]:
+                - checkbox "Habilitar Live Preview" [checked] [ref=f1e218] [cursor=pointer]: ✓
+                - text: Habilitar Live Preview
+              - generic [ref=f1e219]: El servidor renderiza un Preview completo con los parámetros actuales. Solo cuando termina se habilita la reproducción.
+            - tabpanel "Console" [ref=f1e220]:
+              - region "LGMDM Mastering Console" [ref=f1e221]:
+                - generic [ref=f1e222]:
+                  - generic [ref=f1e223]:
+                    - generic [ref=f1e224]: MASTER BUS
+                    - strong [ref=f1e225]: Sin archivo cargado
+                    - generic [ref=f1e226]: Esperando señal
+                  - generic [ref=f1e227]:
+                    - generic "True Peak & Inter-Sample Peak (ISP) Warning Beacon" [ref=f1e228]: ISP PEAK
+                    - generic "Hardware Chassis Skin (Acabado de Consola)" [ref=f1e232]:
+                      - generic [ref=f1e233]: CHASSIS
+                      - generic [ref=f1e234]:
+                        - button "SLATE" [ref=f1e235] [cursor=pointer]
+                        - button "NEVE" [ref=f1e236] [cursor=pointer]
+                        - button "SSL" [ref=f1e237] [cursor=pointer]
+                        - button "OBSIDIAN" [ref=f1e238] [cursor=pointer]
+                    - button "CRT SCOPE" [ref=f1e239] [cursor=pointer]
+                  - generic [ref=f1e241]:
+                    - button "ANALIZAR" [ref=f1e242] [cursor=pointer]
+                    - button "MASTER" [ref=f1e243] [cursor=pointer]
+                - generic "Pantalla VFD de Telemetría" [ref=f1e244]:
+                  - generic [ref=f1e247]:
+                    - generic [ref=f1e248]: DSP ACTIVE
+                    - generic [ref=f1e249]:
+                      - generic [ref=f1e250]: ENG
+                      - strong [ref=f1e251]: 64-BIT FP
+                    - generic [ref=f1e252]:
+                      - generic [ref=f1e253]: SR
+                      - strong [ref=f1e254]: 48.0 kHz
+                    - generic [ref=f1e255]:
+                      - generic [ref=f1e256]: CHAIN
+                      - strong [ref=f1e257]: 16 STAGES
+                    - generic [ref=f1e258]:
+                      - generic [ref=f1e259]: DYN
+                      - strong [ref=f1e260]: 14.2 LU
+                    - generic [ref=f1e261]:
+                      - generic [ref=f1e262]: TP-HEADROOM
+                      - strong [ref=f1e263]: +1.4 dB
+                    - generic [ref=f1e264]:
+                      - generic [ref=f1e265]: LATENCY
+                      - strong [ref=f1e266]: 0.8 ms
+                    - generic [ref=f1e267]: CALIBRATED MASTER BUS · 0.00 dB CEILING · READY
+                - generic "Ruta de Señal DSP" [ref=f1e268]:
+                  - generic [ref=f1e272]:
+                    - button "IN" [ref=f1e273] [cursor=pointer]
+                    - button "00 NR" [ref=f1e276] [cursor=pointer]
+                    - button "01 GAIN" [ref=f1e279] [cursor=pointer]
+                    - button "02 EQ" [ref=f1e282] [cursor=pointer]
+                    - button "04 M/S" [ref=f1e285] [cursor=pointer]
+                    - button "05 COMP" [ref=f1e288] [cursor=pointer]
+                    - button "07 DYN" [ref=f1e291] [cursor=pointer]
+                    - button "08 MB" [ref=f1e294] [cursor=pointer]
+                    - button "09 TRN" [ref=f1e297] [cursor=pointer]
+                    - button "10 TUBE" [ref=f1e300] [cursor=pointer]
+                    - button "11 WID" [ref=f1e303] [cursor=pointer]
+                    - button "12 MONO" [ref=f1e306] [cursor=pointer]
+                    - button "13 GLUE" [ref=f1e309] [cursor=pointer]
+                    - button "14 CLIP" [ref=f1e312] [cursor=pointer]
+                    - button "15 LIM" [ref=f1e315] [cursor=pointer]
+                    - button "16 OUT" [ref=f1e318] [cursor=pointer]
+                - generic [ref=f1e321]:
+                  - generic [ref=f1e322]:
+                    - generic [ref=f1e323]:
+                      - generic [ref=f1e324]:
+                        - text: SIGNAL SCOPE
+                        - strong [ref=f1e325]: Waveform / Dynamics
+                      - generic [ref=f1e326]:
+                        - generic [ref=f1e327]:
+                          - generic [ref=f1e328]: "-∞"
+                          - generic [ref=f1e329]: PEAK
+                        - generic [ref=f1e330]:
+                          - generic [ref=f1e331]: "-∞"
+                          - generic [ref=f1e332]: LUFS
+                        - generic [ref=f1e333]:
+                          - generic [ref=f1e334]: "--"
+                          - generic [ref=f1e335]: CORR
+                    - generic [ref=f1e336]:
+                      - generic "Visualización de señal" [ref=f1e337]
+                      - generic: "-∞"
+                      - generic: 0 dB
+                    - generic [ref=f1e339]:
+                      - generic [ref=f1e340]: 00:00
+                      - generic [ref=f1e341]: 00:00
+                      - generic [ref=f1e342]: "--:--"
+                  - generic [ref=f1e343]:
+                    - generic [ref=f1e344]:
+                      - generic [ref=f1e345]:
+                        - button "BARS" [ref=f1e346] [cursor=pointer]
+                        - button "ANALOG VU" [ref=f1e347] [cursor=pointer]
+                        - button "RADAR" [ref=f1e348] [cursor=pointer]
+                        - button "3D SPHERE" [ref=f1e349] [cursor=pointer]
+                      - generic [ref=f1e350]: ANALOG VU
+                    - generic [ref=f1e351]:
+                      - generic [ref=f1e352]:
+                        - text: CLIP
+                        - generic [ref=f1e354]: L
+                      - generic [ref=f1e355]:
+                        - text: CLIP
+                        - generic [ref=f1e357]: R
+                    - generic [ref=f1e358]:
+                      - generic [ref=f1e359]:
+                        - img [ref=f1e361]:
+                          - generic [ref=f1e365]: "-20"
+                          - generic [ref=f1e366]: "-10"
+                          - generic [ref=f1e367]: "-5"
+                          - generic [ref=f1e368]: "0"
+                          - generic [ref=f1e369]: "+3"
+                          - generic [ref=f1e370]: VU
+                        - generic [ref=f1e375]: CH 1 · LEFT
+                      - generic [ref=f1e376]:
+                        - img [ref=f1e378]:
+                          - generic [ref=f1e382]: "-20"
+                          - generic [ref=f1e383]: "-10"
+                          - generic [ref=f1e384]: "-5"
+                          - generic [ref=f1e385]: "0"
+                          - generic [ref=f1e386]: "+3"
+                          - generic [ref=f1e387]: VU
+                        - generic [ref=f1e392]: CH 2 · RIGHT
+                    - generic [ref=f1e393]:
+                      - generic "Vectorscopio Lissajous Polar" [ref=f1e395]
+                      - generic [ref=f1e396]:
+                        - generic [ref=f1e397]: LISSAJOUS 360°
+                        - generic [ref=f1e398]: +0.95 OK
+                    - generic [ref=f1e399]:
+                      - generic "Esfera Vectorial Estéreo 3D" [ref=f1e401]
+                      - generic [ref=f1e402]:
+                        - generic [ref=f1e403]: VECTORSPHERE 3D
+                        - generic [ref=f1e404]: STEREO 1.20x
+                    - generic "Factor de Cresta & Rango Dinámico (DR)" [ref=f1e405]:
+                      - generic [ref=f1e406]:
+                        - generic [ref=f1e407]: CREST / DYNAMICS
+                        - strong [ref=f1e408]: DR 12.4
+                      - generic [ref=f1e412]:
+                        - generic [ref=f1e413]: CRUSH
+                        - generic [ref=f1e414]: CLUB
+                        - generic [ref=f1e415]: STREAM
+                        - generic [ref=f1e416]: HI-DR
+                    - generic [ref=f1e417]:
+                      - generic [ref=f1e418]:
+                        - generic [ref=f1e419]: TRUE PEAK
+                        - strong [ref=f1e420]: "-∞ dBTP"
+                      - generic [ref=f1e421]:
+                        - generic [ref=f1e422]: RMS
+                        - strong [ref=f1e423]: "-∞ dB"
+                - region "EQ Chain Response" [ref=f1e424]:
+                  - generic [ref=f1e425]:
+                    - generic [ref=f1e426]:
+                      - text: EQ CHAIN
+                      - strong [ref=f1e427]: Respuesta combinada · 6 Peak + LS + HS + HP + LP
+                    - generic [ref=f1e428]: LIVE
+                  - generic [ref=f1e429]:
+                    - generic "Respuesta combinada de la cadena EQ" [ref=f1e430]
+                    - generic [aria-hidden] [ref=f1e431]: "-24 dB-120+12+24"
+                    - generic [aria-hidden] [ref=f1e432]: 20Hz1005001k5k20kHz
+                - generic [ref=f1e434]:
+                  - generic [ref=f1e435]:
+                    - generic [ref=f1e436]:
+                      - text: ANALYZER
+                      - strong [ref=f1e437]: Frequency Spectrum (20 Hz – 20 kHz)
+                    - generic [ref=f1e438]:
+                      - button "2D FFT" [ref=f1e439] [cursor=pointer]
+                      - button "3D WATERFALL" [ref=f1e440] [cursor=pointer]
+                    - generic [ref=f1e441]: LIVE
+                  - generic [ref=f1e442]:
+                    - generic "Analizador de espectro en tiempo real" [ref=f1e443]
+                    - generic "Cascada espectrográfica 3D" [ref=f1e444]
+                  - generic [aria-hidden] [ref=f1e445]:
+                    - generic [ref=f1e446]: 20Hz
+                    - generic [ref=f1e447]: 50Hz
+                    - generic [ref=f1e448]: 100Hz
+                    - generic [ref=f1e449]: 250Hz
+                    - generic [ref=f1e450]: 500Hz
+                    - generic [ref=f1e451]: 1kHz
+                    - generic [ref=f1e452]: 2.5kHz
+                    - generic [ref=f1e453]: 5kHz
+                    - generic [ref=f1e454]: 10kHz
+                    - generic [ref=f1e455]: 20kHz
+                - generic [ref=f1e456]:
+                  - generic [ref=f1e457]: ANALOG MASTERING BUS CONTROLS
+                  - generic [ref=f1e458]:
+                    - generic [ref=f1e459]:
+                      - generic [ref=f1e460]: INPUT GAIN
+                      - slider "Input Gain" [ref=f1e462]
+                      - generic [ref=f1e466]: +0.0 dB
+                    - generic [ref=f1e467]:
+                      - generic [ref=f1e468]: THRESHOLD
+                      - slider "Comp Threshold" [ref=f1e470]
+                      - generic [ref=f1e474]: "-18.0 dB"
+                    - generic "Válvula Termiónica Mullard ECC83 / 12AX7 Saturación" [ref=f1e475]: VALVE 12AX7
+                    - generic [ref=f1e485]:
+                      - generic [ref=f1e486]: STEREO WIDTH
+                      - slider "Stereo Width" [ref=f1e488]
+                      - generic [ref=f1e492]: 1.20x
+                    - generic [ref=f1e493]:
+                      - generic [ref=f1e494]: TUBE DRIVE
+                      - slider "Tube Drive" [ref=f1e496]
+                      - generic [ref=f1e500]: 0%
+                    - generic [ref=f1e501]:
+                      - generic [ref=f1e502]: CEILING
+                      - slider "Brickwall Ceiling" [ref=f1e504]
+                      - generic [ref=f1e508]: "-0.1 dB"
+                - generic [ref=f1e509]:
+                  - generic [ref=f1e510]:
+                    - button "Reproducir preview" [ref=f1e511] [cursor=pointer]: ▶
+                    - button "Detener preview" [ref=f1e512] [cursor=pointer]: ■
+                    - button "Alternar A/B" [ref=f1e513] [cursor=pointer]: A/B
+                    - button "A/B Master" [ref=f1e514] [cursor=pointer]: MASTER
+                    - button "A/B Original" [ref=f1e515] [cursor=pointer]: ORIG
+                    - button "Mostrar cadena" [ref=f1e516] [cursor=pointer]: CHAIN
+                    - generic "Interruptor de Seguridad Hard Limiting" [ref=f1e517]:
+                      - 'generic "Cubierta de seguridad: Clic para abrir/cerrar" [ref=f1e518] [cursor=pointer]': ARMED
+                      - switch "Hard Limiting Safety Switch" [ref=f1e520] [cursor=pointer]
+                      - generic [ref=f1e523]: HARD LIMIT
+                    - generic [ref=f1e524]: —
+                    - generic [ref=f1e525]: GLUE — dB
+                    - generic [ref=f1e526]: LIM — dB
+                    - generic [ref=f1e527]: — dB
+                    - generic [ref=f1e528]: SAVED
+                  - generic [ref=f1e529]: +0.0 dB
+                  - generic [ref=f1e530]: "-18.0 dB · 4.0:1"
+                  - generic [ref=f1e531]: 120%
+                  - generic [ref=f1e532]: "-0.1 dB"
+                  - generic [ref=f1e533]: +0.0 dB
+                  - generic [ref=f1e534]: WIDTH 120%
+                  - generic [ref=f1e535]: CEILING -0.1
+                  - generic [ref=f1e536]: GR 0.0 dB
+                  - status [ref=f1e539]: Listo para recibir audio
+                  - generic [ref=f1e541]: SPACE · Play/Pause · Ctrl+Shift+M · Master
+              - generic [ref=f1e542]:
+                - heading [level=2] [ref=f1e543]:
+                  - text: Peak · RMS · LUFS · Stereo
+                  - button "ocultar" [expanded] [ref=f1e544] [cursor=pointer]
+                - status [ref=f1e545]
+                - generic [ref=f1e546]:
+                  - generic [ref=f1e547]:
+                    - generic [ref=f1e548]:
+                      - generic [ref=f1e549]:
+                        - meter "Nivel Peak"
+                      - generic [ref=f1e550]: Peak
+                      - generic [ref=f1e551]: "-∞ dB"
+                    - generic [ref=f1e552]:
+                      - generic [ref=f1e553]:
+                        - meter "Nivel RMS"
+                      - generic [ref=f1e554]: RMS
+                      - generic [ref=f1e555]: "-∞ dB"
+                    - generic [ref=f1e556]:
+                      - generic [ref=f1e557]:
+                        - meter "Loudness LUFS"
+                      - generic [ref=f1e558]: LUFS
+                      - generic [ref=f1e559]: "-∞"
+                    - generic [ref=f1e560]:
+                      - generic [ref=f1e561]:
+                        - meter "True Peak"
+                      - generic [ref=f1e562]: True Peak
+                      - generic [ref=f1e563]: "-∞ dBTP"
+                  - generic [ref=f1e564]:
+                    - generic [ref=f1e565]: Stereo (correlación L/R)
+                    - generic [ref=f1e566]:
+                      - meter "Correlación estéreo"
+                    - generic [ref=f1e568]: "corr: --"
+                    - generic [ref=f1e569]: "mono: -- dB"
+                  - generic [ref=f1e570]:
+                    - generic [ref=f1e571]:
+                      - generic [ref=f1e572]:
+                        - generic [ref=f1e573]: Sub 20-60
+                        - generic [ref=f1e574]:
+                          - meter "Nivel Sub 20-60 Hz"
+                        - generic [ref=f1e575]: "-∞"
+                      - generic [ref=f1e576]:
+                        - generic [ref=f1e577]: Bass 60-250
+                        - generic [ref=f1e578]:
+                          - meter "Nivel Bass 60-250 Hz"
+                        - generic [ref=f1e579]: "-∞"
+                      - generic [ref=f1e580]:
+                        - generic [ref=f1e581]: L-Mid 250-800
+                        - generic [ref=f1e582]:
+                          - meter "Nivel Low-Mid 250-800 Hz"
+                        - generic [ref=f1e583]: "-∞"
+                      - generic [ref=f1e584]:
+                        - generic [ref=f1e585]: Mid .8-3k
+                        - generic [ref=f1e586]:
+                          - meter "Nivel Mid 0.8-3 kHz"
+                        - generic [ref=f1e587]: "-∞"
+                      - generic [ref=f1e588]:
+                        - generic [ref=f1e589]: H-Mid 3-8k
+                        - generic [ref=f1e590]:
+                          - meter "Nivel High-Mid 3-8 kHz"
+                        - generic [ref=f1e591]: "-∞"
+                      - generic [ref=f1e592]:
+                        - generic [ref=f1e593]: Air 8-20k
+                        - generic [ref=f1e594]:
+                          - meter "Nivel Air 8-20 kHz"
+                        - generic [ref=f1e595]: "-∞"
+                    - generic [ref=f1e596]:
+                      - heading "Loudness Meter (LUFS)" [level=3] [ref=f1e597]
+                      - generic [ref=f1e598]:
+                        - generic [ref=f1e599]:
+                          - generic [ref=f1e600]: "---"
+                          - generic [ref=f1e601]: LUFS integrado
+                        - generic [ref=f1e604]:
+                          - generic [ref=f1e605]: "-40"
+                          - generic [ref=f1e606]: "-24"
+                          - generic [ref=f1e607]: "-18"
+                          - generic [ref=f1e608]: "-14"
+                          - generic [ref=f1e609]: "-9"
+                          - generic [ref=f1e610]: "-6"
+                          - generic [ref=f1e611]: "0"
+                      - generic [ref=f1e612]: "Target Spotify/YouTube: -14 LUFS · Club: -9 LUFS"
+                  - generic [ref=f1e613]:
+                    - generic [ref=f1e614]: Reducción de Ganancia Multibanda
+                    - generic [ref=f1e615]:
+                      - generic [ref=f1e616]:
+                        - generic [ref=f1e617]: Low
+                        - generic [ref=f1e618]:
+                          - meter "Reducción de ganancia Low multibanda"
+                        - generic [ref=f1e619]: 0.0 dB
+                      - generic [ref=f1e620]:
+                        - generic [ref=f1e621]: Mid
+                        - generic [ref=f1e622]:
+                          - meter "Reducción de ganancia Mid multibanda"
+                        - generic [ref=f1e623]: 0.0 dB
+                      - generic [ref=f1e624]:
+                        - generic [ref=f1e625]: High
+                        - generic [ref=f1e626]:
+                          - meter "Reducción de ganancia High multibanda"
+                        - generic [ref=f1e627]: 0.0 dB
+                    - generic [ref=f1e628]: Dinámica (banda ancha), Paralela & Glue
+                    - generic [ref=f1e629]:
+                      - generic [ref=f1e630]:
+                        - generic [ref=f1e631]: Comp
+                        - generic [ref=f1e632]:
+                          - meter "Reducción de ganancia Compresor principal"
+                        - generic [ref=f1e633]: 0.0 dB
+                      - generic [ref=f1e634]:
+                        - generic [ref=f1e635]: Glue
+                        - generic [ref=f1e636]:
+                          - meter "Reducción de ganancia Compresor glue"
+                        - generic [ref=f1e637]: bypass
+                      - generic [ref=f1e638]:
+                        - generic [ref=f1e639]: Paralela
+                        - generic [ref=f1e640]:
+                          - meter "Reducción de ganancia Compresión paralela"
+                        - generic [ref=f1e641]: bypass
+                    - generic [ref=f1e642]: Compresor Mid/Side
+                    - generic [ref=f1e643]:
+                      - generic [ref=f1e644]:
+                        - generic [ref=f1e645]: Mid
+                        - generic [ref=f1e646]:
+                          - meter "Reducción de ganancia Mid del compresor M/S"
+                        - generic [ref=f1e647]: bypass
+                      - generic [ref=f1e648]:
+                        - generic [ref=f1e649]: Side
+                        - generic [ref=f1e650]:
+                          - meter "Reducción de ganancia Side del compresor M/S"
+                        - generic [ref=f1e651]: bypass
+                    - generic [ref=f1e652]: De-esser & Dynamic EQ (resonancias)
+                    - generic [ref=f1e653]:
+                      - generic [ref=f1e654]:
+                        - generic [ref=f1e655]: De-esser
+                        - generic [ref=f1e656]:
+                          - meter "Reducción de ganancia De-esser"
+                        - generic [ref=f1e657]: 0.0 dB
+                      - generic [ref=f1e658]:
+                        - generic [ref=f1e659]: Dinámico
+                        - generic [ref=f1e660]:
+                          - meter "Reducción de ganancia EQ dinámica (resonancias)"
+                        - generic [ref=f1e661]: 0.0 dB
+                    - generic [ref=f1e662]:
+                      - generic [ref=f1e663]:
+                        - generic [ref=f1e664]: Pre-Limiter
+                        - generic [ref=f1e665]:
+                          - generic [ref=f1e666]: RMS
+                          - meter "Pre-Limiter RMS" [ref=f1e667]: "--"
+                        - generic [ref=f1e668]:
+                          - generic [ref=f1e669]: Peak
+                          - meter "Pre-Limiter Peak" [ref=f1e670]: "--"
+                      - generic [ref=f1e671]:
+                        - generic [ref=f1e672]: Post-Limiter
+                        - generic [ref=f1e673]:
+                          - generic [ref=f1e674]: RMS
+                          - meter "Post-Limiter RMS" [ref=f1e675]: "--"
+                        - generic [ref=f1e676]:
+                          - generic [ref=f1e677]: Peak
+                          - meter "Post-Limiter Peak" [ref=f1e678]: "--"
+                        - generic [ref=f1e679]:
+                          - generic [ref=f1e680]: LUFS
+                          - meter "Post-Limiter LUFS" [ref=f1e681]: "--"
+    - contentinfo [ref=f1e682]:
+      - generic [ref=f1e683]: App By Fede Strumia
+  - button "Abrir asistente de IA" [ref=f1e684] [cursor=pointer]
+  - alert [ref=f1e689]
+  - button "Mostrar atajos de teclado" [ref=f1e690] [cursor=pointer]: Presiona ? para ver atajos

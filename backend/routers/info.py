@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException
+import json
+
+from fastapi import APIRouter, HTTPException, Response
 
 
 def create_info_router(*, app, jobs, upload_dir: str, processed_dir: str, stems_dir: str,
@@ -46,12 +48,18 @@ def create_info_router(*, app, jobs, upload_dir: str, processed_dir: str, stems_
                 deps[name] = getattr(mod, "__version__", "present")
             except Exception:
                 deps[name] = None
+        # FIX #6: si alguna dep crítica falla, status=degraded + HTTP 503.
+        # Antes siempre retornaba 200 ok aunque una dep estuviera None →
+        # el healthcheck de Caddy/systemd creía que el backend estaba sano.
+        deps_ok = all(v is not None for v in deps.values())
+        overall_status = "ok" if deps_ok else "degraded"
+        http_status = 200 if deps_ok else 503
         running = [j for j in jobs.get_all().values() if j.get("status") == "processing"]
         # D-2: uptime desde START_TIME del lifespan (expuesto en app.state)
         st = getattr(app.state, "START_TIME", None)
         uptime_seconds = round(time.time() - st, 3) if st else 0.0
         payload = {
-            "status": "ok",
+            "status": overall_status,
             "service": "Audio Mastering API",
             "version": app.version,
             # D-2: uptime desde START_TIME del lifespan (app.py)
@@ -69,7 +77,14 @@ def create_info_router(*, app, jobs, upload_dir: str, processed_dir: str, stems_
         }
         if reference_library_module is not None:
             payload["reference_library"] = reference_library_module.diagnostics()
-        return payload
+        # FIX #6: retornar 503 si deps críticas fallan (para que Caddy/systemd
+        # sepan que el backend está degradado, no OK).
+        from fastapi import Response
+        return Response(
+            content=json.dumps(payload),
+            status_code=http_status,
+            media_type="application/json",
+        )
 
     @router.get("/presets", tags=["Presets"])
     def list_presets():

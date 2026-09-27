@@ -1,0 +1,19 @@
+- generic [ref=f1e3]:
+  - generic [ref=f1e4]:
+    - generic [ref=f1e5]: MASTER Studio
+    - generic [ref=f1e12]: INTELLIGENT MASTERING CONSOLE
+  - tablist "Autenticación" [ref=f1e13]:
+    - tab "Iniciar sesión" [selected] [ref=f1e14] [cursor=pointer]
+    - tab "Registrarse" [ref=f1e15] [cursor=pointer]
+  - tabpanel "Iniciar sesión" [ref=f1e16]:
+    - generic [ref=f1e17]:
+      - generic [ref=f1e18]:
+        - generic [ref=f1e19]: Correo electrónico
+        - textbox "Correo electrónico" [active] [ref=f1e20]:
+          - /placeholder: tu@email.com
+      - generic [ref=f1e21]:
+        - generic [ref=f1e22]: Contraseña
+        - textbox "Contraseña" [ref=f1e23]:
+          - /placeholder: ••••••••
+      - button "Ingresar a la consola" [ref=f1e24] [cursor=pointer]
+  - generic [ref=f1e25]: Audio Mastering Pro v7.0.3 · Plataforma privada de masterización
