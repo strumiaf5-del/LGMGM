@@ -4,7 +4,8 @@
 import { audioTap } from '../../core/audio-tap';
 import { metricsStore } from '../../core/metrics-store';
 
-type AnyEl = HTMLElement | null;
+// FIX M-NEW-5: `type AnyEl = HTMLElement | null` eliminado — 0 usos (verificado
+// con grep), dead type (regla 7 AGENTS.md).
 
 function $(id: string): HTMLElement | null {
   return document.getElementById(id);

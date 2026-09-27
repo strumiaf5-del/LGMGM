@@ -705,8 +705,12 @@ const masteringApi = (wLGMDM.mastering = wLGMDM.mastering || {}) as Record<strin
 (masteringApi as { submitJob: typeof submitMasterJob }).submitJob = submitMasterJob;
 (masteringApi as { submitSync: typeof submitMasterSync }).submitSync = submitMasterSync;
 
-// HMR idempotency
-(wLGMDM as Record<string, unknown>).masteringActionsBound = true;
+// FIX M-NEW-2: este bloque se seteaba `masteringActionsBound = true` con
+// comentario "// HMR idempotency", pero el flag nunca se consultaba →
+// comentario miente (regla 7 AGENTS.md). Como este módulo es ESM y Vite
+// hace full page reload, el flag era cosmético. Lo quitamos (mismo criterio
+// que FIX M-NEW-1 en reference-mastering.ts). Las asignaciones de arriba
+// son idempotentes (re-asignan lo mismo en re-import).
 
 // Cleanup en beforeunload
 window.addEventListener('beforeunload', () => controller.abort(), { once: true });

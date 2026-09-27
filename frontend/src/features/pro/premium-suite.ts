@@ -2267,24 +2267,8 @@ import type { BandSpec } from '../../core/audio-tap';
     _proInstances.clear();
   }
 
-  async function _fetchDspJson(endpoint: string, formData: FormData) {
-    const res = await LGMDM.api.apiFetch(endpoint, {
-      method: 'POST',
-      body: formData
-    });
-    if (res.status === 404) {
-      const err = new Error(`DSP endpoint ${endpoint} no disponible en este despliegue — se habilitará pronto`) as Error & { code?: string; endpoint?: string };
-      err.code = 'DSP_UNAVAILABLE';
-      err.endpoint = endpoint;
-      throw err;
-    }
-    if (!res.ok) {
-      let errText = '';
-      try { errText = await res.text(); } catch (_) {}
-      throw new Error(`HTTP ${res.status}: ${errText || res.statusText}`);
-    }
-    return res.json();
-  }
+  // FIX M-NEW-4: `_fetchDspJson` (18 líneas) eliminada — 0 callers desde el
+  // commit inicial (verificado con grep + `git log -S`), dead code (regla 7).
 
   function setupProFeatures(tabId: string) {
     if (!tabId) return;

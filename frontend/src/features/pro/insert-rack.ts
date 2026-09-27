@@ -67,7 +67,6 @@ interface LgmdmGlobal {
   state?: LgmdmStateSlice;
   ui?: LgmdmUiSlice;
   proInsertRack?: ProInsertRackApi;
-  proInsertRackBound?: boolean;
 }
 
 /** API pública expuesta en `window.LGMDM.proInsertRack`. */
@@ -1152,7 +1151,11 @@ if (g.proInsertRack && typeof g.proInsertRack.teardown === 'function') {
   }
 }
 g.proInsertRack = proInsertRack;
-g.proInsertRackBound = true;
+// FIX M-NEW-3: antes había `g.proInsertRackBound = true` con header "HMR-safe",
+// pero el flag no se consultaba (regla 7 AGENTS.md: comentario que miente).
+// El guard real de re-entry es el teardown de arriba (si ya existía un rack,
+// se desmonta antes de re-registrar). El flag era cosmético → eliminado
+// (mismo criterio que FIX M-NEW-1/M-NEW-2).
 
 // ── Auto-mount (idempotente) ──────────────────────────────────
 if (document.readyState === 'loading') {
