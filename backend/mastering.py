@@ -2554,11 +2554,11 @@ def spectrum_analysis_fft(audio: np.ndarray, sr: int,
 def stereo_correlation(audio: np.ndarray) -> float:
     if audio.ndim != 2 or audio.shape[0] != 2:
         return 1.0
-    l, r = audio[0], audio[1]
-    std_l, std_r = np.std(l), np.std(r)
+    left, right = audio[0], audio[1]
+    std_l, std_r = np.std(left), np.std(right)
     if std_l < 1e-9 or std_r < 1e-9:
         return 1.0
-    corr = float(np.mean((l - l.mean()) * (r - r.mean())) / (std_l * std_r))
+    corr = float(np.mean((left - left.mean()) * (right - right.mean())) / (std_l * std_r))
     return float(np.clip(corr, -1.0, 1.0))
 
 def short_term_loudness_and_lra(audio: np.ndarray, sr: int,
@@ -2888,9 +2888,9 @@ def mono_compatibility_db(audio: np.ndarray) -> float:
     reproducción en sistemas mono (clubs, TV, bluetooth speakers)."""
     if audio.ndim != 2 or audio.shape[0] != 2:
         return 0.0
-    l, r = audio[0], audio[1]
-    mono_sum = (l + r) * 0.5
-    stereo_rms = float(np.sqrt(np.mean(((l ** 2) + (r ** 2)) / 2.0)) + 1e-9)
+    left, right = audio[0], audio[1]
+    mono_sum = (left + right) * 0.5
+    stereo_rms = float(np.sqrt(np.mean(((left ** 2) + (right ** 2)) / 2.0)) + 1e-9)
     mono_rms = float(np.sqrt(np.mean(mono_sum ** 2)) + 1e-9)
     return round(float(20.0 * np.log10(mono_rms / stereo_rms)), 2)
 
