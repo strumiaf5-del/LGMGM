@@ -482,7 +482,7 @@ def _noise_shaped_dither(audio: np.ndarray, sr: int, bit_depth: int,
         if sr < 32000:
             coeffs = _NS_COEFF_HIGH_SHELF.copy()
 
-    order = len(coeffs)
+    # FIX ruff F841: order se calculaba pero no se usaba. _shape_channel no lo referencia.
 
     def _shape_channel(ch: np.ndarray) -> np.ndarray:
         ch = ch.astype(np.float64)
@@ -6039,7 +6039,8 @@ def parallel_compress(audio: np.ndarray, sr: int,
         return audio, {"applied": False, "mix": 0.0}
 
     threshold_lin = float(np.clip(10.0 ** (threshold_db / 20.0), 0.001, 0.99))
-    makeup_lin    = float(10.0 ** (makeup_db / 20.0))
+    # FIX ruff F841: makeup_lin se calculaba pero no se pasaba al compressor
+    # (recibe makeup_db, no makeup_lin). Era dead code.
 
     wet, comp_meter = compressor(
         audio, sr,
@@ -7110,7 +7111,8 @@ def process_audio_with_reference(
             if abs(gain) >= 0.1:
                 audio = eq_parametric_band(audio, sr, freq=freq_hz, gain_db=gain, q=auto_q)
 
-    post_eq_bands_db = spectral_energy_at_bands(audio, sr, band_edges)
+    # FIX ruff F841: post_eq_bands_db se calculaba pero no se usaba (la siguiente
+    # línea usa spectral_energy_at_bands_multires, no _bands).
     match_after_eq = spectral_match_score_multires(
         spectral_energy_at_bands_multires(audio, sr, band_edges), ref_bands_multires)
 
@@ -7391,7 +7393,8 @@ def process_audio_with_reference(
     # SERIE: análisis final secuencial. analyze_audio primero, luego bandas,
     # luego multires.
     analysis_after = analyze_audio(audio, sr)
-    final_bands_db = spectral_energy_at_bands(audio, sr, band_edges)
+    # FIX ruff F841: final_bands_db se calculaba pero no se usaba (la siguiente
+    # línea usa _after_multi, no final_bands_db).
     _after_multi   = spectral_energy_at_bands_multires(audio, sr, band_edges)
     match_after = spectral_match_score_multires(_after_multi, ref_bands_multires)
 

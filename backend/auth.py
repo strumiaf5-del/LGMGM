@@ -138,7 +138,7 @@ def _verify_jwt(token: str) -> dict:
         if data.get("exp", 0) < time.time():
             raise ValueError("token expirado")
         return data
-    except Exception as e:
+    except Exception:
         logger.exception("Auth: token inválido")
         raise HTTPException(status_code=401, detail="Token inválido")
 

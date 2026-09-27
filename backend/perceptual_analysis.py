@@ -177,13 +177,13 @@ def analyze_perceptual_profile(analysis: Dict) -> PerceptualProfile:
     # comparaciones (de lo contrario NaN > X = False y todo cae en "balanced").
     centroid = _safe_metric(analysis.get("spectral_centroid_hz", 3000), 3000.0)
     flatness = _safe_metric(analysis.get("spectral_flatness", 0.5), 0.5)
-    rolloff = _safe_metric(analysis.get("spectral_rolloff_hz", 8000), 8000.0)
+    # FIX ruff F841: rolloff se extraía pero no se usaba.
     band_energies_raw = analysis.get("spectrum", {})  # {sub_bass|bass|low_mid|mid|upper_mid|presence|air: dB}
     band_energies = {k: _safe_metric(band_energies_raw.get(k, -20), -20.0) for k in band_energies_raw.keys()} if isinstance(band_energies_raw, dict) else {}
 
     # Energía en "aire" (8k-20k)
     air_energy = band_energies.get("air", -20.0)
-    low_mids_energy = band_energies.get("low_mid", -20.0)
+    # FIX ruff F841: low_mids_energy se extraía pero no se usaba (solo se usa air_energy).
 
     if air_energy < AIR_ENERGY_VERY_LOW_DB and centroid < CLARITY_DARK_CENTROID_HZ:
         # Muy oscuro, bajos dominan
@@ -219,7 +219,7 @@ def analyze_perceptual_profile(analysis: Dict) -> PerceptualProfile:
 
     # ── COHERENCIA ESTÉREO (mono | coherent | separated | phase_issues) ─────
     correlation_global = _safe_metric(analysis.get("stereo_correlation", 0.8), 0.8)
-    correlation_by_band = analysis.get("band_stereo_correlation", {})
+    # FIX ruff F841: correlation_by_band se extraía pero no se usaba (solo correlation_global).
     mono_compatibility = _safe_metric(analysis.get("mono_compatibility_db", -3), -3.0)
 
     # Si correlación es baja pero mono_compatibility es OK → separated (normal)
@@ -325,7 +325,8 @@ def get_genre_from_perceptual(profile: PerceptualProfile,
     Retorna: (genre, confidence: 0-1)
     """
 
-    confidence = 0.0
+    # FIX ruff F841: confidence se inicializaba pero no se usaba (se calcula
+    # al final a partir de genre_scores).
     genre_scores = {}
 
     # F2.3: sanear NaN/Inf también aquí para que las comparaciones de género

@@ -91,7 +91,8 @@ async def _gemini_generate_content(system_prompt: str, contents: list,
         "generationConfig": generation_config,
     }
 
-    last_error = None
+    # FIX ruff F841: last_error se inicializaba pero nunca se usaba (las
+    # asignaciones dentro de los except también fueron eliminadas).
     for attempt in range(1, max_retries + 1):
         try:
             async with httpx.AsyncClient(timeout=httpx.Timeout(45.0)) as client:
@@ -99,7 +100,7 @@ async def _gemini_generate_content(system_prompt: str, contents: list,
                 resp.raise_for_status()
                 data = resp.json()
         except httpx.TimeoutException as e:
-            last_error = e
+            # FIX ruff F841: last_error se guardaba pero nunca se usaba.
             if attempt < max_retries:
                 wait_time = 2 ** (attempt - 1)  # exponential backoff: 1s, 2s, 4s
                 logger.warning(f"Timeout en Gemini (intento {attempt}/{max_retries}). Esperando {wait_time}s...")
@@ -109,7 +110,8 @@ async def _gemini_generate_content(system_prompt: str, contents: list,
                 logger.error(f"Timeout en Gemini después de {max_retries} intentos: {e}")
                 return None
         except httpx.HTTPStatusError as e:
-            last_error = e
+            # FIX ruff F841: last_error se guardaba pero nunca se usaba.
+            # El loop sigue reintentando y retorna None al final.
             if e.response.status_code >= 500:
                 if attempt < max_retries:
                     wait_time = 2 ** (attempt - 1)
@@ -1930,7 +1932,7 @@ def _fallback_mix_params(stems_analysis: dict) -> dict:
     for name, analysis in stems_analysis.items():
         stem_type = analysis.get("stem_type", "other")
         lufs = analysis.get("lufs") or -20.0
-        peak = analysis.get("peak_db") or -6.0
+        # FIX ruff F841: peak se extraía pero no se usaba (solo se usa lufs).
         channels = analysis.get("channels", 2)
 
         # Ganancia base — normalizar hacia -18 LUFS

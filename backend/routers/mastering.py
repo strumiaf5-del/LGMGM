@@ -162,7 +162,7 @@ def create_router(**dependencies):
         from mastering import get_preset
         try:
             params = get_preset(preset_name)
-        except KeyError as e:
+        except KeyError:
             logger.exception("Preset '%s' no encontrado", preset_name)
             raise HTTPException(404, "Preset no encontrado")
         params.pop("label", None)
@@ -464,7 +464,11 @@ def create_router(**dependencies):
         output_format: str = Form("wav"),
         output_bit_depth: int = Query(24),
     ):
-        ref_params = await _read_reference_params(reference_file, reference_source, reference_library_id)
+        # FIX ruff F841: ref_params se leía pero no se aplicaba. El endpoint
+        # /master/normalize solo normaliza loudness, no aplica matching de
+        # referencia (para eso está /master). Los params reference_* se aceptan
+        # por compatibilidad de API pero no se procesan en este endpoint.
+        # El FE solo usa /master/normalize/sync (verificado con grep).
         params = {"output_format": output_format, "output_bit_depth": output_bit_depth, "normalize": True}
         if platform_target:
             params["platform_target"] = platform_target

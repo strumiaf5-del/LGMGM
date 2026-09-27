@@ -279,14 +279,9 @@ def master_stream_to_pcm(audio: np.ndarray, sr: int,
     """
     chain_params.setdefault("detect_dynamic_eq", False)
 
-    # Preparar chunks como lista de bloques de audio pre-cortados
-    if audio.ndim == 1:
-        audio_2d = audio[np.newaxis, :]
-    else:
-        audio_2d = audio
-    total = audio_2d.shape[-1]
-    chunk_samples = max(1, int(chunk_seconds * sr))
-    n_chunks = int(np.ceil(total / chunk_samples))
+    # FIX ruff F841: audio_2d se preparaba por si audio era 1D, pero ninguna
+    # función lo usa (iter_mastering_chunks recibe audio original, _to_pcm
+    # maneja 1D y 2D internamente). El generador usa chunk_seconds (parámetro).
 
     def _to_pcm(processed: np.ndarray) -> bytes:
         block = processed.T if processed.ndim == 2 else processed

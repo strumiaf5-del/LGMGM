@@ -218,7 +218,8 @@ def simulate_codec(audio: np.ndarray, sr: int,
         if needs_seekable:
             fd, tmp_enc_path = tempfile.mkstemp(suffix=ext, dir=_CODEC_TMP_DIR)
             os.close(fd)
-            tmp_enc = type("T", (), {"name": tmp_enc_path})()
+            # FIX ruff F841: tmp_enc se creaba pero nunca se usaba (se usa
+            # tmp_enc_path directamente en enc_cmd y después).
             enc_cmd.extend(["-f", output_format, tmp_enc_path])
             enc_proc = subprocess.run(
                 enc_cmd, input=pcm_bytes, capture_output=True,

@@ -166,7 +166,7 @@ async def mix_ai_suggest(
             audio, sr = _lr.load(stem_path, sr=None, mono=False)
             if audio.ndim == 1:
                 audio = audio[np.newaxis, :]
-        except Exception as e:
+        except Exception:
             logger.exception("Error cargando stem '%s'", name)
             raise HTTPException(status_code=500, detail="Error interno al procesar el stem")
 

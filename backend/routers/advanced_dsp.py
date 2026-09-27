@@ -128,9 +128,7 @@ def _quick_genre_confidence(audio: np.ndarray, sr: int) -> Optional[float]:
                 band_energy.append(float(np.mean(spec[mask] ** 2)))
             else:
                 band_energy.append(0.0)
-        total = sum(band_energy) + 1e-12
-        # Centroid espectral como proxy de "brillo" (proxy de género)
-        centroid = sum(f * e for f, e in zip([40, 130, 350, 1000, 2750, 7000, 15000], band_energy)) / total
+        # FIX ruff F841: total se calculaba para centroid (eliminado). Ya no se usa.
         # confidence bruta: 1.0 - incertidumbre basada en dispersión de bandas
         flatness = float(np.std(band_energy) / (np.mean(band_energy) + 1e-12))
         confidence = max(0.0, min(1.0, 1.0 - flatness * 0.3))
@@ -389,7 +387,8 @@ def create_advanced_dsp_router(*, upload_dir: str = None, processed_dir: str = N
         uid = uuid.uuid4().hex
         tmp_target = os.path.join(upload_dir, f"match_tgt_{uid}.tmp")
         tmp_ref = os.path.join(upload_dir, f"match_ref_{uid}.tmp")
-        tmp_out = os.path.join(processed_dir, f"match_out_{uid}.wav")
+        # FIX ruff F841: tmp_out se definía pero no se usaba (se usa out_path
+        # del resultado de process_audio_with_reference).
         try:
             with open(tmp_target, "wb") as f:
                 f.write(await target_file.read())
