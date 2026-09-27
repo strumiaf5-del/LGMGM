@@ -398,7 +398,7 @@ def handle_delete_user(user_id: str, admin: dict = Depends(get_admin_user)) -> d
         raise HTTPException(status_code=400, detail="No podés eliminar al admin")
     del db["users"][user_id]
     _save_db(db)
-    return {"message": f"Usuario eliminado", "user_id": user_id}
+    return {"message": "Usuario eliminado", "user_id": user_id}
 
 def handle_change_password(
     current_password: str,

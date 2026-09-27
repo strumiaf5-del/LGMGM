@@ -120,7 +120,7 @@ async def suggest_stems(request: StemSuggestionRequest):
         })
 
     # 2. Construir el prompt para Gemini
-    prompt = f"""
+    prompt = """
 Eres un ingeniero de mezcla experto. Recibirás datos de varios stems (pistas) de una canción.
 Cada stem tiene: LUFS, RMS, pico, crest factor y un espectro de 32 bandas (de 20 Hz a 20 kHz en dB).
 
@@ -134,9 +134,9 @@ Debes devolver ÚNICAMENTE un objeto JSON con la clave "suggestions".
 Dentro de "suggestions", un objeto por cada nombre de stem.
 
 El JSON DEBE tener esta estructura EXACTA (sin texto adicional, sin markdown, solo el JSON puro):
-{{
-  "suggestions": {{
-    "nombre_del_stem_1": {{
+{
+  "suggestions": {
+    "nombre_del_stem_1": {
       "gain_db": float (-18 a 18),
       "hp_cutoff_hz": float (20 a 500),
       "lp_cutoff_hz": float (2000 a 20000),
@@ -159,9 +159,9 @@ El JSON DEBE tener esta estructura EXACTA (sin texto adicional, sin markdown, so
       "comp_release_ms": float (10 a 500),
       "comp_makeup_db": float (-6 a 24),
       "pan": float (-1 a 1)
-    }}
-  }}
-}}
+    }
+  }
+}
 
 Aquí están los datos de los stems (espectro: 32 bandas logarítmicas en dB):
 """
