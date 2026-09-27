@@ -9,11 +9,21 @@ from fastapi.concurrency import run_in_threadpool
 
 try:
     from ..audio_service import AudioService
-    from ..mastering import mix_advice, spectrum_analysis_fft, normalize_to_streaming_target, evaluate_streaming_compliance
+    from ..mastering import (
+        evaluate_streaming_compliance,
+        mix_advice,
+        normalize_to_streaming_target,
+        spectrum_analysis_fft,
+    )
     from ..validation_utils import validate_audio_file
 except ImportError:  # pragma: no cover
     from audio_service import AudioService
-    from mastering import mix_advice, spectrum_analysis_fft, normalize_to_streaming_target, evaluate_streaming_compliance
+    from mastering import (
+        evaluate_streaming_compliance,
+        mix_advice,
+        normalize_to_streaming_target,
+        spectrum_analysis_fft,
+    )
     from validation_utils import validate_audio_file
 
 
@@ -129,6 +139,7 @@ def create_analysis_router(*, upload_dir: str, read_and_validate, logger, curren
 
             def _process():
                 import soundfile as sf
+
                 from mastering import measure_lra
                 audio, sr = sf.read(tmp, always_2d=True)
                 audio_ch = audio.T

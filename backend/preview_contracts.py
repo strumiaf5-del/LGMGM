@@ -7,7 +7,6 @@ from typing import Any, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, create_model, field_validator
 
-
 SOURCE_ID_PATTERN = re.compile(r"^[a-f0-9]{16,128}$")
 
 

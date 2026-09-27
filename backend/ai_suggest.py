@@ -1,17 +1,18 @@
 # ai_suggest.py
 
-import os
 import json
-import re
-import math
 import logging
+import math
+import os
+import re
+from typing import Any, Dict, List
+
+import google.generativeai as genai
 import librosa
 import numpy as np
 import pyloudnorm as pyln
-import google.generativeai as genai
-from fastapi import HTTPException, APIRouter
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import List, Dict, Any
 
 # ─── Configuración de Gemini ──────────────────────────────────────────────
 _GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
@@ -93,8 +94,8 @@ def get_stem_path(library_id: str) -> str | None:
     """
     # Usar la misma lógica que el resto del proyecto
     try:
-        from library import get_path as _get_path
         from config import STEM_LIBRARY_DIR as _STEM_DIR
+        from library import get_path as _get_path
         return _get_path(_STEM_DIR, library_id)
     except Exception:
         return None

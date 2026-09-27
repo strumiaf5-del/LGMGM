@@ -22,9 +22,10 @@ import uuid
 from pathlib import Path
 from typing import Any, Callable, Optional
 
+import librosa
 import numpy as np
 import soundfile as sf
-import librosa
+
 # Preview workers must not initialize Numba's native JIT on Python versions
 # where its compiled extension may be incompatible with the host runtime.
 if mp.current_process().name != "MainProcess":
@@ -213,8 +214,8 @@ class PreviewRenderer:
         expone como ``RuntimeError`` con el nombre real (``SIGSEGV``,
         ``SIGKILL``, etc.). No hay fallback: el preview siempre es render
         real, no copia del snapshot."""
-        import logging
         import faulthandler
+        import logging
         import sys
         import traceback
 

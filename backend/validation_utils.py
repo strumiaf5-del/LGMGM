@@ -1,7 +1,7 @@
 import os
 from typing import Optional
-import numpy as np
 
+import numpy as np
 from fastapi import HTTPException
 
 # Importar MAX_FILE_SIZE desde config.py (fuente única de verdad)

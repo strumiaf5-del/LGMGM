@@ -1,12 +1,33 @@
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Query, BackgroundTasks, WebSocket, WebSocketDisconnect, Depends, Request
-from fastapi.responses import FileResponse, JSONResponse
-from fastapi.middleware.cors import CORSMiddleware
+import asyncio
+import json
+import logging
+import math
+import os
+import time
+import uuid
+import warnings
+from contextlib import asynccontextmanager
+from typing import Dict, List, Optional
+
+from fastapi import (
+    BackgroundTasks,
+    Depends,
+    FastAPI,
+    File,
+    Form,
+    HTTPException,
+    Query,
+    Request,
+    UploadFile,
+    WebSocket,
+    WebSocketDisconnect,
+)
 from fastapi.concurrency import run_in_threadpool
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, JSONResponse
 from slowapi import Limiter
 from slowapi.util import get_remote_address
-from contextlib import asynccontextmanager
-from typing import Optional, List, Dict
-import os, uuid, logging, time, asyncio, math, json, warnings
+
 try:
     from dotenv import load_dotenv
     _env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
@@ -25,120 +46,225 @@ import librosa
 import numpy as np
 import soundfile as sf
 from pydantic import BaseModel, Field
+
 try:
-    from .job_service import JobService
-    from .audio_service import AudioService
-    from .validation_utils import MAX_FILE_SIZE, coerce_ws_chain_params, validate_audio_file
-    from .audio_cache import get as audio_cache_get, put as audio_cache_put
     from . import library
+    from .audio_cache import get as audio_cache_get
+    from .audio_cache import put as audio_cache_put
+    from .audio_service import AudioService
     from .job_runners import create_job_runners
+    from .job_service import JobService
     from .routers import (
+        create_advanced_dsp_router,
         create_ai_router,
         create_analysis_router,
+        create_audio_router,
         create_auth_router,
         create_dashboard_router,
         create_info_router,
         create_jobs_router,
         create_library_router,
+        create_mastering_router,
+        create_mixer_router,
+        create_preview_router,
         create_projects_router,
         create_reference_library_router,
-        create_audio_router,
-        create_mastering_router, create_mixer_router, create_stems_router, create_streaming_router,
-        create_preview_router,
-        create_advanced_dsp_router,
+        create_stems_router,
+        create_streaming_router,
     )
+    from .validation_utils import MAX_FILE_SIZE, coerce_ws_chain_params, validate_audio_file
 except ImportError:  # pragma: no cover - fallback for direct script execution
-    from job_service import JobService
-    from audio_service import AudioService
-    from validation_utils import MAX_FILE_SIZE, coerce_ws_chain_params, validate_audio_file
-    from audio_cache import get as audio_cache_get, put as audio_cache_put
     import library
+    from audio_cache import get as audio_cache_get
+    from audio_cache import put as audio_cache_put
+    from audio_service import AudioService
     from job_runners import create_job_runners
+    from job_service import JobService
     from routers import (
+        create_advanced_dsp_router,
         create_ai_router,
         create_analysis_router,
+        create_audio_router,
         create_auth_router,
         create_dashboard_router,
         create_info_router,
         create_jobs_router,
         create_library_router,
+        create_mastering_router,
+        create_mixer_router,
+        create_preview_router,
         create_projects_router,
         create_reference_library_router,
-        create_audio_router,
-        create_mastering_router, create_mixer_router, create_stems_router, create_streaming_router,
-        create_preview_router,
-        create_advanced_dsp_router,
+        create_stems_router,
+        create_streaming_router,
     )
+    from validation_utils import MAX_FILE_SIZE, coerce_ws_chain_params, validate_audio_file
 try:
-    from .mastering import (
-        process_audio, analyze_audio, spectrum_analysis_fft, mix_advice, apply_mastering_chain,
-        MASTERING_PRESETS, get_preset, PLATFORM_LOUDNESS_TARGETS, get_platform_target,
-        process_audio_with_reference, _crop_preview, measure_lufs_integrated,
-        compute_ms_eq_curves, apply_ms_matching_fir,
-        compute_lufs_corrected_gain,
-        spectral_energy_at_bands, compute_reference_eq_curve, compute_reference_eq_curve_ddsp,
-        build_matching_fir, apply_matching_fir, eq_high_pass, eq_parametric_band,
-        spectral_energy_at_bands_multires,
-        derive_mb_chain_params_from_reference,
-        normalize_by_lufs,
-    )
-    from .streaming_engine import master_stream_to_pcm16, iter_mastering_chunks
-    from .mixer import mix_and_master, StemParams, MixParams, process_stem, apply_sidechain, _ensure_stereo, _match_length
-    from .stem_separation import separate_stems, separate_vocals_hq
-    from .stem_analysis import analyze_stems_full
-    from .system_monitor import get_system_stats
-    from .pitch_correction import PitchCorrectionProcessor
     from . import ai_assistant
-    from .preview_service import PreviewRenderer
-    from .config import UPLOAD_DIR, PROCESSED_DIR, STEMS_DIR, PROCESSED_TTL, MAX_FILE_SIZE, REFERENCE_LIBRARY_DIR, STEM_LIBRARY_DIR
     from . import reference_library as ref_lib
-except ImportError:
-    from mastering import (
-        process_audio, analyze_audio, spectrum_analysis_fft, mix_advice, apply_mastering_chain,
-        MASTERING_PRESETS, get_preset, PLATFORM_LOUDNESS_TARGETS, get_platform_target,
-        process_audio_with_reference, _crop_preview, measure_lufs_integrated,
-        compute_ms_eq_curves, apply_ms_matching_fir,
-        compute_lufs_corrected_gain,
-        spectral_energy_at_bands, compute_reference_eq_curve, compute_reference_eq_curve_ddsp,
-        build_matching_fir, apply_matching_fir, eq_high_pass, eq_parametric_band,
-        spectral_energy_at_bands_multires,
-        derive_mb_chain_params_from_reference,
-        normalize_by_lufs,
+    from .config import (
+        MAX_FILE_SIZE,
+        PROCESSED_DIR,
+        PROCESSED_TTL,
+        REFERENCE_LIBRARY_DIR,
+        STEM_LIBRARY_DIR,
+        STEMS_DIR,
+        UPLOAD_DIR,
     )
-    from streaming_engine import master_stream_to_pcm16, iter_mastering_chunks
-    from mixer import mix_and_master, StemParams, MixParams, process_stem, apply_sidechain, _ensure_stereo, _match_length
-    from stem_separation import separate_stems, separate_vocals_hq
-    from stem_analysis import analyze_stems_full
-    from system_monitor import get_system_stats
-    from pitch_correction import PitchCorrectionProcessor
-    import ai_assistant
-    from preview_service import PreviewRenderer
-    from config import UPLOAD_DIR, PROCESSED_DIR, STEMS_DIR, PROCESSED_TTL, MAX_FILE_SIZE, REFERENCE_LIBRARY_DIR, STEM_LIBRARY_DIR
-    import reference_library as ref_lib
+    from .mastering import (
+        MASTERING_PRESETS,
+        PLATFORM_LOUDNESS_TARGETS,
+        _crop_preview,
+        analyze_audio,
+        apply_mastering_chain,
+        apply_matching_fir,
+        apply_ms_matching_fir,
+        build_matching_fir,
+        compute_lufs_corrected_gain,
+        compute_ms_eq_curves,
+        compute_reference_eq_curve,
+        compute_reference_eq_curve_ddsp,
+        derive_mb_chain_params_from_reference,
+        eq_high_pass,
+        eq_parametric_band,
+        get_platform_target,
+        get_preset,
+        measure_lufs_integrated,
+        mix_advice,
+        normalize_by_lufs,
+        process_audio,
+        process_audio_with_reference,
+        spectral_energy_at_bands,
+        spectral_energy_at_bands_multires,
+        spectrum_analysis_fft,
+    )
+    from .mixer import (
+        MixParams,
+        StemParams,
+        _ensure_stereo,
+        _match_length,
+        apply_sidechain,
+        mix_and_master,
+        process_stem,
+    )
+    from .pitch_correction import PitchCorrectionProcessor
+    from .preview_service import PreviewRenderer
+    from .stem_analysis import analyze_stems_full
+    from .stem_separation import separate_stems, separate_vocals_hq
+    from .streaming_engine import iter_mastering_chunks, master_stream_to_pcm16
+    from .system_monitor import get_system_stats
 except ImportError:
-    from streaming_engine import master_stream_to_pcm16, iter_mastering_chunks
-    from mixer import mix_and_master, StemParams, MixParams, process_stem, apply_sidechain, _ensure_stereo, _match_length
-    from stem_separation import separate_stems, separate_vocals_hq
-    from stem_analysis import analyze_stems_full
-    from system_monitor import get_system_stats
-    from pitch_correction import PitchCorrectionProcessor
     import ai_assistant
-    from config import UPLOAD_DIR, PROCESSED_DIR, STEMS_DIR, PROCESSED_TTL, MAX_FILE_SIZE, REFERENCE_LIBRARY_DIR, STEM_LIBRARY_DIR
     import reference_library as ref_lib
+    from config import (
+        MAX_FILE_SIZE,
+        PROCESSED_DIR,
+        PROCESSED_TTL,
+        REFERENCE_LIBRARY_DIR,
+        STEM_LIBRARY_DIR,
+        STEMS_DIR,
+        UPLOAD_DIR,
+    )
+    from mastering import (
+        MASTERING_PRESETS,
+        PLATFORM_LOUDNESS_TARGETS,
+        _crop_preview,
+        analyze_audio,
+        apply_mastering_chain,
+        apply_matching_fir,
+        apply_ms_matching_fir,
+        build_matching_fir,
+        compute_lufs_corrected_gain,
+        compute_ms_eq_curves,
+        compute_reference_eq_curve,
+        compute_reference_eq_curve_ddsp,
+        derive_mb_chain_params_from_reference,
+        eq_high_pass,
+        eq_parametric_band,
+        get_platform_target,
+        get_preset,
+        measure_lufs_integrated,
+        mix_advice,
+        normalize_by_lufs,
+        process_audio,
+        process_audio_with_reference,
+        spectral_energy_at_bands,
+        spectral_energy_at_bands_multires,
+        spectrum_analysis_fft,
+    )
+    from mixer import (
+        MixParams,
+        StemParams,
+        _ensure_stereo,
+        _match_length,
+        apply_sidechain,
+        mix_and_master,
+        process_stem,
+    )
+    from pitch_correction import PitchCorrectionProcessor
+    from preview_service import PreviewRenderer
+    from stem_analysis import analyze_stems_full
+    from stem_separation import separate_stems, separate_vocals_hq
+    from streaming_engine import iter_mastering_chunks, master_stream_to_pcm16
+    from system_monitor import get_system_stats
+except ImportError:
+    import ai_assistant
+    import reference_library as ref_lib
+    from config import (
+        MAX_FILE_SIZE,
+        PROCESSED_DIR,
+        PROCESSED_TTL,
+        REFERENCE_LIBRARY_DIR,
+        STEM_LIBRARY_DIR,
+        STEMS_DIR,
+        UPLOAD_DIR,
+    )
+    from mixer import (
+        MixParams,
+        StemParams,
+        _ensure_stereo,
+        _match_length,
+        apply_sidechain,
+        mix_and_master,
+        process_stem,
+    )
+    from pitch_correction import PitchCorrectionProcessor
+    from stem_analysis import analyze_stems_full
+    from stem_separation import separate_stems, separate_vocals_hq
+    from streaming_engine import iter_mastering_chunks, master_stream_to_pcm16
+    from system_monitor import get_system_stats
 
 try:
     from .auth import (
-        bootstrap_admin, get_current_user, get_admin_user, _verify_jwt, _get_user_by_id,
-        handle_register, handle_login, handle_me,
-        handle_list_users, handle_approve_user, handle_reject_user,
-        handle_delete_user, handle_change_password,
+        _get_user_by_id,
+        _verify_jwt,
+        bootstrap_admin,
+        get_admin_user,
+        get_current_user,
+        handle_approve_user,
+        handle_change_password,
+        handle_delete_user,
+        handle_list_users,
+        handle_login,
+        handle_me,
+        handle_register,
+        handle_reject_user,
     )
 except ImportError:
     from auth import (
-        bootstrap_admin, get_current_user, get_admin_user, _verify_jwt, _get_user_by_id,
-        handle_register, handle_login, handle_me,
-        handle_list_users, handle_approve_user, handle_reject_user,
-        handle_delete_user, handle_change_password,
+        _get_user_by_id,
+        _verify_jwt,
+        bootstrap_admin,
+        get_admin_user,
+        get_current_user,
+        handle_approve_user,
+        handle_change_password,
+        handle_delete_user,
+        handle_list_users,
+        handle_login,
+        handle_me,
+        handle_register,
+        handle_reject_user,
     )
 
 
@@ -210,6 +336,7 @@ def extract_ws_token(websocket: WebSocket) -> Optional[str]:
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 from logging_filters import install_jwt_redaction
+
 install_jwt_redaction()
 
 # D-3: START_TIME global para uptime en /health (set en startup del lifespan)
@@ -267,6 +394,7 @@ app.add_middleware(
 # y routers/mastering.py — read_and_validate() SÍ chequea el tamaño pero
 # recorta DESPUÉS de haber copiado todo el body a memoria.
 from starlette.middleware.base import BaseHTTPMiddleware
+
 
 class MaxFileSizeMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):

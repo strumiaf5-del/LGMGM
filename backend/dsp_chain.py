@@ -26,7 +26,6 @@ from typing import Any, Callable, Dict, List, Tuple
 
 import numpy as np
 
-
 SUPPORTED_FEATURES = ("spectral_tilt", "phase_rotation", "saturation")
 
 

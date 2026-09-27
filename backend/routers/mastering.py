@@ -5,10 +5,10 @@ import logging
 import os
 import time
 import uuid
+from typing import List, Optional
 
-from fastapi import APIRouter, Depends, BackgroundTasks, UploadFile, File, Query, Form, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse
-from typing import Optional, List
 
 logger = logging.getLogger(__name__)
 
@@ -52,8 +52,9 @@ async def _run_mastering_sync(
     válidos según la firma real, y devuelve un ``FileResponse`` con el WAV
     procesado en 24-bit. Limpia los temporales en el ``finally``.
     """
-    from mastering import process_audio
     import uuid
+
+    from mastering import process_audio
 
     upload_dir = globals().get("UPLOAD_DIR") or os.path.join(
         os.path.dirname(os.path.abspath(__file__)), "..", "uploads"
@@ -89,6 +90,7 @@ async def _run_mastering_sync(
         extra_headers: dict = {}
         try:
             import soundfile as _sf
+
             from mastering import measure_lufs_integrated as _measure_lufs
             _audio, _sr = _sf.read(output_path), _sf.info(output_path).samplerate
             _lufs = _measure_lufs(_audio, _sr)
@@ -601,9 +603,9 @@ def _combine_references_weighted(ref_paths: list, weights: list, upload_dir: str
     más corto, suma ponderada, escribe un único WAV temporal.
     Retorna el path del WAV combinado.
     """
-    import soundfile as sf
-    import numpy as np
     import librosa
+    import numpy as np
+    import soundfile as sf
 
     if not ref_paths:
         raise ValueError("No reference paths to combine")
@@ -748,6 +750,7 @@ async def _run_pitch_job(job_id: str, file: UploadFile, mode: str, scale: Option
     del alcance de este fix mínimo del P0 (ImportError bloqueante).
     """
     import soundfile as sf
+
     from pitch_correction import apply_pitch_shift
     if scale:
         logger.warning("/pitch-correct: scale=%r ignorado en este fix mínimo (cuantización fuera de scope)", scale)

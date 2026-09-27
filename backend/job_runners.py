@@ -14,7 +14,6 @@ from typing import Callable
 import librosa
 import soundfile as sf
 
-
 logger = logging.getLogger(__name__)
 
 

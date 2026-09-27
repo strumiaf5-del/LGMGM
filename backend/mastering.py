@@ -1,10 +1,11 @@
 import dataclasses
 import logging
-import librosa
-import soundfile as sf
-import numpy as np
-import uuid
 import os
+import uuid
+
+import librosa
+import numpy as np
+import soundfile as sf
 
 # FIX (segfault -11 en preview render, ver dmesg): numba (via llvmlite) y
 # torch suelen traer CADA UNO su propio runtime de OpenMP embebido. Tener
@@ -16,9 +17,23 @@ import os
 # real es el import perezoso de torch más abajo (ver HAS_TORCH).
 os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
 from typing import Optional
-from scipy.signal import butter, sosfilt, sosfiltfilt, fftconvolve, resample_poly, welch, sosfreqz, firwin2, find_peaks, savgol_filter, freqz as _freqz, lfilter as _lfilter
+
 from scipy.ndimage import maximum_filter1d, median_filter
 from scipy.optimize import minimize as _sp_minimize
+from scipy.signal import (
+    butter,
+    fftconvolve,
+    find_peaks,
+    firwin2,
+    resample_poly,
+    savgol_filter,
+    sosfilt,
+    sosfiltfilt,
+    sosfreqz,
+    welch,
+)
+from scipy.signal import freqz as _freqz
+from scipy.signal import lfilter as _lfilter
 from scipy.signal import zpk2sos as _zpk2sos
 
 try:
@@ -28,17 +43,17 @@ except ImportError:
 
 try:
     from .advanced_dsp import (
-        polynomial_inflator,
         dynamic_resonance_suppressor,
         equal_loudness_compensation,
         phantom_sub_bass,
+        polynomial_inflator,
     )
 except ImportError:
     from advanced_dsp import (
-        polynomial_inflator,
         dynamic_resonance_suppressor,
         equal_loudness_compensation,
         phantom_sub_bass,
+        polynomial_inflator,
     )
 
 logger = logging.getLogger(__name__)
@@ -270,6 +285,7 @@ except ImportError:
 # paquete exista, sin importarlo/cargar sus .so — el import real queda
 # perezoso, adentro de compute_reference_eq_curve_ddsp.
 import importlib.util
+
 HAS_TORCH = importlib.util.find_spec("torch") is not None
 
 # ─── Helpers ───────────────────────────────────────────────────────────────────
@@ -2399,7 +2415,7 @@ def noise_reduction(
             # (Ubuntu 26.04) aunque ya no haya que lidiar con Windows 7.
             logger.warning(f"noise_reduction: noisereduce falló ({type(e).__name__}: {e}), usando fallback manual con scipy")
             # Fallback: sustracción espectral manual con scipy
-            from scipy.signal import stft, istft
+            from scipy.signal import istft, stft
             n_fft = 2048
             hop = n_fft // 4
             _, _, Zxx = stft(ch, fs=sr, nperseg=n_fft, noverlap=n_fft - hop)
@@ -3413,9 +3429,9 @@ def diagnostic_advice(analysis: dict) -> dict:
             "medium", [f"silence_ratio={silence}"])
 
     try:
-        from .diagnostic_knowledge import memory_summary, match_knowledge
+        from .diagnostic_knowledge import match_knowledge, memory_summary
     except ImportError:
-        from diagnostic_knowledge import memory_summary, match_knowledge
+        from diagnostic_knowledge import match_knowledge, memory_summary
 
     field_memory = memory_summary(analysis)
     # La memoria de cancha puede agregar hipótesis operativas que el conjunto
@@ -5872,8 +5888,9 @@ def match_crest_factor(audio: np.ndarray, sr: int,
         mono_ref = ref_audio.mean(axis=0) if ref_audio.ndim == 2 else ref_audio
         # Resamplear ref si tiene diferente sr
         if ref_sr != sr:
-            from scipy.signal import resample_poly
             from math import gcd
+
+            from scipy.signal import resample_poly
             g = gcd(int(ref_sr), int(sr))
             mono_ref = resample_poly(mono_ref, sr // g, ref_sr // g).astype(np.float32)
         src_cf = _crest_db(mono_src)
@@ -5886,8 +5903,9 @@ def match_crest_factor(audio: np.ndarray, sr: int,
 
     # Resamplear referencia al sr del source si es necesario
     if ref_sr != sr:
-        from scipy.signal import resample_poly
         from math import gcd
+
+        from scipy.signal import resample_poly
         g = gcd(int(ref_sr), int(sr))
         ref_resampled = np.stack([
             resample_poly(ref_audio[c], sr // g, ref_sr // g).astype(np.float32)

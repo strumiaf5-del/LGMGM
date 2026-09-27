@@ -12,10 +12,11 @@ Características:
 
 from __future__ import annotations
 
-import os
-import numpy as np
-from typing import Optional, Tuple, Dict
 import logging
+import os
+from typing import Dict, Optional, Tuple
+
+import numpy as np
 
 logger = logging.getLogger(__name__)
 

@@ -23,6 +23,7 @@ Solución:
 import threading
 import time
 from typing import Optional, Tuple
+
 import numpy as np
 
 MAX_ENTRIES = 20          # máx. sesiones simultáneas cacheadas

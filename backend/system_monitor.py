@@ -1,7 +1,9 @@
 """Monitor de sistema para dashboard en tiempo real: CPU, RAM, cola de jobs, estado."""
 import time
 from typing import Optional
+
 import psutil
+
 
 def get_system_stats(jobs: dict) -> dict:
     cpu_percent = psutil.cpu_percent(interval=None)

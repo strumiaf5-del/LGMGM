@@ -7,7 +7,7 @@ No depende de mastering.py — usa solo numpy/scipy — para poder importarse
 en cualquier contexto (job worker, script standalone, tests).
 """
 import numpy as np
-from scipy.signal import welch, butter, filtfilt
+from scipy.signal import butter, filtfilt, welch
 
 # Bandas críticas para detección de colisiones genéricas (Hz)
 CRITICAL_BANDS = {
@@ -81,8 +81,9 @@ def _low_band_envelope(mono: np.ndarray, sr: int, lo=30, hi=250, hop=512) -> np.
     original (44.1/48kHz) es ~10x más caro sin ninguna ganancia real."""
     target_sr = 2000
     if sr > target_sr:
-        from scipy.signal import resample_poly
         from math import gcd
+
+        from scipy.signal import resample_poly
         g = gcd(int(sr), target_sr)
         up, down = target_sr // g, sr // g
         mono_ds = resample_poly(mono, up, down)

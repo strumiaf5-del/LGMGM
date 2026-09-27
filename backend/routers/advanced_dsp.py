@@ -21,54 +21,56 @@ import os
 import uuid
 from typing import Optional
 
+import numpy as np
+import soundfile as sf
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import FileResponse, JSONResponse
-import numpy as np
-import soundfile as sf
 
 try:
     from ..advanced_dsp import (
-        polynomial_inflator,
+        cross_spectral_unmasking,
         dynamic_resonance_suppressor,
         equal_loudness_compensation,
-        cross_spectral_unmasking,
         phantom_sub_bass,
+        polynomial_inflator,
     )
+    from ..codec_simulator import loudness_penalty as _codec_loudness_penalty
+    from ..codec_simulator import simulate_codec
     from ..mastering import (
-        compute_reference_eq_curve,
-        build_matching_fir,
         apply_matching_fir,
-        process_audio_with_reference,
-        phase_rotation,
-        linear_phase_eq,
-        short_term_loudness_and_lra,
         band_crest_factors,
+        build_matching_fir,
+        compute_reference_eq_curve,
+        linear_phase_eq,
         measure_lufs_integrated,
+        phase_rotation,
+        process_audio_with_reference,
+        short_term_loudness_and_lra,
     )
-    from ..codec_simulator import simulate_codec, loudness_penalty as _codec_loudness_penalty
     from ..validation_utils import validate_audio_file
 except ImportError:
     from advanced_dsp import (
-        polynomial_inflator,
+        cross_spectral_unmasking,
         dynamic_resonance_suppressor,
         equal_loudness_compensation,
-        cross_spectral_unmasking,
         phantom_sub_bass,
+        polynomial_inflator,
     )
+    from codec_simulator import loudness_penalty as _codec_loudness_penalty
+    from codec_simulator import simulate_codec
     from mastering import (
-        compute_reference_eq_curve,
-        build_matching_fir,
         apply_matching_fir,
-        process_audio_with_reference,
-        phase_rotation,
-        linear_phase_eq,
-        short_term_loudness_and_lra,
         band_crest_factors,
+        build_matching_fir,
+        compute_reference_eq_curve,
+        linear_phase_eq,
         measure_lufs_integrated,
+        phase_rotation,
+        process_audio_with_reference,
+        short_term_loudness_and_lra,
     )
-    from codec_simulator import simulate_codec, loudness_penalty as _codec_loudness_penalty
-    from validation_utils import validate_audio_file, _validate_audio_magic_bytes
+    from validation_utils import _validate_audio_magic_bytes, validate_audio_file
 
 logger = logging.getLogger("advanced_dsp_router")
 

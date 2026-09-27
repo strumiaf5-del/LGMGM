@@ -11,14 +11,29 @@ Optimizaciones de CPU:
 - recommend_dynamic_eq cada 8s (antes 6s)
 - true_peak y mono_compat solo cada 8 chunks
 """
-import numpy as np # type: ignore
-import os
 import atexit
+import os
+
+import numpy as np  # type: ignore
 
 try:
-    from .mastering import apply_mastering_chain, measure_lufs_integrated, stereo_correlation, recommend_dynamic_eq, true_peak_dbfs, mono_compatibility_db
+    from .mastering import (
+        apply_mastering_chain,
+        measure_lufs_integrated,
+        mono_compatibility_db,
+        recommend_dynamic_eq,
+        stereo_correlation,
+        true_peak_dbfs,
+    )
 except ImportError:  # pragma: no cover - fallback for direct script execution
-    from mastering import apply_mastering_chain, measure_lufs_integrated, stereo_correlation, recommend_dynamic_eq, true_peak_dbfs, mono_compatibility_db
+    from mastering import (
+        apply_mastering_chain,
+        measure_lufs_integrated,
+        mono_compatibility_db,
+        recommend_dynamic_eq,
+        stereo_correlation,
+        true_peak_dbfs,
+    )
 
 # El ProcessPoolExecutor anterior se creaba al importar el módulo aunque no se usaba.
 # En Python 3.14 eso puede dejar semáforos IPC pendientes al terminar el proceso.

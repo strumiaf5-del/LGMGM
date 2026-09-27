@@ -29,7 +29,8 @@ def create_info_router(*, app, jobs, upload_dir: str, processed_dir: str, stems_
 
     @router.get("/health", tags=["Info"])
     def health():
-        import time, os
+        import os
+        import time
         # D-2: métricas livianas vía psutil (ya presente en venv) — < 100ms, sin deps pesadas
         try:
             import psutil

@@ -16,11 +16,20 @@ Admin: se crea automáticamente al arrancar si no existe. Credenciales en .env:
   JWT_SECRET=string_aleatorio_largo
 """
 
-import os, json, uuid, hashlib, hmac, time, base64, threading, secrets, string
-from typing import Optional
-from fastapi import HTTPException, Depends, Header, Cookie, Response
-from typing import Optional
+import base64
+import hashlib
+import hmac
+import json
 import logging
+import os
+import secrets
+import string
+import threading
+import time
+import uuid
+from typing import Optional
+
+from fastapi import Cookie, Depends, Header, HTTPException, Response
 
 try:
     from dotenv import load_dotenv
@@ -147,7 +156,8 @@ def _load_db() -> dict:
 
 def _save_db(db: dict) -> None:
     with _db_lock:
-        import tempfile, os
+        import os
+        import tempfile
         fd, tmp_path = tempfile.mkstemp(dir=os.path.dirname(USERS_DB_PATH), prefix=".users_db_", suffix=".tmp")
         try:
             with os.fdopen(fd, "w") as f:

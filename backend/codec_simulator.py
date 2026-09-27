@@ -26,14 +26,13 @@ from __future__ import annotations
 
 import hashlib
 import logging
+import os
 import shutil
 import subprocess
 import tempfile
-import os
 from typing import Any, Dict, Optional
 
 import numpy as np
-
 
 # Directorio confinado para tempfiles de codec_simulator. Antes usaba
 # /tmp por default (riesgo cross-user en hosts multi-tenant y

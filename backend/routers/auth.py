@@ -5,34 +5,34 @@ from pydantic import BaseModel
 
 try:
     from ..auth import (
+        clear_auth_cookie,
         get_admin_user,
         get_current_user,
-        clear_auth_cookie,
         handle_approve_user,
         handle_change_password,
         handle_delete_user,
         handle_list_users,
         handle_login,
         handle_me,
-        handle_ws_ticket,
         handle_register,
         handle_reject_user,
+        handle_ws_ticket,
         set_auth_cookie,
     )
 except ImportError:
     from auth import (
+        clear_auth_cookie,
         get_admin_user,
         get_current_user,
-        clear_auth_cookie,
         handle_approve_user,
         handle_change_password,
         handle_delete_user,
         handle_list_users,
         handle_login,
         handle_me,
-        handle_ws_ticket,
         handle_register,
         handle_reject_user,
+        handle_ws_ticket,
         set_auth_cookie,
     )
 

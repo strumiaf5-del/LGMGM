@@ -15,30 +15,41 @@ Reutiliza las funciones DSP ya existentes en mastering.py:
 
 from __future__ import annotations
 
-import numpy as np
 from dataclasses import dataclass, field
 from typing import Optional
 
+import numpy as np
+
 try:
-    from .mastering import (
-        eq_parametric_band, eq_high_pass, eq_low_pass,
-        compressor, transient_shaper, stereo_width,
-        apply_mastering_chain, measure_lufs_integrated,
-        limiter,
-    )
     from .config import PROCESSED_DIR
-    from .reverb import ReverbProcessor
-    from .pitch_correction import PitchCorrectionProcessor
-except ImportError:
-    from mastering import (
-        eq_parametric_band, eq_high_pass, eq_low_pass,
-        compressor, transient_shaper, stereo_width,
-        apply_mastering_chain, measure_lufs_integrated,
+    from .mastering import (
+        apply_mastering_chain,
+        compressor,
+        eq_high_pass,
+        eq_low_pass,
+        eq_parametric_band,
         limiter,
+        measure_lufs_integrated,
+        stereo_width,
+        transient_shaper,
     )
+    from .pitch_correction import PitchCorrectionProcessor
+    from .reverb import ReverbProcessor
+except ImportError:
     from config import PROCESSED_DIR
-    from reverb import ReverbProcessor
+    from mastering import (
+        apply_mastering_chain,
+        compressor,
+        eq_high_pass,
+        eq_low_pass,
+        eq_parametric_band,
+        limiter,
+        measure_lufs_integrated,
+        stereo_width,
+        transient_shaper,
+    )
     from pitch_correction import PitchCorrectionProcessor
+    from reverb import ReverbProcessor
 
 
 # ── Parámetros por stem ───────────────────────────────────────────────────────
@@ -394,7 +405,10 @@ def mix_and_master(
     _report(55, "Aplicando cadena de mastering")
 
     # ── 4. Mastering chain ────────────────────────────────────────────────────
-    import tempfile, os, soundfile as sf
+    import os
+    import tempfile
+
+    import soundfile as sf
 
     # Guardar mix temporal para process_audio si se pasan chain_params completos
     # Alternativamente, aplicar apply_mastering_chain directo

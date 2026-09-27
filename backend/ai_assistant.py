@@ -5,12 +5,12 @@
 from __future__ import annotations
 
 import asyncio
-import os
 import json
 import logging
+import os
 import re
 import threading
-from typing import Optional, Dict, Tuple
+from typing import Dict, Optional, Tuple
 
 import httpx
 
@@ -533,6 +533,8 @@ def _linear_to_db(linear_value: float) -> float:
     return round(20 * math.log10(max(float(linear_value), 1e-6)), 2)
 
 import math
+
+
 def linear_to_db(linear: float) -> float:
     return 20 * math.log10(max(linear, 1e-6))
 
@@ -1441,7 +1443,7 @@ def _optimize_and_verify_mix(result: dict, audio, sr, pre_analysis: Optional[dic
     if audio is None or sr is None:
         return []
 
-    from mastering import apply_mastering_chain, _crop_preview, analyze_audio
+    from mastering import _crop_preview, analyze_audio, apply_mastering_chain
 
     target_lufs = _resolve_target_lufs(result)
     chain_keys = set(PARAM_RANGES.keys()) | set(BOOL_PARAM_FIELDS) | set(STRING_ENUM_FIELDS.keys())

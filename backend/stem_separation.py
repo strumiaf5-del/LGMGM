@@ -30,6 +30,7 @@ API pública:
         Cada array tiene shape (channels, samples) en el sr original de entrada.
 """
 import functools
+
 import numpy as np
 
 STEM_NAMES = ["drums", "bass", "other", "vocals"]  # orden nativo de htdemucs
@@ -52,8 +53,9 @@ def _get_device(device):
 def _resample(audio_2d: np.ndarray, sr_in: int, sr_out: int) -> np.ndarray:
     if sr_in == sr_out:
         return audio_2d
-    from scipy.signal import resample_poly
     from math import gcd
+
+    from scipy.signal import resample_poly
     g = gcd(int(sr_in), int(sr_out))
     up, down = sr_out // g, sr_in // g
     return resample_poly(audio_2d, up, down, axis=-1).astype(np.float32)
@@ -188,6 +190,7 @@ def _get_roformer_separator(model_filename: str = ROFORMER_MODEL_DEFAULT):
     if model_filename in _ROFORMER_SEPARATOR_CACHE:
         return _ROFORMER_SEPARATOR_CACHE[model_filename]
     import os
+
     from audio_separator.separator import Separator
 
     model_dir = os.path.join(os.path.expanduser("~"), ".cache", "audio-separator-models")
@@ -220,6 +223,7 @@ def separate_vocals_hq(audio: np.ndarray, sr: int, progress_cb=None,
     """
     import os as _os
     import tempfile
+
     import soundfile as sf
 
     # R3: confinar tempfile al sandbox /root/diego/backend/processed_stems/_tmp

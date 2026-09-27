@@ -3,10 +3,11 @@
 # Convierte métricas técnicas en descripción perceptual real
 # ============================================================
 
-from typing import Dict, Optional, Tuple
-import math
-import numpy as np
 import logging
+import math
+from typing import Dict, Optional, Tuple
+
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
