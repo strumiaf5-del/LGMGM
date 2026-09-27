@@ -78,15 +78,28 @@ export function wsUrl(path: string = ''): string {
     throw new Error('La URL de la API debe usar http:// o https://');
   }
   const proto = url.protocol === 'https:' ? 'wss' : 'ws';
-  return `${proto}://${url.host}${path.startsWith('/') ? path : `/${path}`}`;
+  // FIX WS-1: preservar el pathname de API_BASE (p.ej. `/api` tras el reverse
+  // proxy de Caddy). Antes solo se usaba url.host → los WS salían como
+  // wss://host/ws/... SIN el prefijo y el file_server de Caddy devolvía 404
+  // (verificado: /ws/ref-stream → 404 vs /api/ws/ref-stream → 101).
+  const basePath = url.pathname.replace(/\/+$/, '');
+  return `${proto}://${url.host}${basePath}${path.startsWith('/') ? path : `/${path}`}`;
 }
 
-export async function wsAuthUrl(path: string = ''): Promise<string> {
+export const WS_SUBPROTOCOL = 'lgmdm-ws-ticket';
+
+export interface WsAuthTarget {
+  /** URL final del handshake (con /api si API_BASE lo tiene). */
+  url: string;
+  /** Subprotocolos a ofrecer en `new WebSocket(url, protocols)`. */
+  protocols: string[];
+}
+
+export async function wsAuthUrl(path: string = ''): Promise<WsAuthTarget> {
   if (!getAuthToken()) {
     const err = makeError(401, 'Sesión requerida para autorizar WebSocket', 'AUTH_REQUIRED');
     throw err;
   }
-  const target = new URL(wsUrl(path));
   // FIX K2: el backend declara @router.get("/auth/ws-ticket") (auth.py:121).
   // Antes se llamaba con POST → 405, lo que rompía la auth de TODOS los WS
   // que usan token (wsAuthUrl es el previo de /ws/mix-stream etc.).
@@ -96,8 +109,14 @@ export async function wsAuthUrl(path: string = ''): Promise<string> {
   if (!data.token || typeof data.token !== 'string') {
     throw makeError(0, 'El servidor no devolvió un ticket WebSocket válido');
   }
-  target.searchParams.set('token', data.token);
-  return target.toString();
+  // FIX WS-2: el backend SIEMPRE hace eco de `lgmdm-ws-ticket` en
+  // accept(subprotocol=...) (streaming.py) y Chrome rechaza el handshake si
+  // ese eco no está entre los subprotocolos ofrecidos por el cliente
+  // (close 1006). El ticket viaja como segundo subprotocolo — formato
+  // canónico de extract_ws_token (app.py:298, ["lgmdm-ws-ticket", "<token>"]) —
+  // nunca en la URL, así no queda en logs de proxies ni en el history.
+  // Verificado en runtime: sin protocols → 1006; con este array → OPEN 101.
+  return { url: wsUrl(path), protocols: [WS_SUBPROTOCOL, data.token] };
 }
 
 function resolveApiTarget(path: string): string {
@@ -349,7 +368,7 @@ interface LgmdmApi {
   apiBase?: () => string;
   apiUrl?: (path?: string) => string;
   wsUrl?: (path?: string) => string;
-  wsAuthUrl?: (path?: string) => Promise<string>;
+  wsAuthUrl?: (path?: string) => Promise<WsAuthTarget>;
   authToken?: () => string;
   csrfToken?: () => string;
   authHeaders?: (extra?: HeadersInit, method?: string) => Record<string, string>;

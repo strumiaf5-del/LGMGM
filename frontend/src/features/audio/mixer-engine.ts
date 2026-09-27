@@ -375,10 +375,12 @@ async function runServerPreview(): Promise<void> {
   const pcmChunks: ArrayBuffer[] = [];
   let sampleRate = 44100, channels = 2;
   try {
-    const wsUrl = await wsAuthUrl('/ws/mix-stream');
+    const { url: wsTarget, protocols } = await wsAuthUrl('/ws/mix-stream');
     await new Promise<void>((resolve, reject) => {
       let resolved = false;
-      const ws = new WebSocket(wsUrl);
+      // FIX WS-2: protocols debe pasar a WebSocket — el backend ecoa
+      // "lgmdm-ws-ticket" y Chrome cierra con 1006 si no lo ofrecimos.
+      const ws = new WebSocket(wsTarget, protocols);
       serverPreview.ws = ws;
       ws.binaryType = 'arraybuffer';
       ws.onopen = () => {

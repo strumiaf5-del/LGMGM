@@ -496,9 +496,10 @@ async function submitReferenceMasterJob(): Promise<void> {
     if (status) status.textContent = 'Conectando…';
 
     const api = lg().api;
-    // FIX K9: el helper real es `wsAuthUrl` (api.ts:84, devuelve Promise<string>
-    // con ?token=...). Antes se llamaba `wsAuthHandle` que NO EXISTE en ningún
-    // .ts → el guard era siempre true y el WS del ref-stream nunca se abría.
+    // FIX K9: el helper real es `wsAuthUrl` (api.ts, devuelve
+    // Promise<WsAuthTarget> = { url, protocols }). Antes se llamaba
+    // `wsAuthHandle` que NO EXISTE en ningún .ts → el guard era siempre
+    // true y el WS del ref-stream nunca se abría.
     if (!api.wsAuthUrl) {
       console.warn('[reference] wsAuthUrl no disponible');
       return;
@@ -508,8 +509,10 @@ async function submitReferenceMasterJob(): Promise<void> {
     let pendingMetrics: Record<string, unknown> | null = null;
 
     try {
-      const wsUrl = await api.wsAuthUrl('/ws/ref-stream');
-      refWs = new WebSocket(wsUrl);
+      const { url: wsTarget, protocols } = await api.wsAuthUrl('/ws/ref-stream');
+      // FIX WS-2: protocols debe pasar a WebSocket — el backend ecoa
+      // "lgmdm-ws-ticket" y Chrome cierra con 1006 si no lo ofrecimos.
+      refWs = new WebSocket(wsTarget, protocols);
       refWs.binaryType = 'arraybuffer';
     } catch (e) {
       console.warn('[reference] WS auth failed:', e);
