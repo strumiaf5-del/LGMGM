@@ -1,18 +1,36 @@
 // master-visual-suite.ts — 20 visual enhancements. Port of aporte/js/15-master-visual-suite.js.
-// @ts-nocheck
+// Pragma de supresión TS REMOVIDO 2026-09-27 (FIX FINAL): tipar los 156 errores TS restantes.
 
 import { audioTap } from '../../core/audio-tap';
 import { metricsStore } from '../../core/metrics-store';
 
 type AnyEl = HTMLElement | null;
 
-function $(id) {
+function $(id: string): HTMLElement | null {
   return document.getElementById(id);
 }
 
+// FIX FINAL 2026-09-27: helpers para castear elementos a su tipo correcto.
+// El $() original retorna HTMLElement|null, pero muchos elementos son
+// HTMLCanvasElement (width/height/getContext), HTMLInputElement (value/checked),
+// HTMLSelectElement (value) o HTMLButtonElement (click). Sin estos casts,
+// tsc reporta TS2339 "Property X does not exist on type HTMLElement/Element".
+function $canvas(id: string): HTMLCanvasElement | null {
+  return document.getElementById(id) as HTMLCanvasElement | null;
+}
+function $input(id: string): HTMLInputElement | null {
+  return document.getElementById(id) as HTMLInputElement | null;
+}
+function $select(id: string): HTMLSelectElement | null {
+  return document.getElementById(id) as HTMLSelectElement | null;
+}
+function $button(id: string): HTMLButtonElement | null {
+  return document.getElementById(id) as HTMLButtonElement | null;
+}
+
 // Bridge to the (loosely-typed) LGMDM global namespace.
-function lgmdm() {
-  return (window).LGMDM || {};
+function lgmdm(): Record<string, any> {
+  return (window as unknown as { LGMDM?: Record<string, any> }).LGMDM || {};
 }
 
   const CHASSIS_THEMES = ["slate", "neve", "ssl", "obsidian"];
@@ -28,17 +46,17 @@ function lgmdm() {
 
     const container = $("consoleChassisSelector");
     if (!container) return;
-    container.addEventListener("click", (e) => {
-      const btn = e.target.closest(".chassis-btn");
+    container.addEventListener("click", (e: Event) => {
+      const btn = (e.target as HTMLElement | null)?.closest(".chassis-btn");
       if (!btn) return;
-      const theme = btn.dataset.chassis;
+      const theme = (btn as HTMLElement).dataset.chassis;
       if (theme && CHASSIS_THEMES.includes(theme)) {
         applyChassisTheme(theme);
       }
     }, { signal });
   }
 
-  function applyChassisTheme(theme) {
+  function applyChassisTheme(theme: string) {
     document.documentElement.setAttribute("data-chassis-theme", theme);
     const consoleEl = $("lgMasterConsole");
     if (consoleEl) consoleEl.setAttribute("data-chassis-theme", theme);
@@ -47,7 +65,7 @@ function lgmdm() {
       localStorage.setItem(CHASSIS_STORAGE_KEY, theme);
     } catch (_) {}
 
-    document.querySelectorAll(".chassis-btn").forEach((btn) => {
+    document.querySelectorAll<HTMLElement>(".chassis-btn").forEach((btn) => {
       btn.classList.toggle("active", btn.dataset.chassis === theme);
     });
   }
@@ -55,9 +73,13 @@ function lgmdm() {
   const CRT_STORAGE_KEY = "lgmdm_crt_mode";
 
   function initCrtToggle(signal: AbortSignal) {
-    const toggleBtn = $("consoleCrtToggle");
+    const toggleBtnEl = $("consoleCrtToggle");
     const consoleEl = $("lgMasterConsole");
-    if (!toggleBtn || !consoleEl) return;
+    if (!toggleBtnEl || !consoleEl) return;
+    // FIX FINAL 2026-09-27: TS no estrecha tipos dentro de closures (updateCrt).
+    // Re-asignamos a const no-null para que el closure las capture con tipo no-null.
+    const toggleBtn: HTMLElement = toggleBtnEl;
+    const consoleEl2: HTMLElement = consoleEl;
 
     let crtActive = true;
     try {
@@ -65,9 +87,9 @@ function lgmdm() {
       if (saved !== null) crtActive = saved === "true";
     } catch (_) {}
 
-    function updateCrt(state) {
+    function updateCrt(state: boolean) {
       crtActive = state;
-      consoleEl.classList.toggle("crt-enabled", crtActive);
+      consoleEl2.classList.toggle("crt-enabled", crtActive);
       toggleBtn.classList.toggle("active", crtActive);
       const dot = toggleBtn.querySelector?.(".crt-led-dot");
       if (dot) dot.classList?.toggle?.("active", crtActive);
@@ -86,12 +108,12 @@ function lgmdm() {
     const rack = $("consoleMeterRack");
     if (!rack) return;
 
-    const btns = rack.querySelectorAll(".meter-view-btn");
+    const btns = rack.querySelectorAll<HTMLElement>(".meter-view-btn");
     const modeLabel = $("consoleMeterMode");
 
-    function setView(view) {
+    function setView(view: string) {
       activeMeterView = view;
-      btns.forEach((b) => b.classList.toggle("active", b.dataset.view === view));
+      btns.forEach((b: HTMLElement) => b.classList.toggle("active", b.dataset.view === view));
 
       const viewBars = $("meterViewBars");
       const viewVu = $("meterViewVu");
@@ -115,8 +137,8 @@ function lgmdm() {
       }
     }
 
-    btns.forEach((b) => {
-      b.addEventListener("click", () => setView(b.dataset.view), { signal });
+    btns.forEach((b: HTMLElement) => {
+      b.addEventListener("click", () => setView(b.dataset.view || ""), { signal });
     });
 
     setView("vu");
@@ -128,7 +150,7 @@ function lgmdm() {
     right: { angle: -45, velocity: 0, target: -45 },
   };
 
-  function dbToVuAngle(db) {
+  function dbToVuAngle(db: number): number {
     if (!Number.isFinite(db) || db <= -45) return -45;
     if (db >= 3) return 25;
     if (db <= -20) {
@@ -143,7 +165,22 @@ function lgmdm() {
     return norm * 25;
   }
 
-  function updateVuNeedles(metrics) {
+// FIX FINAL 2026-09-27: tipo de metrics que pasa el backend (routers/info.py /analysis)
+// y metricsStore. Es un subset — los campos opcionales porque no todos los endpoints los devuelven.
+interface MetricsShape {
+  peak_db?: number | null;
+  rms_db?: number | null;
+  true_peak_dbtp?: number | null;
+  stereo_correlation?: number | null;
+  lufs_short?: number | null;
+  lufs_integrated?: number | null;
+  lufs_range?: number | null;
+  crest_factor_db?: number | null;
+  thd_pct?: number | null;
+  [key: string]: unknown;
+}
+
+  function updateVuNeedles(metrics: MetricsShape | null | undefined) {
     const needleL = $("vuNeedleL");
     const needleR = $("vuNeedleR");
     if (!needleL || !needleR) return;
@@ -165,7 +202,7 @@ function lgmdm() {
     const spring = 0.16;
     const damping = 0.68;
 
-    ["left", "right"].forEach((ch) => {
+    (["left", "right"] as const).forEach((ch: 'left' | 'right') => {
       const p = needlePhysics[ch];
       const force = (p.target - p.angle) * spring;
       p.velocity = (p.velocity + force) * damping;
@@ -186,12 +223,14 @@ function lgmdm() {
 
   let gonioPhaseAngle = 0;
 
-  function drawGoniometer(metrics) {
+  function drawGoniometer(metrics: MetricsShape | null | undefined) {
     if (activeMeterView !== "gonio") return;
-    const canvas = $("lgmdmGoniometerCanvas");
+    const canvas = $canvas("lgmdmGoniometerCanvas");
     if (!canvas) return;
 
     const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    if (!ctx) return;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const size = 220;
     const w = size * dpr;
@@ -210,7 +249,7 @@ function lgmdm() {
     const r = Math.min(cx, cy) - 14 * dpr;
 
     ctx.lineWidth = 1;
-    [0.25, 0.5, 0.75, 1.0].forEach((ratio, idx) => {
+    [0.25, 0.5, 0.75, 1.0].forEach((ratio: number, idx: number) => {
       ctx.strokeStyle = idx === 3 ? "rgba(0, 229, 255, 0.35)" : "rgba(0, 229, 255, 0.12)";
       ctx.beginPath();
       ctx.arc(cx, cy, r * ratio, 0, Math.PI * 2);
@@ -304,7 +343,16 @@ function lgmdm() {
     ctx.fill();
   }
 
-  const KNOB_CONFIGS = {
+  const KNOB_CONFIGS: Record<string, {
+    inputControlId: string;
+    rotorId: string;
+    arcId: string;
+    valId: string;
+    min: number;
+    max: number;
+    step: number;
+    format: (v: number) => string;
+  }> = {
     cellKnobInput: {
       inputControlId: "s-ingain",
       rotorId: "rotorInputGain",
@@ -313,7 +361,7 @@ function lgmdm() {
       min: -12,
       max: 12,
       step: 0.1,
-      format: (v) => `${v >= 0 ? "+" : ""}${v.toFixed(1)} dB`,
+      format: (v: number) => `${v >= 0 ? "+" : ""}${v.toFixed(1)} dB`,
     },
     cellKnobComp: {
       inputControlId: "s-thresh",
@@ -323,7 +371,7 @@ function lgmdm() {
       min: -40,
       max: 0,
       step: 0.5,
-      format: (v) => `${v.toFixed(1)} dB`,
+      format: (v: number) => `${v.toFixed(1)} dB`,
     },
     cellKnobWidth: {
       inputControlId: "s-width",
@@ -333,7 +381,7 @@ function lgmdm() {
       min: 0,
       max: 3,
       step: 0.05,
-      format: (v) => `${v.toFixed(2)}x`,
+      format: (v: number) => `${v.toFixed(2)}x`,
     },
     cellKnobDrive: {
       inputControlId: "s-satdrive",
@@ -343,7 +391,7 @@ function lgmdm() {
       min: 0,
       max: 1,
       step: 0.01,
-      format: (v) => `${Math.round(v * 100)}%`,
+      format: (v: number) => `${Math.round(v * 100)}%`,
     },
     cellKnobCeil: {
       inputControlId: "s-ceiling",
@@ -353,7 +401,7 @@ function lgmdm() {
       min: 0.1,
       max: 1.0,
       step: 0.01,
-      format: (v) => {
+      format: (v: number) => {
         const db = 20 * Math.log10(Math.max(0.01, Number(v)));
         return `${db.toFixed(1)} dB`;
       },
@@ -370,57 +418,62 @@ function lgmdm() {
       const rotor = $(cfg.rotorId);
       const arc = $(cfg.arcId);
       const valPill = $(cfg.valId);
-      const inputEl = $(cfg.inputControlId);
+      const inputEl = $input(cfg.inputControlId);
 
       if (!cell || !rotor || !arc || !valPill) return;
+      // FIX FINAL 2026-09-27: TS no estrecha tipos dentro de closures.
+      // Re-asignamos a const no-null.
+      const rotorEl: HTMLElement = rotor;
+      const arcEl: HTMLElement = arc;
+      const valPillEl: HTMLElement = valPill;
 
-      arc.style.strokeDasharray = `${ARC_TOTAL_LENGTH} ${ARC_CIRCUMFERENCE}`;
+      arcEl.style.strokeDasharray = `${ARC_TOTAL_LENGTH} ${ARC_CIRCUMFERENCE}`;
 
-      function updateKnobDisplay(val) {
+      function updateKnobDisplay(val: number) {
         const clamped = Math.max(cfg.min, Math.min(cfg.max, Number(val)));
         const norm = (clamped - cfg.min) / (cfg.max - cfg.min);
         const angle = -135 + norm * 270;
-        rotor.style.transform = `rotate(${angle.toFixed(1)}deg)`;
+        rotorEl.style.transform = `rotate(${angle.toFixed(1)}deg)`;
 
         const offset = ARC_TOTAL_LENGTH * (1 - norm);
-        arc.style.strokeDashoffset = offset.toFixed(2);
+        arcEl.style.strokeDashoffset = offset.toFixed(2);
 
-        valPill.textContent = cfg.format(clamped);
-        rotor.setAttribute("aria-valuenow", clamped.toFixed(2));
+        valPillEl.textContent = cfg.format(clamped);
+        rotorEl.setAttribute("aria-valuenow", clamped.toFixed(2));
       }
 
       if (inputEl) {
-        updateKnobDisplay(inputEl.value);
-        inputEl.addEventListener("input", () => updateKnobDisplay(inputEl.value), { signal });
-        inputEl.addEventListener("change", () => updateKnobDisplay(inputEl.value), { signal });
+        updateKnobDisplay(Number(inputEl.value));
+        inputEl.addEventListener("input", () => updateKnobDisplay(Number(inputEl.value)), { signal });
+        inputEl.addEventListener("change", () => updateKnobDisplay(Number(inputEl.value)), { signal });
       }
 
       let startY = 0;
       let startVal = 0;
       let isDragging = false;
 
-      function onPointerDown(e) {
+      function onPointerDown(e: PointerEvent) {
         e.preventDefault();
         isDragging = true;
-        startY = e.clientY ?? e.touches?.[0]?.clientY ?? 0;
+        startY = e.clientY ?? 0;
         startVal = inputEl ? Number(inputEl.value) : (cfg.min + cfg.max) / 2;
-        rotor.focus();
-        rotor.classList.add("dragging");
+        rotorEl.focus();
+        rotorEl.classList.add("dragging");
         window.addEventListener("pointermove", onPointerMove, { signal });
         window.addEventListener("pointerup", onPointerUp, { signal });
         window.addEventListener("pointercancel", onPointerUp, { signal });
       }
 
-      function onPointerMove(e) {
+      function onPointerMove(e: PointerEvent) {
         if (!isDragging) return;
-        const currentY = e.clientY ?? e.touches?.[0]?.clientY ?? 0;
+        const currentY = e.clientY ?? 0;
         const deltaY = startY - currentY;
         const sensitivity = (cfg.max - cfg.min) / 160;
         let newVal = startVal + deltaY * sensitivity;
         newVal = Math.max(cfg.min, Math.min(cfg.max, newVal));
 
         if (inputEl) {
-          inputEl.value = newVal;
+          inputEl.value = String(newVal);
           inputEl.dispatchEvent(new Event("input", { bubbles: true }));
         } else {
           updateKnobDisplay(newVal);
@@ -430,7 +483,7 @@ function lgmdm() {
       function onPointerUp() {
         if (!isDragging) return;
         isDragging = false;
-        rotor.classList.remove("dragging");
+        rotorEl.classList.remove("dragging");
         window.removeEventListener("pointermove", onPointerMove);
         window.removeEventListener("pointerup", onPointerUp);
         window.removeEventListener("pointercancel", onPointerUp);
@@ -439,17 +492,17 @@ function lgmdm() {
         }
       }
 
-      rotor.addEventListener("pointerdown", onPointerDown, { signal });
+      rotorEl.addEventListener("pointerdown", onPointerDown, { signal });
 
-      rotor.addEventListener(
+      rotorEl.addEventListener(
         "wheel",
-        (e) => {
+        (e: WheelEvent) => {
           e.preventDefault();
           const step = (cfg.max - cfg.min) * 0.02 * (e.deltaY < 0 ? 1 : -1);
-          const current = inputEl ? Number(inputEl.value) : Number(rotor.getAttribute("aria-valuenow") || 0);
+          const current = inputEl ? Number(inputEl.value) : Number(rotorEl.getAttribute("aria-valuenow") || 0);
           const newVal = Math.max(cfg.min, Math.min(cfg.max, current + step));
           if (inputEl) {
-            inputEl.value = newVal;
+            inputEl.value = String(newVal);
             inputEl.dispatchEvent(new Event("input", { bubbles: true }));
             inputEl.dispatchEvent(new Event("change", { bubbles: true }));
           } else {
@@ -459,14 +512,14 @@ function lgmdm() {
         { passive: false, signal }
       );
 
-      rotor.addEventListener("keydown", (e) => {
+      rotorEl.addEventListener("keydown", (e: KeyboardEvent) => {
         let step = (cfg.max - cfg.min) * 0.05;
         if (e.key === "ArrowUp" || e.key === "ArrowRight") {
           e.preventDefault();
           const current = inputEl ? Number(inputEl.value) : cfg.min;
           const newVal = Math.min(cfg.max, current + step);
           if (inputEl) {
-            inputEl.value = newVal;
+            inputEl.value = String(newVal);
             inputEl.dispatchEvent(new Event("input", { bubbles: true }));
             inputEl.dispatchEvent(new Event("change", { bubbles: true }));
           }
@@ -475,7 +528,7 @@ function lgmdm() {
           const current = inputEl ? Number(inputEl.value) : cfg.max;
           const newVal = Math.max(cfg.min, current - step);
           if (inputEl) {
-            inputEl.value = newVal;
+            inputEl.value = String(newVal);
             inputEl.dispatchEvent(new Event("input", { bubbles: true }));
             inputEl.dispatchEvent(new Event("change", { bubbles: true }));
           }
@@ -484,15 +537,15 @@ function lgmdm() {
     });
   }
 
-  function updateTubeFilamentGlow(metrics) {
+  function updateTubeFilamentGlow(metrics: MetricsShape | null | undefined) {
     const consoleGlow = $("consoleFilamentGlow");
     const consoleCorona = $("consoleFilamentCorona");
     const rackGlow = $("rackFilamentGlow");
     const rackCorona = $("rackFilamentCorona");
     const tempStatus = $("tubeFilamentTemp");
 
-    const driveEl = $("s-satdrive");
-    const clipDriveEl = $("s-clip-drive");
+    const driveEl = $input("s-satdrive");
+    const clipDriveEl = $input("s-clip-drive");
     const driveVal = Math.max(
       Number(driveEl?.value ?? 0),
       Number(clipDriveEl?.value ?? 0) / 24
@@ -545,7 +598,7 @@ function lgmdm() {
     }, 8000);
   }
 
-  function updateVfdMetrics(metrics) {
+  function updateVfdMetrics(metrics: MetricsShape | null | undefined) {
     const m = metrics || {};
     const dyn = $("vfdDynRange");
     const headroom = $("vfdHeadroom");
@@ -580,20 +633,20 @@ function lgmdm() {
     const ribbon = $("dspSignalFlow");
     if (!ribbon) return;
 
-    ribbon.querySelectorAll(".dsp-node").forEach((btn) => {
+    ribbon.querySelectorAll<HTMLElement>(".dsp-node").forEach((btn) => {
       btn.addEventListener("click", () => {
         const pane = btn.dataset.pane;
         const stageNum = btn.dataset.stage;
 
         if (pane) {
-          const tab = document.querySelector(`.sidebar-tab[data-pane="${pane}"]`);
+          const tab = document.querySelector<HTMLElement>(`.sidebar-tab[data-pane="${pane}"]`);
           if (tab) tab.click();
         }
 
         if (stageNum && stageNum !== "in") {
           const card =
-            document.querySelector(`.lg-stage-card[data-stage="${stageNum}"]`) ||
-            document.querySelector(`[data-stage="${stageNum}"]`);
+            document.querySelector<HTMLElement>(`.lg-stage-card[data-stage="${stageNum}"]`) ||
+            document.querySelector<HTMLElement>(`[data-stage="${stageNum}"]`);
           if (card) {
             card.scrollIntoView({ behavior: "smooth", block: "center" });
             card.classList.add("pulse-highlight");
@@ -604,7 +657,7 @@ function lgmdm() {
     });
   }
 
-  function updateMsHeatmap(metrics) {
+  function updateMsHeatmap(metrics: MetricsShape | null | undefined) {
     const m = metrics || {};
     const corr = Math.max(-1, Math.min(1, Number(m.stereo_correlation ?? 0.95)));
     const badge = $("heatmapCorrBadge");
@@ -613,9 +666,9 @@ function lgmdm() {
       badge.className = `heatmap-badge ${corr < 0 ? "danger" : corr < 0.4 ? "wide" : "safe"}`;
     }
 
-    const wLow = Number($("s-mb-sw-low")?.value ?? 0.9);
-    const wMid = Number($("s-mb-sw-mid")?.value ?? 1.2);
-    const wHigh = Number($("s-mb-sw-high")?.value ?? 1.5);
+    const wLow = Number($input("s-mb-sw-low")?.value ?? 0.9);
+    const wMid = Number($input("s-mb-sw-mid")?.value ?? 1.2);
+    const wHigh = Number($input("s-mb-sw-high")?.value ?? 1.5);
 
     const statLow = $("msStatLowMid");
     const statMid = $("msStatHighMid");
@@ -683,44 +736,51 @@ function lgmdm() {
     }, { signal });
   }
 
-  let activeSpecView = "2d"; // '2d' | '3d'
-  const waterfallHistory = [];
+  let activeSpecView: "2d" | "3d" = "2d";
+  // FIX FINAL 2026-09-27: tipar waterfallHistory como array de Float32Array (slices del waterfall 3D).
+  const waterfallHistory: Float32Array[] = [];
   const WATERFALL_SLICES = 30;
   const WATERFALL_BINS = 64;
   let waterfallFrameCounter = 0;
 
   function initWaterfallSpectrogram(signal: AbortSignal) {
-    const btn2d = $("btnSpec2d");
-    const btn3d = $("btnSpec3d");
+    const btn2d = $button("btnSpec2d");
+    const btn3d = $button("btnSpec3d");
     const spec2d = $("lgmdmConsoleSpectrum");
-    const spec3d = $("lgmdmWaterfallCanvas");
+    const spec3d = $canvas("lgmdmWaterfallCanvas");
 
     if (!btn2d || !btn3d || !spec3d) return;
+    // FIX FINAL 2026-09-27: TS no estrecha tipos dentro de closures (setSpecView).
+    const btn2dEl: HTMLButtonElement = btn2d;
+    const btn3dEl: HTMLButtonElement = btn3d;
+    const spec3dEl: HTMLCanvasElement = spec3d;
 
-    function setSpecView(view) {
+    function setSpecView(view: "2d" | "3d") {
       activeSpecView = view;
-      btn2d.classList.toggle("active", view === "2d");
-      btn3d.classList.toggle("active", view === "3d");
+      btn2dEl.classList.toggle("active", view === "2d");
+      btn3dEl.classList.toggle("active", view === "3d");
 
       if (view === "2d") {
-        spec3d.style.display = "none";
+        spec3dEl.style.display = "none";
         if (spec2d) spec2d.style.display = "block";
       } else {
         if (spec2d) spec2d.style.display = "none";
-        spec3d.style.display = "block";
+        spec3dEl.style.display = "block";
       }
     }
 
-    btn2d.addEventListener("click", () => setSpecView("2d"), { signal });
-    btn3d.addEventListener("click", () => setSpecView("3d"), { signal });
+    btn2dEl.addEventListener("click", () => setSpecView("2d"), { signal });
+    btn3dEl.addEventListener("click", () => setSpecView("3d"), { signal });
   }
 
-  function drawWaterfallSpectrogram(metrics) {
+  function drawWaterfallSpectrogram(metrics: MetricsShape | null | undefined) {
     if (activeSpecView !== "3d") return;
-    const canvas = $("lgmdmWaterfallCanvas");
+    const canvas = $canvas("lgmdmWaterfallCanvas");
     if (!canvas) return;
 
     const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    if (!ctx) return;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const rect = canvas.getBoundingClientRect();
     const w = Math.round((rect.width || 800) * dpr);
@@ -848,8 +908,11 @@ function lgmdm() {
   function initMarconiSwitch(signal: AbortSignal) {
     const pointer = $("marconiShelfFreq");
     const valPill = $("marconiShelfVal");
-    const inputEl = $("s-lowshelf-freq");
+    const inputEl = $input("s-lowshelf-freq");
     if (!pointer || !valPill) return;
+    // FIX FINAL 2026-09-27: TS no estrecha tipos dentro de closures (setStep).
+    const pointerEl: HTMLElement = pointer;
+    const valPillEl: HTMLElement = valPill;
 
     let currentVal = 100;
     if (inputEl) {
@@ -857,7 +920,7 @@ function lgmdm() {
       if (Number.isFinite(v) && v > 0) currentVal = v;
     }
 
-    function setStep(val, triggerChange) {
+    function setStep(val: number, triggerChange: boolean) {
       const step =
         MARCONI_STEPS.find((s) => s.val === val) ||
         MARCONI_STEPS.reduce((prev, curr) =>
@@ -865,12 +928,12 @@ function lgmdm() {
         );
 
       currentVal = step.val;
-      pointer.style.transform = `rotate(${step.deg}deg)`;
-      pointer.setAttribute("aria-valuenow", String(step.val));
-      valPill.textContent = `${step.val} Hz`;
+      pointerEl.style.transform = `rotate(${step.deg}deg)`;
+      pointerEl.setAttribute("aria-valuenow", String(step.val));
+      valPillEl.textContent = `${step.val} Hz`;
 
       if (inputEl && (triggerChange || Number(inputEl.value) !== step.val)) {
-        inputEl.value = step.val;
+        inputEl.value = String(step.val);
         inputEl.dispatchEvent(new Event("input", { bubbles: true }));
         if (triggerChange) inputEl.dispatchEvent(new Event("change", { bubbles: true }));
       }
@@ -878,25 +941,25 @@ function lgmdm() {
 
     setStep(currentVal, false);
 
-    document.querySelectorAll(".step-tick").forEach((tick) => {
+    document.querySelectorAll<HTMLElement>(".step-tick").forEach((tick) => {
       tick.style.cursor = "pointer";
       tick.style.pointerEvents = "auto";
-      tick.addEventListener("click", (e) => {
+      tick.addEventListener("click", (e: Event) => {
         e.stopPropagation();
         const v = Number(tick.dataset.val);
         if (v) setStep(v, true);
       }, { signal });
     });
 
-    pointer.addEventListener("click", () => {
+    pointerEl.addEventListener("click", () => {
       const idx = MARCONI_STEPS.findIndex((s) => s.val === currentVal);
       const nextIdx = (idx + 1) % MARCONI_STEPS.length;
       setStep(MARCONI_STEPS[nextIdx].val, true);
     }, { signal });
 
-    pointer.addEventListener(
+    pointerEl.addEventListener(
       "wheel",
-      (e) => {
+      (e: WheelEvent) => {
         e.preventDefault();
         const idx = MARCONI_STEPS.findIndex((s) => s.val === currentVal);
         const delta = e.deltaY < 0 ? 1 : -1;
@@ -929,12 +992,13 @@ function lgmdm() {
 
   let sphereRotY = 0;
 
-  function drawVectorsphere(metrics) {
+  function drawVectorsphere(metrics: MetricsShape | null | undefined) {
     if (activeMeterView !== "sphere") return;
-    const canvas = $("lgmdmVectorsphereCanvas");
+    const canvas = $canvas("lgmdmVectorsphereCanvas");
     if (!canvas) return;
 
     const ctx = canvas.getContext("2d");
+    if (!ctx) return;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const size = 220;
     const w = size * dpr;
@@ -954,7 +1018,7 @@ function lgmdm() {
     const m = metrics || {};
     const peak = Number(m.peak_db ?? -60);
     const corr = Math.max(-1, Math.min(1, Number(m.stereo_correlation ?? 0.95)));
-    const widthEl = $("s-width");
+    const widthEl = $input("s-width");
     const stereoWidth = Number(widthEl?.value ?? 1.2);
 
     const badge = $("sphereWidthBadge");
@@ -976,7 +1040,7 @@ function lgmdm() {
     const cosY = Math.cos(sphereRotY);
     const sinY = Math.sin(sphereRotY);
 
-    function project3d(x, y, z) {
+    function project3d(x: number, y: number, z: number): { x: number; y: number; z: number; factor: number } {
       const sx = x * scaleX;
       const sy = y * scaleY;
       const sz = z * scaleZ;
@@ -1061,10 +1125,11 @@ function lgmdm() {
   }
 
   function drawEqCurve() {
-    const canvas = $("lgmdmEqCurveCanvas");
+    const canvas = $canvas("lgmdmEqCurveCanvas");
     if (!canvas) return;
 
     const ctx = canvas.getContext("2d");
+    if (!ctx) return;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const rect = canvas.getBoundingClientRect();
     const w = Math.round((rect.width || 600) * dpr);
@@ -1083,7 +1148,7 @@ function lgmdm() {
     const logMin = Math.log10(minFreq);
     const logMax = Math.log10(maxFreq);
 
-    function freqToX(f) {
+    function freqToX(f: number): number {
       const norm = (Math.log10(Math.max(minFreq, f)) - logMin) / (logMax - logMin);
       return norm * w;
     }
@@ -1092,7 +1157,7 @@ function lgmdm() {
     const maxDb = 15;
     const zeroY = h * (maxDb / (maxDb - minDb));
 
-    function dbToY(db) {
+    function dbToY(db: number): number {
       const norm = (db - minDb) / (maxDb - minDb);
       return h - norm * h;
     }
@@ -1114,23 +1179,23 @@ function lgmdm() {
     ctx.lineTo(w, zeroY);
     ctx.stroke();
 
-    const hpCutoff = Number($("s-hp")?.value ?? 30);
-    const lowShelfGain = Number($("s-lowshelf")?.value ?? 0);
-    const lowShelfFreq = Number($("s-lowshelf-freq")?.value ?? 100);
+    const hpCutoff = Number($input("s-hp")?.value ?? 30);
+    const lowShelfGain = Number($input("s-lowshelf")?.value ?? 0);
+    const lowShelfFreq = Number($input("s-lowshelf-freq")?.value ?? 100);
 
-    const b1Gain = Number($("s-eq1gain")?.value ?? 0);
-    const b1Freq = Number($("s-eq1freq")?.value ?? 100);
-    const b1Q = Number($("s-eq1q")?.value ?? 1.0);
+    const b1Gain = Number($input("s-eq1gain")?.value ?? 0);
+    const b1Freq = Number($input("s-eq1freq")?.value ?? 100);
+    const b1Q = Number($input("s-eq1q")?.value ?? 1.0);
 
-    const b3Gain = Number($("s-eq3gain")?.value ?? 0);
-    const b3Freq = Number($("s-eq3freq")?.value ?? 1000);
-    const b3Q = Number($("s-eq3q")?.value ?? 1.2);
+    const b3Gain = Number($input("s-eq3gain")?.value ?? 0);
+    const b3Freq = Number($input("s-eq3freq")?.value ?? 1000);
+    const b3Q = Number($input("s-eq3q")?.value ?? 1.2);
 
-    const b6Gain = Number($("s-eq6gain")?.value ?? 0);
-    const b6Freq = Number($("s-eq6freq")?.value ?? 12000);
-    const b6Q = Number($("s-eq6q")?.value ?? 0.8);
+    const b6Gain = Number($input("s-eq6gain")?.value ?? 0);
+    const b6Freq = Number($input("s-eq6freq")?.value ?? 12000);
+    const b6Q = Number($input("s-eq6q")?.value ?? 0.8);
 
-    const airGain = Number($("s-air")?.value ?? 0);
+    const airGain = Number($input("s-air")?.value ?? 0);
 
     const dbVal1 = $("dynBellVal1");
     const dbVal3 = $("dynBellVal3");
@@ -1224,7 +1289,7 @@ function lgmdm() {
   }
 
   function initEqCurve(signal: AbortSignal) {
-    const canvas = $("lgmdmEqCurveCanvas");
+    const canvas = $canvas("lgmdmEqCurveCanvas");
     if (!canvas) return;
 
     const eqControls = [
@@ -1259,7 +1324,7 @@ function lgmdm() {
     const leverClipper = $("safetyLeverClipper");
     const ledClipper = $("safetyLedClipper");
     const statusClipper = $("safetyStatusClipper");
-    const clipModeSelect = $("s-clip-mode");
+    const clipModeSelect = $select("s-clip-mode");
 
     let clipperArmed = false;
 
@@ -1349,13 +1414,13 @@ function lgmdm() {
     }
   }
 
-  function updateThdMatrix(metrics) {
+  function updateThdMatrix(metrics: MetricsShape | null | undefined) {
     const card = $("thdHarmonicMatrix");
     if (!card) return;
 
-    const driveEl = $("s-satdrive");
-    const clipDriveEl = $("s-clip-drive");
-    const clipMode = $("s-clip-mode")?.value || "soft";
+    const driveEl = $input("s-satdrive");
+    const clipDriveEl = $input("s-clip-drive");
+    const clipMode = $input("s-clip-mode")?.value || "soft";
 
     const drive = Number(driveEl?.value ?? 0.2);
     const clipDrive = Number(clipDriveEl?.value ?? 0);
@@ -1415,7 +1480,7 @@ function lgmdm() {
   // Module-scope so teardown can clearTimeout.
   let jewelFlashTimer: ReturnType<typeof setTimeout> | null = null;
 
-  function updateJewelLamp(metrics) {
+  function updateJewelLamp(metrics: MetricsShape | null | undefined) {
     const lamp = $("jewelLampBeacon");
     if (!lamp) return;
 
@@ -1434,7 +1499,7 @@ function lgmdm() {
     }
   }
 
-  function updateCrestFactor(metrics) {
+  function updateCrestFactor(metrics: MetricsShape | null | undefined) {
     const container = $("crestFactorContainer");
     if (!container) return;
 
@@ -1454,14 +1519,17 @@ function lgmdm() {
     }
   }
 
-  const roomWaves = [];
+  // FIX FINAL 2026-09-27: tipar roomWaves como array de ondas circulares que emiten los speakers.
+  interface RoomWave { r: number; alpha: number; amp: number; isLeft: boolean; }
+  const roomWaves: RoomWave[] = [];
   let roomWaveSpawnCounter = 0;
 
-  function drawMasteringRoom(metrics) {
-    const canvas = $("lgmdmRoomCanvas");
+  function drawMasteringRoom(metrics: MetricsShape | null | undefined) {
+    const canvas = $canvas("lgmdmRoomCanvas");
     if (!canvas) return;
 
     const ctx = canvas.getContext("2d");
+    if (!ctx) return;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const rect = canvas.getBoundingClientRect();
     const w = Math.round((rect.width || 480) * dpr);
@@ -1478,9 +1546,9 @@ function lgmdm() {
     const cx = w / 2;
     const sweetY = h * 0.72;
 
-    const widthEl = $("s-width");
-    const haasEl = $("s-haas");
-    const enhancerEl = $("s-enhancer");
+    const widthEl = $input("s-width");
+    const haasEl = $input("s-haas");
+    const enhancerEl = $input("s-enhancer");
 
     const stereoWidth = Number(widthEl?.value ?? 1.2);
     const haasDelay = Number(haasEl?.value ?? 0);
@@ -1594,9 +1662,10 @@ function lgmdm() {
   }
 
   // Module-scope state (so teardown at the end of the file can access them).
-  let lastMetricsRef = null;
+  // FIX FINAL 2026-09-27: tipar explícitamente lastMetricsRef y metricsUnsub.
+  let lastMetricsRef: MetricsShape | null = null;
   let animFrameId = 0;
-  let metricsUnsub = null;
+  let metricsUnsub: (() => void) | null = null;
   let visualSuiteController: AbortController | null = null;
 
   // FIX: respect `prefers-reduced-motion` by throttling the RAF loop to a
@@ -1632,7 +1701,7 @@ function lgmdm() {
     animFrameId = requestAnimationFrame(visualSuiteTick);
   }
 
-  function handleMetricsUpdate(metrics) {
+  function handleMetricsUpdate(metrics: MetricsShape | null | undefined) {
     if (!metrics) return;
     lastMetricsRef = metrics;
     updateVuNeedles(metrics);
