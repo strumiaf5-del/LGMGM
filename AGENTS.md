@@ -15,17 +15,24 @@ Un grep que no encontró algo **no prueba** que no exista. Se dice
 `tsc` no chequea los archivos con `@ts-nocheck`. Todo reporte debe decir
 cuántos archivos y cuántas líneas están suprimidas.
 
-Estado real al 2026-09-26: **2 archivos, 4.920 líneas = 16.5% del código**
-(`premium-suite.ts` 3205, `master-visual-suite.ts` 1715).
-Nota: `utils.ts` era un 3er pragma oculto (comentario decía "is NOT used"
-pero era activo); fixeado el 26-sep-2026 (A1). El `@ts-nocheck` de
-`premium-suite.ts` está en línea 4 (con texto después) — TS lo reconoce.
+Estado real al 2026-09-27: **0 archivos, 0 líneas suprimidas**.
+Los 2 archivos que tenían pragma (`premium-suite.ts` 3241 líneas,
+`master-visual-suite.ts` 1715 líneas) fueron tipados completamente:
+- `master-visual-suite.ts`: commit `c98fa7b` (156 errores TS → 0)
+- `premium-suite.ts`: commit `81b2499` (323 errores TS → 0)
+Verificado con `npx tsc --noEmit` (EXIT 0) + Playwright (0 console errors
+en index + 23 tabs Pro Suite + visual suite con 5 canvas activos).
 
-Por eso "0 type errors" no es prueba de nada: el bug que rompe el visual
-suite VFD está en `master-visual-suite.ts:568,574` (TS2552 `LGMDM` no
-declarado → `ReferenceError` en runtime, capturado por try/catch que
-detiene el loop). Fixeado el 26-sep-2026. El TS2304 original
-(`drawWaterfallFrame` fuera del IIFE en premium-suite) ya no existe.
+Nota: `utils.ts` era un 3er pragma oculto (comentario decía "is NOT used"
+pero era activo); fixeado el 26-sep-2026 (A1).
+
+Historial de bugs ya fixeados (referencia, no vigentes):
+- `master-visual-suite.ts:568,574` (TS2552 `LGMDM` no declarado →
+  `ReferenceError` en runtime, capturado por try/catch que detiene el loop).
+  Fixeado el 26-sep-2026.
+- `drawWaterfallFrame` fuera del IIFE en `premium-suite.ts` (TS2304).
+  Fixeado el 26-sep-2026. Export verificado en runtime:
+  `window.LGMDM.visualizerRender.drawWaterfallFrame` es `function`.
 
 ## 3. El backend es READ-ONLY pero se LEE
 
