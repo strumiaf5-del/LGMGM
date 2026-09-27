@@ -1,7 +1,7 @@
 // premium-suite.ts — 23 pro modules. Port of aporte/js/34-premium-suite.js.
 // FIX B2: el conteo era "22" (línea 1 y línea 3128) pero hay 23 data-premium-tab
 // (verificado con grep). Off-by-one en el comentario.
-// @ts-nocheck — suprimido temporalmente. Bug crítico :3425 (ReferenceError
+// Pragma TS REMOVIDO 2026-09-27 (FIX FINAL): tipar los 323 errores TS restantes.
 // drawWaterfallFrame fuera del IIFE) ya fixeado el 26-sep-2026. Resto de types
 // pendiente de migración gradual. Ver AGENTS.md regla 2.
 
@@ -10,11 +10,32 @@
 // Import muerto = dead code (regla 7).
 // (import original: `import { getPrefersReducedMotion } from '../../core/utils';`)
 
+// FIX FINAL 2026-09-27: type-only import para tipar `_bandSpecs` (TS7006 en
+// lambdas `.map((spec, i) => ...)`). Erased at runtime — no behavior change.
+import type { BandSpec } from '../../core/audio-tap';
+
 (function (global) {
   'use strict';
 
   const LG: any = global.LGMDM = global.LGMDM || {};
   const el = (id: string): HTMLElement | null => document.getElementById(id) || document.querySelector(`[data-status-id="${id}"]`);
+
+  // FIX FINAL 2026-09-27: helpers para castear elementos a su tipo correcto.
+  // Mismo patrón que master-visual-suite.ts. El `el` original retorna
+  // HTMLElement|null, pero muchos elementos son HTMLCanvasElement
+  // (width/height/getContext), HTMLInputElement (value/checked),
+  // HTMLSelectElement (value) o HTMLButtonElement (disabled/click). Sin estos
+  // casts, tsc reporta TS2339 "Property X does not exist on type HTMLElement".
+  // Se preserva el fallback `data-status-id` de `el` (ver línea 2420).
+  const $canvas = (id: string): HTMLCanvasElement | null => (document.getElementById(id) || document.querySelector(`[data-status-id="${id}"]`)) as HTMLCanvasElement | null;
+  const $input = (id: string): HTMLInputElement | null => (document.getElementById(id) || document.querySelector(`[data-status-id="${id}"]`)) as HTMLInputElement | null;
+  const $select = (id: string): HTMLSelectElement | null => (document.getElementById(id) || document.querySelector(`[data-status-id="${id}"]`)) as HTMLSelectElement | null;
+  const $button = (id: string): HTMLButtonElement | null => (document.getElementById(id) || document.querySelector(`[data-status-id="${id}"]`)) as HTMLButtonElement | null;
+
+  // Tipos locales para los fixes TS (no cambian runtime).
+  type CompliancePreset = { name: string; label: string; target_lufs: number; target_peak: number };
+  type ComplianceMetrics = { lufs: number; tp: number; lra: number; isLive: boolean };
+  type GonioParticle = { x: number; y: number; vx: number; vy: number; life: number; maxLife: number };
   const escapeHtml = LG.ui?.escapeHtml || ((str: unknown) => String(str ?? '').replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m] as string)));
   const getSelectedFile = (): any => (typeof LGMDM !== 'undefined' && LGMDM.state?.getSelectedFile?.()) || null;
   const getLastAnalysis = (): any => (typeof LGMDM !== 'undefined' && LGMDM.state?.getLastAnalysis?.()) || null;
@@ -27,11 +48,11 @@
     abx: {
       slotA: 'Original',
       slotB: 'Master',
-      hiddenX: null,
+      hiddenX: null as string | null,
       score: 0,
       trials: 0,
       gainMatch: true,
-      currentPlaying: null,
+      currentPlaying: null as string | null,
       lastFeedback: ''
     },
     codec: {
@@ -39,22 +60,22 @@
       ispWarning: false
     },
     stereo: {
-      monoSafeActive: null,
+      monoSafeActive: null as boolean | null,
       bands: { sub: 0, lowMid: 0.85, highMid: 1.15, air: 1.3 },
-      rafId: null,
+      rafId: null as number | null,
       available: false
     },
     waterfall: {
       animating: false,
       history: [],
-      rafId: null,
+      rafId: null as number | null,
       available: false
     },
     demask: {
       kickDepth: 45,
       voxDepth: 30
     },
-    compliancePresets: [],
+    compliancePresets: [] as CompliancePreset[],
     compliancePresetsLoading: false,
     compliancePresetsLoaded: false,
     compliancePresetSelected: '',
@@ -64,10 +85,13 @@
   const _audioTap = LGMDM.proFeatures.audioTap;
   const ensureAudioTap = _audioTap.ensure;
   const teardownAudioTap = _audioTap.teardown;
-  const _bandSpecs = _audioTap.bandSpecs;
+  // FIX FINAL 2026-09-27: cast a BandSpec[] para que los `.map((spec, i) => ...)`
+  // infieran `spec: BandSpec` y `i: number` (TS7006). `_audioTap` es `any`
+  // (vía LGMDM:any) — el cast no cambia runtime.
+  const _bandSpecs: BandSpec[] = _audioTap.bandSpecs;
 
   // Correlación Pearson sobre vectores de [-1..1]. Barata: O(n) con n ≤ 512.
-  function pearsonCorrelation(x, y) {
+  function pearsonCorrelation(x: ArrayLike<number>, y: ArrayLike<number>) {
     const n = Math.min(x.length, y.length);
     if (n < 2) return 0;
     let sx = 0, sy = 0, sxy = 0, sxx = 0, syy = 0;
@@ -90,6 +114,7 @@
     const c = document.createElement('canvas');
     c.width = 256; c.height = 1;
     const g = c.getContext('2d');
+    if (!g) return c; // FIX FINAL 2026-09-27: TS18047 — getContext puede retornar null
     const grd = g.createLinearGradient(0, 0, 256, 0);
     grd.addColorStop(0.00, '#070c24');
     grd.addColorStop(0.20, '#1a3f8a');
@@ -101,14 +126,17 @@
     return c;
   })();
 
-  function colorForMagnitude(mag) {
+  function colorForMagnitude(mag: number) {
     // Mantenido por compatibilidad con consumidores que esperan [r,g,b].
     const idx = Math.max(0, Math.min(255, Math.round(mag * 255)));
-    const px = _WATERFALL_LUT.getContext('2d').getImageData(idx, 0, 1, 1).data;
+    // FIX FINAL 2026-09-27: TS2531 — _WATERFALL_LUT.getContext('2d') puede ser null
+    const gctx = _WATERFALL_LUT.getContext('2d');
+    if (!gctx) return [0, 0, 0];
+    const px = gctx.getImageData(idx, 0, 1, 1).data;
     return [px[0], px[1], px[2]];
   }
 
-  let _gonioParticles = [];
+  let _gonioParticles: GonioParticle[] = [];
   let _haloPulse = 0;
   let _gonioScratchL = new Float32Array(1024);
   let _gonioScratchR = new Float32Array(1024);
@@ -322,15 +350,15 @@
     el('closePremiumSuite')?.addEventListener('click', () => close());
     modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
 
-    modal.querySelectorAll('[data-premium-tab]').forEach((btn) => {
+    modal.querySelectorAll<HTMLElement>('[data-premium-tab]').forEach((btn) => {
       btn.addEventListener('click', () => {
-        modal.querySelectorAll('[data-premium-tab]').forEach((b) => b.classList.remove('active'));
+        modal.querySelectorAll<HTMLElement>('[data-premium-tab]').forEach((b) => b.classList.remove('active'));
         btn.classList.add('active');
         const prevTab = state.activeTab;
         if (prevTab !== btn.dataset.premiumTab) {
           teardownProFeatures();
         }
-        state.activeTab = btn.dataset.premiumTab;
+        state.activeTab = btn.dataset.premiumTab || 'compliance';
         modal.classList.add('pro-tab-leaving');
         requestAnimationFrame(() => {
           renderActiveTab();
@@ -350,7 +378,7 @@
     const modal = el('premiumSuiteModal');
     if (!modal) return;
     state.activeTab = tabName;
-    modal.querySelectorAll('[data-premium-tab]').forEach((b) => {
+    modal.querySelectorAll<HTMLElement>('[data-premium-tab]').forEach((b) => {
       b.classList.toggle('active', b.dataset.premiumTab === tabName);
     });
     modal.classList.add('is-open');
@@ -368,8 +396,11 @@
 
   function close() {
     const modal = el('premiumSuiteModal');
-    if (modal && window.LGMDM?.ui?.isModalOpen?.(modal)) {
-      window.LGMDM.ui.closeModal(modal);
+    // FIX FINAL 2026-09-27: usar el `LGMDM` local (`any`) en lugar de
+    // `window.LGMDM` (cuyo tipo global no declara `ui`). Misma referencia:
+    // `LG === LGMDM === window.LGMDM` (ver línea 16-21).
+    if (modal && LGMDM?.ui?.isModalOpen?.(modal)) {
+      LGMDM.ui.closeModal(modal);
     } else {
       doCloseCleanup();
     }
@@ -397,7 +428,9 @@
     const container = el('premiumTabContent');
     if (!container) return;
 
-    const analysis = getLastAnalysis() || LG.state?.analysis || window.analysisData || null;
+    // FIX FINAL 2026-09-27: `window.analysisData` no está en el tipo global
+    // Window; cast a `any` para preservar el fallback de runtime.
+    const analysis = getLastAnalysis() || LG.state?.analysis || (window as any).analysisData || null;
     const isLive = Boolean(analysis && (
       Number.isFinite(Number(analysis.lufs)) ||
       Number.isFinite(Number(analysis.integrated_lufs)) ||
@@ -455,7 +488,7 @@
     }
   }
 
-  function renderComplianceTab(container, metrics) {
+  function renderComplianceTab(container: HTMLElement, metrics: ComplianceMetrics) {
     const rows = PLATFORMS.map((p) => {
       const lufsDelta = metrics.lufs - p.targetLufs;
       const tpOk = metrics.tp <= p.maxTp + 0.05;
@@ -534,7 +567,7 @@
       runComplianceRefresh(container);
     });
 
-    const presetSel = el('compliancePreset');
+    const presetSel = $select('compliancePreset');
     if (presetSel) {
       presetSel.addEventListener('change', () => {
         const name = presetSel.value;
@@ -573,7 +606,7 @@
     }
   }
 
-  async function runComplianceRefresh(container) {
+  async function runComplianceRefresh(container: HTMLElement) {
     const file = getSelectedFile();
     if (!file) {
       LGMDM.ui?.showToast?.('Cargá un archivo antes de re-analizar.', 'warning', 4000);
@@ -582,7 +615,7 @@
     // Guard contra cambio de tab: si el usuario navega a otro tab durante
     // el await del backend, abortamos para no mutar un DOM detached.
     const startedTab = state.activeTab;
-    const btn = el('btnRefreshCompliance');
+    const btn = $button('btnRefreshCompliance');
     const status = el('certNotice');
     try {
       if (btn) btn.disabled = true;
@@ -605,10 +638,14 @@
       renderComplianceTab(container, { lufs, tp, lra: safeLra, isLive: true });
       if (status) status.textContent = `✓ Re-análisis OK · LUFS ${lufs.toFixed(1)} · TP ${tp.toFixed(1)} dBTP`;
       LGMDM.ui?.showToast?.(`Re-análisis completado · LUFS ${lufs.toFixed(1)} · TP ${tp.toFixed(1)} dBTP`, 'success', 3500);
-    } catch (err) {
-      if (status) status.textContent = `❌ Error en re-análisis: ${err.message || err}`;
-      const safeMessage = (err.message && err.message.length < 200 && !err.message.includes("\n"))
-        ? `Error en re-análisis: ${err.message}`
+    } catch (err: unknown) {
+      // FIX FINAL 2026-09-27: TS18046 — err es unknown bajo strict. Cast a any
+      // preserva el comportamiento original (que asumía err.message accesible,
+      // incluyendo throws de objetos con .message — ver AGENTS.md regla 3).
+      const e = err as any;
+      if (status) status.textContent = `❌ Error en re-análisis: ${e.message || e}`;
+      const safeMessage = (e.message && e.message.length < 200 && !e.message.includes("\n"))
+        ? `Error en re-análisis: ${e.message}`
         : "Error del servidor. Verificá tu conexión.";
       LGMDM.ui?.showToast?.(safeMessage, 'error', 5000);
     } finally {
@@ -623,7 +660,9 @@
       const res = await LGMDM.api.apiFetch('/presets', { method: 'GET' });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      const presets = Object.entries(data || {}).map(([name, conf]) => ({
+      // FIX FINAL 2026-09-27: tipar `conf` para que `conf?.label` etc. no
+      // tiren TS2339 (Object.entries returns [string, unknown][]).
+      const presets = Object.entries(data || {}).map(([name, conf]: [string, any]) => ({
         name,
         label: conf?.label || name,
         target_lufs: Number(conf?.target_lufs ?? -14.0),
@@ -651,7 +690,7 @@
     return { lufs, tp, lra, isLive: Number.isFinite(lufs) && Number.isFinite(tp) };
   }
 
-  function exportQualityCertificate(metrics) {
+  function exportQualityCertificate(metrics: ComplianceMetrics) {
     const filename = getSelectedFile()?.name || 'Master_Track';
     const dateStr = new Intl.DateTimeFormat('es', { dateStyle: 'long', timeStyle: 'short' }).format(new Date());
     const certData = {
@@ -685,7 +724,7 @@
     if (notice) notice.textContent = '✓ Certificado técnico descargado con éxito.';
   }
 
-  function renderAbxTab(container) {
+  function renderAbxTab(container: HTMLElement) {
     container.innerHTML = `
       <div class="pro-abx-wrap">
         <h4 class="pro-h4">Prueba a Ciegas ABX con Nivelación Perceptual</h4>
@@ -764,11 +803,14 @@
         ? (state.abx.hiddenX === 'A' ? 'original' : 'master')
         : (slot === 'A' ? 'original' : 'master');
 
-      if (typeof window.LGMDM?.ab?.setMode === 'function') {
-        try { window.LGMDM.ab.setMode(targetMode); } catch (_) {}
+      // FIX FINAL 2026-09-27: usar el `LGMDM` local (`any`) en lugar de
+      // `window.LGMDM` (cuyo tipo global no declara `ab.setMode` ni
+      // `console.setAB`). Misma referencia (ver línea 16-21).
+      if (typeof LGMDM?.ab?.setMode === 'function') {
+        try { LGMDM.ab.setMode(targetMode); } catch (_) {}
       }
-      if (typeof window.LGMDM?.console?.setAB === 'function') {
-        try { window.LGMDM.console.setAB(targetMode); } catch (_) {}
+      if (typeof LGMDM?.console?.setAB === 'function') {
+        try { LGMDM.console.setAB(targetMode); } catch (_) {}
       }
 
       try {
@@ -791,20 +833,26 @@
       const scoreEl = el('abxScore');
       const confEl = el('abxConfidence');
       if (scoreEl) scoreEl.textContent = `${state.abx.score} / ${state.abx.trials}`;
-      const pct = state.abx.trials > 0 ? ((state.abx.score / state.abx.trials) * 100).toFixed(1) : '0.0';
-      if (confEl) confEl.textContent = `${pct}% ${state.abx.trials >= 5 && pct >= 80 ? '✓ (Significativo)' : ''}`;
+      // FIX FINAL 2026-09-27: TS2365 — `pct` era string (de .toFixed(1)), pero
+      // se comparaba con `>= 80` (number). Calcular pctNum numérico para la
+      // comparación; el display sigue usando el string formateado.
+      const pctNum = state.abx.trials > 0 ? (state.abx.score / state.abx.trials) * 100 : 0;
+      const pct = pctNum.toFixed(1);
+      if (confEl) confEl.textContent = `${pct}% ${state.abx.trials >= 5 && pctNum >= 80 ? '✓ (Significativo)' : ''}`;
     };
 
     el('abxPlayA')?.addEventListener('click', () => playAbxSlot('A'));
     el('abxPlayB')?.addEventListener('click', () => playAbxSlot('B'));
     el('abxPlayX')?.addEventListener('click', () => playAbxSlot('X'));
 
-    const gainMatchCb = el('abxGainMatch');
+    const gainMatchCb = $input('abxGainMatch');
     if (gainMatchCb) {
       gainMatchCb.checked = !!state.abx.gainMatch;
       ['change', 'input'].forEach((evt) => {
         gainMatchCb.addEventListener(evt, (e) => {
-          state.abx.gainMatch = e.target.checked;
+          // FIX FINAL 2026-09-27: TS18047/TS2339 — e.target es EventTarget|null,
+          // castear a HTMLInputElement para acceder a `.checked`.
+          state.abx.gainMatch = (e.target as HTMLInputElement).checked;
         });
       });
     }
@@ -857,9 +905,9 @@
     });
   }
 
-  function renderStereoTab(container) {
+  function renderStereoTab(container: HTMLElement) {
     if (state.stereo.monoSafeActive === null) {
-      const monoAmt = el('s-mono-amount');
+      const monoAmt = $input('s-mono-amount');
       state.stereo.monoSafeActive = Boolean(monoAmt && Number(monoAmt.value) >= 0.99);
     }
     const isMonoSafe = !!state.stereo.monoSafeActive;
@@ -920,7 +968,7 @@
       </div>
     `;
 
-    const canvas = el('lissajousCanvas');
+    const canvas = $canvas('lissajousCanvas');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
@@ -1028,20 +1076,20 @@
     el('btnToggleMonoSafe')?.addEventListener('click', () => {
       state.stereo.monoSafeActive = !state.stereo.monoSafeActive;
       if (state.stereo.monoSafeActive) {
-        const monoFreq = el('s-mono-freq');
+        const monoFreq = $input('s-mono-freq');
         if (monoFreq) {
           monoFreq.value = '90';
           monoFreq.dispatchEvent(new Event('input', { bubbles: true }));
           monoFreq.dispatchEvent(new Event('change', { bubbles: true }));
         }
-        const monoAmount = el('s-mono-amount');
+        const monoAmount = $input('s-mono-amount');
         if (monoAmount) {
           monoAmount.value = '1.0';
           monoAmount.dispatchEvent(new Event('input', { bubbles: true }));
           monoAmount.dispatchEvent(new Event('change', { bubbles: true }));
         }
       } else {
-        const monoAmount = el('s-mono-amount');
+        const monoAmount = $input('s-mono-amount');
         if (monoAmount) {
           monoAmount.value = '0';
           monoAmount.dispatchEvent(new Event('input', { bubbles: true }));
@@ -1056,7 +1104,8 @@
   // Perfiles de pre-éco (BiquadFilterNode) para emular la pérdida de altas/bajas frecuencias
   // característica de cada códec. NO usamos librerías externas — sólo el
   // Web Audio nativo (OfflineAudioContext + BiquadFilterNode).
-  const CODEC_PROFILES = {
+  type CodecProfile = { label: string; fileSlug: string; filters: { type: BiquadFilterType; frequency: number; gain: number; q: number }[]; ispPenaltyDb: number };
+  const CODEC_PROFILES: Record<string, CodecProfile> = {
     bypass: {
       label: 'ORIGINAL LOSSLESS',
       fileSlug: 'lossless',
@@ -1152,7 +1201,7 @@
   // [-1..1]; los que están exactamente en +1 ya son clipping. Sumamos el
   // penalty configurable del códec para reflejar los inter-sample peaks
   // que el códec real podría producir tras el re-encoding.
-  function countInterSamplePeaks(audioBuffer, penaltyDb) {
+  function countInterSamplePeaks(audioBuffer: AudioBuffer, penaltyDb: number) {
     let count = 0;
     const channels = audioBuffer.numberOfChannels;
     for (let c = 0; c < channels; c++) {
@@ -1168,7 +1217,7 @@
     return count + extra;
   }
 
-  function rmsDbfs(audioBuffer) {
+  function rmsDbfs(audioBuffer: AudioBuffer) {
     let sumSq = 0;
     let n = 0;
     const ch = audioBuffer.numberOfChannels;
@@ -1186,7 +1235,7 @@
     return 20 * Math.log10(rms);
   }
 
-  function renderCodecTab(container) {
+  function renderCodecTab(container: HTMLElement) {
     container.innerHTML = `
       <div>
         <h4 class="pro-h4">Simulador de Compresión de Codecs (Lossy Preview)</h4>
@@ -1267,9 +1316,9 @@
       `;
     }
 
-    container.querySelectorAll('[data-codec]').forEach((btn) => {
+    container.querySelectorAll<HTMLElement>('[data-codec]').forEach((btn) => {
       btn.addEventListener('click', () => {
-        state.codec.activeCodec = btn.dataset.codec;
+        state.codec.activeCodec = btn.dataset.codec || 'bypass';
         renderActiveTab();
       });
     });
@@ -1283,7 +1332,7 @@
       const codecId = state.codec.activeCodec || 'bypass';
       const profile = CODEC_PROFILES[codecId] || CODEC_PROFILES.bypass;
       const status = el('codecStatus');
-      const btn = el('btnRunCodec');
+      const btn = $button('btnRunCodec');
       const outArea = el('codecOutputArea');
       const activeLbl = el('codecActiveLabel');
       if (activeLbl) activeLbl.textContent = profile.label.toUpperCase();
@@ -1310,7 +1359,7 @@
         const source = offline.createBufferSource();
         source.buffer = decoded;
 
-        let chain = source;
+        let chain: AudioNode = source;
         for (const f of profile.filters) {
           const node = offline.createBiquadFilter();
           node.type = f.type;
@@ -1339,8 +1388,8 @@
         const dlName = `${baseName}_${profile.fileSlug}.wav`;
 
         const url = _trackObjectUrl(URL.createObjectURL(blob));
-        const player = el('codecAudioPlayer');
-        const dl = el('codecDownloadBtn');
+        const player = el('codecAudioPlayer') as HTMLAudioElement | null;
+        const dl = el('codecDownloadBtn') as HTMLAnchorElement | null;
         const abArea = el('codecABCompare');
         if (player) player.src = url;
         if (dl) {
@@ -1369,14 +1418,14 @@
         setupABCompare('codec', originalBlob, url);
       } catch (err) {
         if (status) status.textContent = `❌ Error: simulador de códec falló`;
-        window.LGMDM?.errors?.safeToast?.('Simulador de códec', err);
+        LGMDM.errors?.safeToast?.('Simulador de códec', err);
       } finally {
         if (btn) btn.disabled = false;
       }
     });
   }
 
-  function renderWaterfallTab(container) {
+  function renderWaterfallTab(container: HTMLElement) {
     if (state.waterfall.rafId) {
       cancelAnimationFrame(state.waterfall.rafId);
       state.waterfall.rafId = null;
@@ -1404,7 +1453,7 @@
       </div>
     `;
 
-    const canvas = el('waterfallCanvas');
+    const canvas = $canvas('waterfallCanvas');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
@@ -1449,7 +1498,7 @@
           state.waterfall.animating = false;
           return; // skip animation (P0 accessibility)
         }
-        const liveCanvas = el('waterfallCanvas');
+        const liveCanvas = $canvas('waterfallCanvas');
         if (!liveCanvas) { state.waterfall.rafId = null; return; }
 
         if (now && _lastFrame && (now - _lastFrame) < _FRAME_INTERVAL) {
@@ -1485,7 +1534,7 @@
         state.waterfall.animating = false;
       } else {
         state.waterfall.animating = true;
-        const liveCanvas = el('waterfallCanvas');
+        const liveCanvas = $canvas('waterfallCanvas');
         const liveCtx = liveCanvas && liveCanvas.getContext('2d');
         if (!liveCanvas || !liveCtx) return;
         const bins = tap.analyserWaterfall.frequencyBinCount;
@@ -1501,7 +1550,7 @@
             state.waterfall.animating = false;
             return; // skip animation (P0 accessibility)
           }
-          const c = el('waterfallCanvas');
+          const c = $canvas('waterfallCanvas');
           if (!c) { state.waterfall.rafId = null; return; }
           if (now && _lastFrameR && (now - _lastFrameR) < _FRAME_INTERVAL_R) {
             state.waterfall.rafId = requestAnimationFrame(tickResume);
@@ -1519,7 +1568,7 @@
     });
   }
 
-  function renderDoctorTab(container, metrics) {
+  function renderDoctorTab(container: HTMLElement, metrics: ComplianceMetrics) {
     container.innerHTML = `
       <div>
         <div class="pro-doctor-head">
@@ -1561,20 +1610,20 @@
     `;
 
     const applyClean300 = () => {
-      const eq2Freq = el('s-eq2freq');
+      const eq2Freq = $input('s-eq2freq');
       if (eq2Freq) {
         eq2Freq.value = '300';
         eq2Freq.dispatchEvent(new Event('input', { bubbles: true }));
         eq2Freq.dispatchEvent(new Event('change', { bubbles: true }));
       }
-      const eq2Gain = el('s-eq2gain');
+      const eq2Gain = $input('s-eq2gain');
       if (eq2Gain) {
         eq2Gain.value = '-1.2';
         eq2Gain.dispatchEvent(new Event('input', { bubbles: true }));
         eq2Gain.dispatchEvent(new Event('change', { bubbles: true }));
       }
       if (!eq2Freq) {
-        const dynFreq = el('s-dyneq-freq');
+        const dynFreq = $input('s-dyneq-freq');
         if (dynFreq) {
           dynFreq.value = '300';
           dynFreq.dispatchEvent(new Event('input', { bubbles: true }));
@@ -1593,7 +1642,7 @@
     });
   }
 
-  function renderDemaskTab(container) {
+  function renderDemaskTab(container: HTMLElement) {
     loadDemaskSettings();
 
     container.innerHTML = `
@@ -1662,13 +1711,13 @@
     };
 
     el('demaskKickDepth')?.addEventListener('input', (e) => {
-      const val = Number(e.target.value);
+      const val = Number((e.target as HTMLInputElement).value);
       state.demask.kickDepth = val;
       updateKick(val);
       saveDemaskSettings();
     });
     el('demaskVoxDepth')?.addEventListener('input', (e) => {
-      const val = Number(e.target.value);
+      const val = Number((e.target as HTMLInputElement).value);
       state.demask.voxDepth = val;
       updateVox(val);
       saveDemaskSettings();
@@ -1680,8 +1729,8 @@
     });
 
     el('btnRunDemask')?.addEventListener('click', async () => {
-      const targetPicker = el('demaskTargetFile');
-      const maskingPicker = el('demaskMaskingFile');
+      const targetPicker = $input('demaskTargetFile');
+      const maskingPicker = $input('demaskMaskingFile');
       const targetFile = targetPicker && targetPicker.files && targetPicker.files[0] ? targetPicker.files[0] : null;
       const maskingFile = maskingPicker && maskingPicker.files && maskingPicker.files[0] ? maskingPicker.files[0] : null;
 
@@ -1691,7 +1740,7 @@
       }
 
       const status = el('demaskStatus');
-      const btn = el('btnRunDemask');
+      const btn = $button('btnRunDemask');
       try {
         if (btn) btn.disabled = true;
         if (status) status.textContent = '⏳ Analizando colisión espectral entre stems en backend…';
@@ -1699,18 +1748,18 @@
         fd.append('target_stem', targetFile);
         fd.append('masking_stem', maskingFile);
         // Mapeo slider 0–100 → depth_db -2 a -12 dB
-        const kickPct = Number(el('demaskKickDepth')?.value || 50);
+        const kickPct = Number($input('demaskKickDepth')?.value || 50);
         const depthDb = (-2 - (kickPct / 100) * 10).toFixed(2);
         fd.append('depth_db', depthDb);
         // Mapeo slider 0–100 → sensitivity 0.0 a 1.0
-        const voxPct = Number(el('demaskVoxDepth')?.value || 50);
+        const voxPct = Number($input('demaskVoxDepth')?.value || 50);
         fd.append('sensitivity', (voxPct / 100).toFixed(2));
 
         const res = await apiPostDsp('/dsp/cross-demask', fd);
         const blob = await res.blob();
         const url = _trackObjectUrl(URL.createObjectURL(blob));
-        const player = el('demaskAudioPlayer');
-        const dl = el('demaskDownloadBtn');
+        const player = el('demaskAudioPlayer') as HTMLAudioElement | null;
+        const dl = el('demaskDownloadBtn') as HTMLAnchorElement | null;
         const outArea = el('demaskOutputArea');
         if (player) player.src = url;
         if (dl) dl.href = url;
@@ -1722,19 +1771,19 @@
         LGMDM.ui?.showToast?.('Cross-demask aplicado con éxito.', 'success', 3500);
       } catch (err) {
         if (status) status.textContent = `❌ Error: cross-demask falló`;
-        window.LGMDM?.errors?.safeToast?.('Cross-demask', err);
+        LGMDM.errors?.safeToast?.('Cross-demask', err);
       } finally {
         if (btn) btn.disabled = false;
       }
     });
   }
 
-  async function apiPostDsp(endpoint, formData) {
+  async function apiPostDsp(endpoint: string, formData: FormData) {
     const apiBase = window.safeApiBase();
     const token = (typeof LGMDM !== 'undefined' && LGMDM.api && typeof LGMDM.api.authToken === 'function')
       ? LGMDM.api.authToken()
       : (sessionStorage.getItem('master_auth_token') || '');
-    const headers = {};
+    const headers: Record<string, string> = {};
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
     const res = await fetch(`${apiBase}${endpoint}`, {
@@ -1743,7 +1792,7 @@
       body: formData
     });
     if (res.status === 404) {
-      const err = new Error(`DSP endpoint ${endpoint} no disponible en este despliegue — se habilitará pronto`);
+      const err = new Error(`DSP endpoint ${endpoint} no disponible en este despliegue — se habilitará pronto`) as Error & { code: string; endpoint: string };
       err.code = 'DSP_UNAVAILABLE';
       err.endpoint = endpoint;
       throw err;
@@ -1756,8 +1805,8 @@
     return res;
   }
 
-  function getActiveOrPickedFile(pickerId) {
-    const picker = el(pickerId);
+  function getActiveOrPickedFile(pickerId: string | null) {
+    const picker = pickerId != null ? $input(pickerId) : null;
     if (picker && picker.files && picker.files[0]) return picker.files[0];
     const sel = getSelectedFile();
     if (sel) return sel;
@@ -1767,8 +1816,8 @@
   // El backend adjunta X-Output-LUFS, X-Confidence, X-Mode,
   // X-Reference-Match, X-Detected-Key en cada respuesta /dsp/*.
   // Si falta un header, se omite silenciosamente (no rompe el flow).
-  function readDspMetrics(res) {
-    const out = { lufs: null, confidence: null, mode: null, refMatch: null, key: null };
+  function readDspMetrics(res: Response) {
+    const out = { lufs: null as number | null, confidence: null as number | null, mode: null as string | null, refMatch: null as string | null, key: null as string | null };
     if (!res || !res.headers || typeof res.headers.get !== 'function') return out;
     const lufs = res.headers.get('X-Output-LUFS');
     if (lufs != null && lufs !== '') {
@@ -1786,7 +1835,7 @@
     return out;
   }
 
-  function formatDspMetrics(m, fallbackLufs) {
+  function formatDspMetrics(m: ReturnType<typeof readDspMetrics>, fallbackLufs?: number) {
     const parts = [];
     if (m.lufs != null) parts.push(`LUFS: ${m.lufs.toFixed(1)}`);
     if (m.key)         parts.push(`Key: ${m.key}`);
@@ -1796,15 +1845,15 @@
       if (Number.isFinite(r)) parts.push(`Ref: ${r.toFixed(2)}`);
     }
     if (m.mode)        parts.push(`Mode: ${m.mode}`);
-    if (parts.length === 0 && Number.isFinite(fallbackLufs)) {
+    if (parts.length === 0 && typeof fallbackLufs === 'number' && Number.isFinite(fallbackLufs)) {
       parts.push(`LUFS: ${fallbackLufs.toFixed(1)}`);
     }
     return parts.length ? parts.join(' · ') : '';
   }
 
-  function renderTamerTab(container) {
+  function renderTamerTab(container: HTMLElement) {
     const currentFile = getSelectedFile();
-    const currentName = currentFile ? window.LGMDM.ui.escapeHtml(currentFile.name) : 'Ningún archivo cargado en consola';
+    const currentName = currentFile ? LGMDM.ui.escapeHtml(currentFile.name) : 'Ningún archivo cargado en consola';
     container.innerHTML = `
       <div>
         <h4 class="pro-h4-accent">🎯 Supresor Espectral de Resonancias (Soothe-Style Tamer)</h4>
@@ -1867,10 +1916,10 @@
     `;
 
     el('tamerSensitivity')?.addEventListener('input', (e) => {
-      const o = el('tamerSensitivityVal'); if (o) o.textContent = Number(e.target.value).toFixed(2);
+      const o = el('tamerSensitivityVal'); if (o) o.textContent = Number((e.target as HTMLInputElement).value).toFixed(2);
     });
     el('tamerDepth')?.addEventListener('input', (e) => {
-      const o = el('tamerDepthVal'); if (o) o.textContent = `${Number(e.target.value).toFixed(1)} dB`;
+      const o = el('tamerDepthVal'); if (o) o.textContent = `${Number((e.target as HTMLInputElement).value).toFixed(1)} dB`;
     });
 
     el('btnRunTamer')?.addEventListener('click', async () => {
@@ -1880,21 +1929,21 @@
         return;
       }
       const status = el('tamerStatus');
-      const btn = el('btnRunTamer');
+      const btn = $button('btnRunTamer');
       try {
         if (btn) btn.disabled = true;
         if (status) status.textContent = '⏳ Procesando supresión espectral en backend…';
         const fd = new FormData();
         fd.append('file', file);
-        fd.append('sensitivity', el('tamerSensitivity')?.value || '0.5');
-        fd.append('depth_db', el('tamerDepth')?.value || '-6.0');
-        fd.append('n_bands', el('tamerBands')?.value || '64');
+        fd.append('sensitivity', $input('tamerSensitivity')?.value || '0.5');
+        fd.append('depth_db', $input('tamerDepth')?.value || '-6.0');
+        fd.append('n_bands', $select('tamerBands')?.value || '64');
 
         const res = await apiPostDsp('/dsp/resonance-tamer', fd);
         const blob = await res.blob();
         const url = _trackObjectUrl(URL.createObjectURL(blob));
-        const player = el('tamerAudioPlayer');
-        const dl = el('tamerDownloadBtn');
+        const player = el('tamerAudioPlayer') as HTMLAudioElement | null;
+        const dl = el('tamerDownloadBtn') as HTMLAnchorElement | null;
         const outArea = el('tamerOutputArea');
         const abArea = el('tamerABCompare');
         if (player) player.src = url;
@@ -1908,16 +1957,16 @@
           : '✓ Procesamiento completado con éxito.';
         setupABCompare('tamer', file, url);
       } catch (err) {
-        if (status) status.textContent = `❌ Error: ${err.message}`;
+        if (status) status.textContent = `❌ Error: ${(err as Error).message}`;
       } finally {
         if (btn) btn.disabled = false;
       }
     });
   }
 
-  function renderPhantomSubTab(container) {
+  function renderPhantomSubTab(container: HTMLElement) {
     const currentFile = getSelectedFile();
-    const currentName = currentFile ? window.LGMDM.ui.escapeHtml(currentFile.name) : 'Ningún archivo cargado en consola';
+    const currentName = currentFile ? LGMDM.ui.escapeHtml(currentFile.name) : 'Ningún archivo cargado en consola';
     container.innerHTML = `
       <div>
         <h4 class="pro-h4-accent">🔊 Generador Psicoacústico de Graves (Phantom Sub Bass)</h4>
@@ -1980,10 +2029,10 @@
     `;
 
     el('phantomCrossover')?.addEventListener('input', (e) => {
-      const o = el('phantomCrossoverVal'); if (o) o.textContent = `${e.target.value} Hz`;
+      const o = el('phantomCrossoverVal'); if (o) o.textContent = `${(e.target as HTMLInputElement).value} Hz`;
     });
     el('phantomMix')?.addEventListener('input', (e) => {
-      const o = el('phantomMixVal'); if (o) o.textContent = `${e.target.value}%`;
+      const o = el('phantomMixVal'); if (o) o.textContent = `${(e.target as HTMLInputElement).value}%`;
     });
 
     el('btnRunPhantom')?.addEventListener('click', async () => {
@@ -1993,21 +2042,21 @@
         return;
       }
       const status = el('phantomStatus');
-      const btn = el('btnRunPhantom');
+      const btn = $button('btnRunPhantom');
       try {
         if (btn) btn.disabled = true;
         if (status) status.textContent = '⏳ Sintetizando armónicos psicoacústicos en backend…';
         const fd = new FormData();
         fd.append('file', file);
-        fd.append('crossover_hz', el('phantomCrossover')?.value || '80');
-        fd.append('mix', (Number(el('phantomMix')?.value || 45) / 100).toFixed(2));
-        fd.append('harmonic_mode', el('phantomMode')?.value || 'fifth');
+        fd.append('crossover_hz', $input('phantomCrossover')?.value || '80');
+        fd.append('mix', (Number($input('phantomMix')?.value || 45) / 100).toFixed(2));
+        fd.append('harmonic_mode', $select('phantomMode')?.value || 'fifth');
 
         const res = await apiPostDsp('/dsp/phantom-sub', fd);
         const blob = await res.blob();
         const url = _trackObjectUrl(URL.createObjectURL(blob));
-        const player = el('phantomAudioPlayer');
-        const dl = el('phantomDownloadBtn');
+        const player = el('phantomAudioPlayer') as HTMLAudioElement | null;
+        const dl = el('phantomDownloadBtn') as HTMLAnchorElement | null;
         const outArea = el('phantomOutputArea');
         const abArea = el('phantomABCompare');
         if (player) player.src = url;
@@ -2021,16 +2070,16 @@
           : '✓ Fundamental fantasma sintetizada con éxito.';
         setupABCompare('phantom', file, url);
       } catch (err) {
-        if (status) status.textContent = `❌ Error: ${err.message}`;
+        if (status) status.textContent = `❌ Error: ${(err as Error).message}`;
       } finally {
-        if (btn) btn.disabled = false;
+        if (btn) (btn as HTMLButtonElement).disabled = false;
       }
     });
   }
 
-  function renderStemSepTab(container) {
+  function renderStemSepTab(container: HTMLElement) {
     const currentFile = getSelectedFile();
-    const currentName = currentFile ? window.LGMDM.ui.escapeHtml(currentFile.name) : 'Ningún archivo cargado en consola';
+    const currentName = currentFile ? LGMDM.ui.escapeHtml(currentFile.name) : 'Ningún archivo cargado en consola';
     container.innerHTML = `
       <div>
         <h4 class="pro-h4-accent">🪄 Separador de Stems por IA (Demucs AI Studio)</h4>
@@ -2086,7 +2135,7 @@
         return;
       }
       const status = el('stemSepStatus');
-      const btn = el('btnRunStemSep');
+      const btn = $button('btnRunStemSep');
       const progArea = el('stemSepProgressArea');
       const bar = el('stemSepProgressBar');
       const stage = el('stemSepStageText');
@@ -2098,7 +2147,7 @@
 
         const fd = new FormData();
         fd.append('file', file);
-        fd.append('mode', el('stemSepMode')?.value || 'demucs_4stem');
+        fd.append('mode', $select('stemSepMode')?.value || 'demucs_4stem');
 
         const apiBase = window.safeApiBase();
         const res = await apiPostDsp('/stems/separate', fd);
@@ -2164,7 +2213,7 @@
         _proIntervals.add(pollInterval);
 
       } catch (err) {
-        if (status) status.textContent = `❌ Error: ${err.message}`;
+        if (status) status.textContent = `❌ Error: ${(err as Error).message}`;
         if (btn) btn.disabled = false;
       }
     });
@@ -2204,18 +2253,18 @@
 
   // C6 — Track Object URLs creados por tabs DSP / setupABCompare para
   // revocarlos en teardownProFeatures() y evitar leaks de memoria.
-  const _proObjectUrls = new Set();
+  const _proObjectUrls = new Set<string>();
   // FIX A8: registry de intervals activos (stemsep polling, etc.) para que
   // teardownProFeatures pueda cancelarlos. Antes el pollInterval era local
   // al closure del handler click → no se podía cancelar desde afuera → si
   // el usuario cambiaba de tab mientras el job corría, seguía polleando.
-  const _proIntervals = new Set();
-  function _trackObjectUrl(url) {
+  const _proIntervals = new Set<ReturnType<typeof setTimeout>>();
+  function _trackObjectUrl(url: string) {
     _proObjectUrls.add(url);
     return url;
   }
 
-  function _proLogMissing(cls) {
+  function _proLogMissing(cls: string) {
     if (typeof console !== 'undefined') {
       console.warn(`[proFeatures] clase "${cls}" no registrada. ¿Cargó el script correspondiente?`);
     }
@@ -2260,13 +2309,13 @@
     _proInstances.clear();
   }
 
-  async function _fetchDspJson(endpoint, formData) {
+  async function _fetchDspJson(endpoint: string, formData: FormData) {
     const res = await LGMDM.api.apiFetch(endpoint, {
       method: 'POST',
       body: formData
     });
     if (res.status === 404) {
-      const err = new Error(`DSP endpoint ${endpoint} no disponible en este despliegue — se habilitará pronto`);
+      const err = new Error(`DSP endpoint ${endpoint} no disponible en este despliegue — se habilitará pronto`) as Error & { code?: string; endpoint?: string };
       err.code = 'DSP_UNAVAILABLE';
       err.endpoint = endpoint;
       throw err;
@@ -2279,11 +2328,11 @@
     return res.json();
   }
 
-  function setupProFeatures(tabId) {
+  function setupProFeatures(tabId: string) {
     if (!tabId) return;
-    const spec = PRO_FEATURES[tabId];
+    const spec = PRO_FEATURES[tabId as keyof typeof PRO_FEATURES];
     if (!spec) return;
-    const NS = window.LGMDM && window.LGMDM.proFeatures;
+    const NS = LGMDM && LGMDM.proFeatures;
     if (!NS) { _proLogMissing('proFeatures namespace'); return; }
     const Cls = NS[spec.cls];
     if (typeof Cls !== 'function') { _proLogMissing(spec.cls); return; }
@@ -2310,7 +2359,7 @@
         const file = getSelectedFile();
         if (file && inst.data && Array.isArray(inst.data.bands) && inst.data.bands.length > 0) {
           Cls.processAllBands(file, inst.data.bands.slice(), '')
-            .then((results) => {
+            .then((results: unknown) => {
               if (!Array.isArray(results)) return;
               const okBands = results
                 .filter((r) => r && r.ok)
@@ -2319,7 +2368,7 @@
                 inst.update({ bands: okBands });
               }
             })
-            .catch((err) => {
+            .catch((err: unknown) => {
               if (typeof console !== 'undefined') console.debug('[phase-rotation processAllBands]', err);
             });
         }
@@ -2341,7 +2390,7 @@
   const _PRO_CANVAS_TIMEOUT_MS = 1000;
   const _proPendingCanvas = new Map();
 
-  function _cancelPendingCanvas(tabId) {
+  function _cancelPendingCanvas(tabId: string) {
     const entry = _proPendingCanvas.get(tabId);
     if (!entry) return;
     try { entry.observer && entry.observer.disconnect(); } catch (_) {}
@@ -2349,7 +2398,7 @@
     _proPendingCanvas.delete(tabId);
   }
 
-  function _observeCanvasInsertion(tabId, maxMs) {
+  function _observeCanvasInsertion(tabId: string, maxMs?: number) {
     const timeoutMs = Number.isFinite(maxMs) ? maxMs : _PRO_CANVAS_TIMEOUT_MS;
 
     // MX-14 — Cancelar CUALQUIER observador pendiente antes de crear uno nuevo.
@@ -2373,26 +2422,26 @@
       return;
     }
 
-    const entry = { observer: null, timeoutId: null };
-    entry.observer = new MutationObserver(() => {
+    const observer = new MutationObserver(() => {
       if (!_proPendingCanvas.has(tabId)) return; // ya cancelado
       if (el(`${tabId}Canvas`)) {
         _cancelPendingCanvas(tabId);
         setupProFeatures(tabId);
       }
     });
-    entry.observer.observe(content, { childList: true, subtree: true });
-    entry.timeoutId = setTimeout(() => {
+    observer.observe(content, { childList: true, subtree: true });
+    const timeoutId = setTimeout(() => {
       _cancelPendingCanvas(tabId);
       if (!_proInstances.has(tabId) && typeof console !== 'undefined') {
         console.warn(`[proFeatures] ${tabId}: canvas "${tabId}Canvas" no apareció tras ${timeoutMs}ms.`);
       }
     }, timeoutMs);
+    const entry: { observer: MutationObserver | null; timeoutId: ReturnType<typeof setTimeout> | null } = { observer, timeoutId };
     _proPendingCanvas.set(tabId, entry);
   }
 
   function _proPanelShell(tabId: any, title: any, subtitle: any, leftExtraHtml: any) {
-    const camelBase = tabId.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+    const camelBase = tabId.replace(/-([a-z])/g, (_: string, c: string) => c.toUpperCase());
     const filePicker = `${camelBase}File`;
     const statusId = `${camelBase}Status`;
     return `
@@ -2424,7 +2473,7 @@
     `;
   }
 
-  function renderLoudnessPenaltyTab(container) {
+  function renderLoudnessPenaltyTab(container: HTMLElement) {
     const left = `
       <div class="pro-mt-14">
         <div class="pro-control-row">
@@ -2450,8 +2499,8 @@
       left
     );
 
-    el('penaltyBitrate')?.addEventListener('input', (e) => {
-      const o = el('penaltyBitrateVal'); if (o) o.textContent = `${e.target.value} kbps`;
+    el('penaltyBitrate')?.addEventListener('input', (e: Event) => {
+      const o = el('penaltyBitrateVal'); if (o) o.textContent = `${(e.target as HTMLInputElement).value} kbps`;
     });
 
     el('btnRunPenalty')?.addEventListener('click', async () => {
@@ -2460,10 +2509,10 @@
         LGMDM.ui?.showToast?.('Cargá un archivo de audio para simular la penalización.', 'warning', 4000);
         return;
       }
-      const codec = el('penaltyCodec')?.value || 'opus';
-      const bitrate = Number(el('penaltyBitrate')?.value || 96);
+      const codec = $select('penaltyCodec')?.value || 'opus';
+      const bitrate = Number($input('penaltyBitrate')?.value || 96);
       const status = el('loudnessPenaltyStatus');
-      const btn = el('btnRunPenalty');
+      const btn = $button('btnRunPenalty');
       try {
         if (btn) btn.disabled = true;
         if (status) status.textContent = '⏳ Simulando recodificación con códec en backend…';
@@ -2497,14 +2546,14 @@
         LGMDM.ui?.showToast?.(`Loudness Penalty: ${penalty.toFixed(2)} dB (${codec} ${bitrate}kbps).`, 'success', 3500);
       } catch (err) {
         if (status) status.textContent = `❌ Error: Loudness Penalty falló`;
-        window.LGMDM?.errors?.safeToast?.('Loudness Penalty', err);
+        LGMDM?.errors?.safeToast?.('Loudness Penalty', err);
       } finally {
         if (btn) btn.disabled = false;
       }
     });
   }
 
-  function renderSpectralTiltTab(container) {
+  function renderSpectralTiltTab(container: HTMLElement) {
     const left = `
       <div class="pro-mt-14">
         <div class="pro-control-row">
@@ -2527,11 +2576,11 @@
       left
     );
 
-    el('tiltDb')?.addEventListener('input', (e) => {
-      const o = el('tiltDbVal'); if (o) o.textContent = `${Number(e.target.value) > 0 ? '+' : ''}${Number(e.target.value).toFixed(1)} dB`;
+    $input('tiltDb')?.addEventListener('input', (e: Event) => {
+      const o = el('tiltDbVal'); if (o) o.textContent = `${Number((e.target as HTMLInputElement).value) > 0 ? '+' : ''}${Number((e.target as HTMLInputElement).value).toFixed(1)} dB`;
     });
-    el('tiltPivot')?.addEventListener('input', (e) => {
-      const o = el('tiltPivotVal'); if (o) o.textContent = `${e.target.value} Hz`;
+    $input('tiltPivot')?.addEventListener('input', (e: Event) => {
+      const o = el('tiltPivotVal'); if (o) o.textContent = `${(e.target as HTMLInputElement).value} Hz`;
     });
 
     el('btnRunTilt')?.addEventListener('click', async () => {
@@ -2540,10 +2589,10 @@
         LGMDM.ui?.showToast?.('Cargá un archivo de audio para aplicar Spectral Tilt.', 'warning', 4000);
         return;
       }
-      const tilt = Number(el('tiltDb')?.value || 0);
-      const pivot = Number(el('tiltPivot')?.value || 1000);
+      const tilt = Number($input('tiltDb')?.value || 0);
+      const pivot = Number($input('tiltPivot')?.value || 1000);
       const status = el('spectralTiltStatus');
-      const btn = el('btnRunTilt');
+      const btn = $button('btnRunTilt');
       try {
         if (btn) btn.disabled = true;
         if (status) status.textContent = '⏳ Aplicando tilt lineal-phase en backend…';
@@ -2569,14 +2618,14 @@
         LGMDM.ui?.showToast?.(`Spectral Tilt aplicado (${tilt.toFixed(1)} dB @ ${pivot} Hz).`, 'success', 3500);
       } catch (err) {
         if (status) status.textContent = `❌ Error: Spectral Tilt falló`;
-        window.LGMDM?.errors?.safeToast?.('Spectral Tilt', err);
+        LGMDM?.errors?.safeToast?.('Spectral Tilt', err);
       } finally {
         if (btn) btn.disabled = false;
       }
     });
   }
 
-  function renderMultibandTransientTab(container) {
+  function renderMultibandTransientTab(container: HTMLElement) {
     container.innerHTML = _proPanelShell(
       'multiband-transient',
       '🥁 Multiband Transient Designer (Low / Mid / High)',
@@ -2585,7 +2634,7 @@
     );
   }
 
-  function renderMsImagerTab(container) {
+  function renderMsImagerTab(container: HTMLElement) {
     container.innerHTML = _proPanelShell(
       'ms-imager',
       '📐 Imager M/S (Correlación Mid/Side)',
@@ -2594,7 +2643,7 @@
     );
   }
 
-  function renderReferenceMatchTab(container) {
+  function renderReferenceMatchTab(container: HTMLElement) {
     const leftExtra = `
       <div class="pro-section-gap-tight pro-mt-14">
         <label class="pro-label-muted">Pista de Referencia Comercial:</label>
@@ -2628,34 +2677,35 @@
       leftExtra
     );
 
-    el('matchAmount')?.addEventListener('input', (e) => {
-      const o = el('matchAmountVal'); if (o) o.textContent = `${e.target.value}%`;
+    $input('matchAmount')?.addEventListener('input', (e: Event) => {
+      const o = el('matchAmountVal'); if (o) o.textContent = `${(e.target as HTMLInputElement).value}%`;
     });
 
     el('matchRefFile')?.addEventListener('change', () => {
       const tgtFile = getActiveOrPickedFile('referenceMatchFile') || getSelectedFile();
-      const refPicker = el('matchRefFile');
+      const refPicker = $input('matchRefFile');
       const refFile = refPicker && refPicker.files && refPicker.files[0] ? refPicker.files[0] : null;
       if (!tgtFile || !refFile) return;
-      const RefWidgetCls = window.LGMDM?.proFeatures?.referenceMatchWidget;
+      const RefWidgetCls = LGMDM?.proFeatures?.referenceMatchWidget;
       if (typeof RefWidgetCls?.fetchMatch !== 'function') return;
-      const matchAmt = Number(el('matchAmount')?.value || 65) / 100;
+      const matchAmt = Number($input('matchAmount')?.value || 65) / 100;
       RefWidgetCls.fetchMatch(tgtFile, refFile, { match_amount: matchAmt })
-        .then((result) => {
-          if (!result || !Array.isArray(result.applied_eq_bands)) return;
+        .then((result: unknown) => {
+          const bands = (result as { applied_eq_bands?: unknown[] } | null | undefined)?.applied_eq_bands;
+          if (!Array.isArray(bands)) return;
           const vizInst = _proInstances.get('reference-match');
           if (vizInst && typeof vizInst.update === 'function') {
-            vizInst.update({ applied_eq_bands: result.applied_eq_bands });
+            vizInst.update({ applied_eq_bands: bands });
           }
         })
-        .catch((err) => {
+        .catch((err: unknown) => {
           if (typeof console !== 'undefined') console.debug('[reference-match fetchMatch]', err);
         });
     });
 
     el('btnRunMatchEq')?.addEventListener('click', async () => {
       const tgtFile = getActiveOrPickedFile('referenceMatchFile') || getSelectedFile();
-      const refPicker = el('matchRefFile');
+      const refPicker = $input('matchRefFile');
       const refFile = refPicker && refPicker.files && refPicker.files[0] ? refPicker.files[0] : null;
 
       if (!tgtFile || !refFile) {
@@ -2664,20 +2714,20 @@
       }
 
       const status = el('matchEqStatus');
-      const btn = el('btnRunMatchEq');
+      const btn = $button('btnRunMatchEq');
       try {
         if (btn) btn.disabled = true;
         if (status) status.textContent = '⏳ Computando análisis multirresolución y aplicando filtro FIR en backend…';
         const fd = new FormData();
         fd.append('target_file', tgtFile);
         fd.append('reference_file', refFile);
-        fd.append('match_amount', (Number(el('matchAmount')?.value || 65) / 100).toFixed(2));
+        fd.append('match_amount', (Number($input('matchAmount')?.value || 65) / 100).toFixed(2));
 
         const res = await apiPostDsp('/dsp/match-eq', fd);
         const blob = await res.blob();
         const url = _trackObjectUrl(URL.createObjectURL(blob));
-        const player = el('matchEqAudioPlayer');
-        const dl = el('matchEqDownloadBtn');
+        const player = el('matchEqAudioPlayer') as HTMLAudioElement | null;
+        const dl = el('matchEqDownloadBtn') as HTMLAnchorElement | null;
         const outArea = el('matchEqOutputArea');
         if (player) player.src = url;
         if (dl) dl.href = url;
@@ -2688,7 +2738,7 @@
           ? `✓ Curva espectral igualada. ${metricsLine}`
           : '✓ Curva espectral igualada con éxito.';
       } catch (err) {
-        if (status) status.textContent = `❌ Error: ${err.message}`;
+        if (status) status.textContent = `❌ Error: ${(err as Error).message}`;
       } finally {
         if (btn) btn.disabled = false;
       }
@@ -2697,7 +2747,7 @@
     setupProFeatures('reference-match');
   }
 
-  function renderDrMeterTab(container) {
+  function renderDrMeterTab(container: HTMLElement) {
     const left = `
       <div class="pro-mt-14">
         <p class="pro-caption-muted-tight">
@@ -2720,7 +2770,7 @@
         return;
       }
       const status = el('drMeterStatus');
-      const btn = el('btnRunDr');
+      const btn = $button('btnRunDr');
       try {
         if (btn) btn.disabled = true;
         if (status) status.textContent = '⏳ Midiendo LRA + crest factors en backend…';
@@ -2741,14 +2791,14 @@
         LGMDM.ui?.showToast?.(`DR Meter: DR-${Number(json.dr_score).toFixed(1)} · ${json.genre_classification}.`, 'success', 3500);
       } catch (err) {
         if (status) status.textContent = `❌ Error: DR Meter falló`;
-        window.LGMDM?.errors?.safeToast?.('DR Meter', err);
+        LGMDM?.errors?.safeToast?.('DR Meter', err);
       } finally {
         if (btn) btn.disabled = false;
       }
     });
   }
 
-  function renderSaturationTab(container) {
+  function renderSaturationTab(container: HTMLElement) {
     const leftExtra = `
       <div class="pro-control-row pro-mt-14">
         <label>Tipo de Curva:</label>
@@ -2788,22 +2838,22 @@
       leftExtra
     );
 
-    el('warmerDrive')?.addEventListener('input', (e) => {
-      const o = el('warmerDriveVal'); if (o) o.textContent = `${e.target.value}%`;
+    $input('warmerDrive')?.addEventListener('input', (e: Event) => {
+      const o = el('warmerDriveVal'); if (o) o.textContent = `${(e.target as HTMLInputElement).value}%`;
       const inst = _proInstances.get('saturation');
       if (inst && typeof inst.update === 'function') {
-        inst.update({ drive: Number(e.target.value) / 100 });
+        inst.update({ drive: Number((e.target as HTMLInputElement).value) / 100 });
       }
     });
 
-    el('warmerMix')?.addEventListener('input', (e) => {
-      const o = el('warmerMixVal'); if (o) o.textContent = `${e.target.value}%`;
+    $input('warmerMix')?.addEventListener('input', (e: Event) => {
+      const o = el('warmerMixVal'); if (o) o.textContent = `${(e.target as HTMLInputElement).value}%`;
     });
 
-    el('warmerCurve')?.addEventListener('change', (e) => {
+    $select('warmerCurve')?.addEventListener('change', (e: Event) => {
       const inst = _proInstances.get('saturation');
       if (inst && typeof inst.update === 'function') {
-        inst.update({ curve: e.target.value });
+        inst.update({ curve: (e.target as HTMLSelectElement).value });
       }
     });
 
@@ -2814,21 +2864,21 @@
         return;
       }
       const status = el('warmerStatus');
-      const btn = el('btnRunWarmer');
+      const btn = $button('btnRunWarmer');
       try {
         if (btn) btn.disabled = true;
         if (status) status.textContent = '⏳ Modelando no linealidades de circuito…';
         const fd = new FormData();
         fd.append('file', file);
-        fd.append('drive', (Number(el('warmerDrive')?.value || 65) / 100).toFixed(2));
-        fd.append('mix', (Number(el('warmerMix')?.value || 100) / 100).toFixed(2));
-        fd.append('curve', el('warmerCurve')?.value || 'chebyshev');
+        fd.append('drive', (Number($input('warmerDrive')?.value || 65) / 100).toFixed(2));
+        fd.append('mix', (Number($input('warmerMix')?.value || 100) / 100).toFixed(2));
+        fd.append('curve', $select('warmerCurve')?.value || 'chebyshev');
 
         const res = await apiPostDsp('/dsp/inflator', fd);
         const blob = await res.blob();
         const url = _trackObjectUrl(URL.createObjectURL(blob));
-        const player = el('warmerAudioPlayer');
-        const dl = el('warmerDownloadBtn');
+        const player = el('warmerAudioPlayer') as HTMLAudioElement | null;
+        const dl = el('warmerDownloadBtn') as HTMLAnchorElement | null;
         const outArea = el('warmerOutputArea');
         if (player) player.src = url;
         if (dl) dl.href = url;
@@ -2839,7 +2889,7 @@
           ? `✓ Saturación analógica completada. ${metricsLine}`
           : '✓ Saturación analógica completada con éxito.';
       } catch (err) {
-        if (status) status.textContent = `❌ Error: ${err.message}`;
+        if (status) status.textContent = `❌ Error: ${(err as Error).message}`;
       } finally {
         if (btn) btn.disabled = false;
       }
@@ -2848,7 +2898,7 @@
     setupProFeatures('saturation');
   }
 
-  function renderPhaseRotationTab(container) {
+  function renderPhaseRotationTab(container: HTMLElement) {
     const left = `
       <div class="pro-mt-14">
         <div class="pro-control-row">
@@ -2876,9 +2926,9 @@
       left
     );
 
-    el('phaseFreq')?.addEventListener('input', (e) => { const o = el('phaseFreqVal'); if (o) o.textContent = `${e.target.value} Hz`; });
-    el('phaseAngle')?.addEventListener('input', (e) => { const o = el('phaseAngleVal'); if (o) o.textContent = `${e.target.value}°`; });
-    el('phaseQ')?.addEventListener('input', (e) => { const o = el('phaseQVal'); if (o) o.textContent = Number(e.target.value).toFixed(1); });
+    $input('phaseFreq')?.addEventListener('input', (e: Event) => { const o = el('phaseFreqVal'); if (o) o.textContent = `${(e.target as HTMLInputElement).value} Hz`; });
+    $input('phaseAngle')?.addEventListener('input', (e: Event) => { const o = el('phaseAngleVal'); if (o) o.textContent = `${(e.target as HTMLInputElement).value}°`; });
+    $input('phaseQ')?.addEventListener('input', (e: Event) => { const o = el('phaseQVal'); if (o) o.textContent = Number((e.target as HTMLInputElement).value).toFixed(1); });
 
     el('btnRunPhase')?.addEventListener('click', async () => {
       const file = getActiveOrPickedFile('phaseRotationFile');
@@ -2886,11 +2936,11 @@
         LGMDM.ui?.showToast?.('Cargá un archivo de audio para aplicar Phase Rotation.', 'warning', 4000);
         return;
       }
-      const freq = Number(el('phaseFreq')?.value || 1000);
-      const angle = Number(el('phaseAngle')?.value || 0);
-      const q = Number(el('phaseQ')?.value || 1.0);
+      const freq = Number($input('phaseFreq')?.value || 1000);
+      const angle = Number($input('phaseAngle')?.value || 0);
+      const q = Number($input('phaseQ')?.value || 1.0);
       const status = el('phaseRotationStatus');
-      const btn = el('btnRunPhase');
+      const btn = $button('btnRunPhase');
       try {
         if (btn) btn.disabled = true;
         if (status) status.textContent = '⏳ Aplicando all-pass de 2º orden en backend…';
@@ -2917,14 +2967,14 @@
         LGMDM.ui?.showToast?.(`Phase Rotation aplicada (${angle}° @ ${freq} Hz).`, 'success', 3500);
       } catch (err) {
         if (status) status.textContent = `❌ Error: Phase Rotation falló`;
-        window.LGMDM?.errors?.safeToast?.('Phase Rotation', err);
+        LGMDM?.errors?.safeToast?.('Phase Rotation', err);
       } finally {
         if (btn) btn.disabled = false;
       }
     });
   }
 
-  function renderReverbTab(container) {
+  function renderReverbTab(container: HTMLElement) {
     container.innerHTML = _proPanelShell(
       'reverb',
       '🌫 Automatic Reverb Designer (Hall / Plate / Room / Chamber)',
@@ -2933,7 +2983,7 @@
     );
   }
 
-  function renderLoudnessWarTab(container) {
+  function renderLoudnessWarTab(container: HTMLElement) {
     container.innerHTML = _proPanelShell(
       'loudness-war',
       '📉 Loudness War Detector (Timeline DR)',
@@ -2942,7 +2992,7 @@
     );
   }
 
-  function renderIsoCompensationTab(container) {
+  function renderIsoCompensationTab(container: HTMLElement) {
     container.innerHTML = _proPanelShell(
       'iso-compensation',
       '🔉 ISO 226 — Compensación de Curvas Isosónicas',
@@ -2978,12 +3028,12 @@
         </div>
       `
     );
-    const strength = el('isoStrength');
+    const strength = $input('isoStrength');
     const strengthVal = el('isoStrengthVal');
     if (strength && strengthVal) {
       strength.addEventListener('input', () => { strengthVal.textContent = `${strength.value}%`; });
     }
-    const runBtn = el('isoRunBtn');
+    const runBtn = $button('isoRunBtn');
     if (runBtn) {
       runBtn.addEventListener('click', async () => {
         runBtn.disabled = true;
@@ -2998,13 +3048,13 @@
           }
           const fd = new FormData();
           fd.append('file', f, f.name);
-          fd.append('playback_phon', el('isoPlaybackPhon')?.value || '60');
-          fd.append('reference_phon', el('isoReferencePhon')?.value || '80');
-          fd.append('strength', (Number(el('isoStrength')?.value || 50) / 100).toFixed(3));
+          fd.append('playback_phon', $select('isoPlaybackPhon')?.value || '60');
+          fd.append('reference_phon', $select('isoReferencePhon')?.value || '80');
+          fd.append('strength', (Number($input('isoStrength')?.value || 50) / 100).toFixed(3));
           await (await apiPostDsp('/dsp/iso-compensation', fd)).json();
           if (typeof LGMDM.ui.showToast === 'function') LGMDM.ui.showToast('✅ ISO 226 aplicado', 'success');
         } catch (err) {
-          if (typeof LGMDM.ui.showToast === 'function') LGMDM.ui.showToast(`❌ ${err.message}`, 'error');
+          if (typeof LGMDM.ui.showToast === 'function') LGMDM.ui.showToast(`❌ ${(err as Error).message}`, 'error');
         } finally {
           runBtn.disabled = false;
           runBtn.textContent = '🎚 Aplicar compensación';
@@ -3023,14 +3073,14 @@
   //   - Llamar setupABCompare() después de poblar el `processedUrl` y el `originalFile`.
   function setupABCompare(prefix: any, originalFile: any, processedUrl: any) {
     if (!prefix) return;
-    const player = el(`${prefix}AudioPlayer`);
+    const player = el(`${prefix}AudioPlayer`) as HTMLAudioElement | null;
     if (!player) return;
 
     const origBtn = el(`${prefix}PlayOrig`);
     const procBtn = el(`${prefix}PlayProc`);
     if (!origBtn || !procBtn) return;
 
-    const abArea = el(`${prefix}ABCompare`);
+    const abArea = el(`${prefix}ABCompare`) as (HTMLElement & { _origUrl?: string | null }) | null;
     // Revoke previous object URL de una llamada anterior a setupABCompare para
     // evitar leaks al regenerar la comparación A/B sobre el mismo bloque.
     if (abArea && abArea._origUrl) {
@@ -3038,7 +3088,7 @@
       abArea._origUrl = null;
     }
 
-    let origUrl = null;
+    let origUrl: string | null = null;
     try {
       if (originalFile instanceof Blob) origUrl = _trackObjectUrl(URL.createObjectURL(originalFile));
     } catch (_) {}
@@ -3117,7 +3167,7 @@
       window.addEventListener('analysis-updated', _analysisUpdatedHandler);
     }
 
-    let btn = el('btnOpenPremiumSuite');
+    let btn: HTMLButtonElement | null = $button('btnOpenPremiumSuite');
     if (!btn) {
       const headerRight = document.querySelector('.header-right') || document.querySelector('.lg-console-actions');
       if (headerRight) {
@@ -3143,19 +3193,19 @@
     state,
     PLATFORMS,
     applyClean300: () => {
-      const eq2Freq = el('s-eq2freq');
+      const eq2Freq = $input('s-eq2freq');
       if (eq2Freq) {
         eq2Freq.value = '300';
         eq2Freq.dispatchEvent(new Event('input', { bubbles: true }));
         eq2Freq.dispatchEvent(new Event('change', { bubbles: true }));
       }
-      const eq2Gain = el('s-eq2gain');
+      const eq2Gain = $input('s-eq2gain');
       if (eq2Gain) {
         eq2Gain.value = '-1.2';
         eq2Gain.dispatchEvent(new Event('input', { bubbles: true }));
         eq2Gain.dispatchEvent(new Event('change', { bubbles: true }));
       }
-      const dynFreq = el('s-dyneq-freq');
+      const dynFreq = $input('s-dyneq-freq');
       if (dynFreq && !eq2Freq) {
         dynFreq.value = '300';
         dynFreq.dispatchEvent(new Event('input', { bubbles: true }));
@@ -3164,13 +3214,13 @@
     },
     toggleMonoSafe: () => {
       state.stereo.monoSafeActive = !state.stereo.monoSafeActive;
-      const monoFreq = el('s-mono-freq');
+      const monoFreq = $input('s-mono-freq');
       if (monoFreq && state.stereo.monoSafeActive) {
         monoFreq.value = '90';
         monoFreq.dispatchEvent(new Event('input', { bubbles: true }));
         monoFreq.dispatchEvent(new Event('change', { bubbles: true }));
       }
-      const monoAmount = el('s-mono-amount');
+      const monoAmount = $input('s-mono-amount');
       if (monoAmount) {
         monoAmount.value = state.stereo.monoSafeActive ? '1.0' : '0';
         monoAmount.dispatchEvent(new Event('input', { bubbles: true }));
@@ -3202,7 +3252,7 @@
 
   // F5.16 — Expose the 4 tab renderers on window so the external stubs
   // (40/41/42/43-tab-*.js, ported to features/tabs/) can delegate.
-  global._lgmdmRenderComplianceTab = renderComplianceTab;
+  global._lgmdmRenderComplianceTab = renderComplianceTab as TabRenderer;
   global._lgmdmRenderAbxTab = renderAbxTab;
   global._lgmdmRenderCodecTab = renderCodecTab;
   global._lgmdmRenderWaterfallTab = renderWaterfallTab;
