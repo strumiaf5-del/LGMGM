@@ -1,0 +1,45 @@
+# Build artifacts
+node_modules/
+dist/
+.vite/
+*.log
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Secrets (regla 5 AGENTS.md: nunca commitear secrets)
+.env
+.env.local
+.env.*.local
+*.secret
+*.key
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# Backend uploads (no commitear audio)
+backend/uploads/
+backend/reference_library/
+
+# OpenCode sessions (cada sesión es su propio estado)
+.opencode/sessions/
+
+# Cache
+.cache/
+*.cache
+
+# Backups de .env (contienen secrets viejos)
+*.env.bak*
+*.bak-before-*
+
+# users_db.json (contiene hashes de passwords)
+backend/users_db.json

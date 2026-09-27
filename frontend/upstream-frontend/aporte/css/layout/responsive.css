@@ -1,0 +1,593 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   RESPONSIVE DESIGN - Mobile First Approach
+
+   Tablet 959px breakpoint is SPLIT between this file (content half:
+   grids, buttons, inputs) and layout-shell.css (shell half: sidebar,
+   content-area geometry). When editing tablet styles, check BOTH files.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ─────────────────────────────────────────────────────────────────────────
+   LGMDM Responsive Breakpoints (canonical, mobile-first)
+   ─────────────────────────────────────────────────────────────────────────
+   480 mobile baseline (smallest phones, icon-only mode)
+   599 mobile upper boundary
+   760 mobile/tablet compact (icon-only fallback, insert rack dock)
+   959 tablet upper / desktop lower (sidebar collapse)
+   1280 wide desktop boundary
+
+   layout-shell.css owns its own shell-half breakpoints (700, 959, 480, height 820).
+   When editing tablet styles, check BOTH this file AND layout-shell.css.
+
+   QA checklist por breakpoint (test con Chrome DevTools responsive mode):
+   ─────────────────────────────────────────────────────────────────────────
+   • 320px (smallest mobile)  : header colapsa a iconos (P2-1).
+   • 480px (mobile baseline)  : full mobile layout, single column.
+   • 599px (mobile upper)    : breakpoint threshold, verificar reflow.
+   • 768px (tablet portrait)  : sidebar docked top, content below.
+   • 960px (desktop lower)    : sidebar docked left, content right.
+   • 1024px (desktop)         : standard layout.
+   • 1440px (wide desktop)    : extended layout.
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* ─────────────────────────────────────────────────────────────────────────
+   TABLET: 600px - 959px (content half — see layout-shell.css:224 for shell half)
+   ───────────────────────────────────────────────────────────────────────── */
+
+@media (max-width: 959px) {
+  /* Layout principal owned by layout-shell.css. */
+
+  /* Console & Meters Grids */
+  .lg-console-main {
+    grid-template-columns: 1fr;
+  }
+
+  .lg-spectrum-row {
+    grid-template-columns: 1fr;
+  }
+
+  .meters-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* Buttons */
+  .btn {
+    width: 100%;
+    padding: 10px 8px;
+  }
+
+  /* Inputs */
+  input[type="range"] {
+    height: var(--lg-range-h, 8px);
+  }
+
+  .live-spectrum-wrap canvas,
+  .fft-wrap canvas,
+  .waveform-wrap canvas,
+  .visualizer-container canvas {
+    height: 250px;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   MOBILE: < 600px
+   ───────────────────────────────────────────────────────────────────────── */
+
+@media (max-width: 599px) {
+  html, body {
+    font-size: 13px;
+    overflow-x: hidden;
+  }
+
+  /* HEADER */
+  .app-header {
+    padding: 8px 12px;
+    gap: 8px;
+  }
+
+  .logo {
+    font-size: var(--space-5);
+  }
+
+  .header-left,
+  .header-center,
+  .header-right {
+    flex: 1;
+  }
+
+  .header-center {
+    display: none;
+  }
+
+  .header-right {
+    justify-content: flex-end;
+    gap: 4px;
+  }
+
+  .header-btn {
+    padding: 4px 8px;
+    font-size: 16px;
+  }
+
+  /* F5.9 — En ≤360px: header sin texto, solo iconos. Oculta historyToggleBtn
+     (icon-only clock) para liberar espacio. Mantiene theme-switcher-btn
+     + logout-btn como iconos accesibles via aria-label. */
+  @media (max-width: 360px) {
+    .header-btn > span:not([aria-hidden]) {
+      display: none;
+    }
+    #historyToggleBtn {
+      display: none;
+    }
+    .app-header {
+      padding: 0 4px;
+    }
+    .header-left {
+      flex: 0 0 auto;
+    }
+    .header-right {
+      gap: 2px;
+    }
+  }
+
+  /* STATUS BAR */
+  .status-bar {
+    font-size: 12px;
+  }
+
+  /* Shell geometry is owned by layout-shell.css. */
+
+  .sidebar-pane {
+    display: none;
+    max-height: 400px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .sidebar-pane.active {
+    display: block;
+  }
+
+  /* PANELS */
+  .panel-block {
+    padding: 8px;
+    gap: 6px;
+  }
+
+  .panel-block label {
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  /* GRIDS */
+  .preset-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 4px;
+  }
+
+  /* Console & Meters Grids */
+  .lg-console-main {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .lg-spectrum-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .meters-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .mb-vu-section {
+    grid-template-columns: 1fr;
+  }
+
+  .lg-console-topbar {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .lg-console-actions {
+    display: flex;
+    width: 100%;
+    gap: 6px;
+  }
+
+  .lg-console-actions .lg-ghost-btn,
+  .lg-console-actions .lg-primary-btn {
+    flex: 1;
+    text-align: center;
+  }
+
+  .lg-workspace-workspace-tab {
+    padding: 6px 8px;
+    font-size: 11px;
+  }
+
+  .lg-chain-control-strip,
+  .lg-console-transport {
+    padding: 8px;
+    gap: 6px;
+  }
+
+  .lg-transport-hint {
+    display: none;
+  }
+
+  /* CARDS */
+  .process-card {
+    padding: 8px;
+  }
+
+  .process-card-header {
+    padding: 4px 0;
+    margin-bottom: 6px;
+  }
+
+  .process-card-body {
+    padding: 0;
+  }
+
+  /* BUTTONS */
+  .btn {
+    width: 100%;
+    padding: 8px 6px;
+    font-size: 12px;
+    border-radius: var(--radius-xs);
+  }
+
+  .btn-small {
+    padding: 4px;
+    font-size: 11px;
+  }
+
+  .button-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .button-row .btn {
+    flex: 1;
+  }
+
+  /* INPUTS & SLIDERS */
+  input[type="range"] {
+    height: 6px;
+    width: 100%;
+    cursor: pointer;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    width: 24px;
+    height: 24px;
+  }
+
+  input[type="range"]::-moz-range-thumb {
+    width: 24px;
+    height: 24px;
+  }
+
+  input[type="text"],
+  input[type="number"],
+  input[type="email"],
+  input[type="password"],
+  select,
+  textarea {
+    font-size: 16px; /* Prevenir auto-zoom en iOS */
+    padding: 8px 6px;
+    width: 100%;
+  }
+
+  /* DROPDOWN ZONE */
+  .drop-zone {
+    padding: 12px 8px;
+    border-radius: var(--radius-sm);
+  }
+
+  .drop-zone .icon {
+    font-size: 32px;
+  }
+
+  .drop-zone p {
+    font-size: 12px;
+    margin: 4px 0;
+  }
+
+  .live-spectrum-wrap canvas,
+  .fft-wrap canvas,
+  .waveform-wrap canvas,
+  .visualizer-container canvas {
+    height: 150px;
+    width: 100%;
+  }
+
+  /* PRESETS */
+  .preset-btn {
+    padding: 6px 4px;
+    font-size: 10px;
+    border-radius: 3px;
+  }
+
+  .param label {
+    font-size: 11px;
+  }
+
+  .param .val {
+    font-size: 12px;
+    text-align: right;
+  }
+
+  /* SECTION LABELS */
+  .section-label {
+    font-size: 12px;
+    padding: 4px 0;
+  }
+
+  /* FOCUS para touch */
+  *:focus-visible {
+    outline: 2px solid var(--ui-accent);
+    outline-offset: 1px;
+  }
+
+  /* FOOTER */
+  .app-footer {
+    font-size: 11px;
+    padding: 6px 8px;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+    CONSOLIDATED RESPONSIVE RULES (migrated from various files 2026-09-20)
+    
+    Each @media below was extracted from its source file and consolidated
+    to canonical breakpoints. Source attribution in comments.
+    ───────────────────────────────────────────────────────────────────────── */
+
+/* ─────────────────────────────────────────────────────────────────────────
+    WIDE DESKTOP: ≤ 1280px (consolidated from 1120, 1200, 1280)
+    ───────────────────────────────────────────────────────────────────────── */
+
+@media (max-width: 1280px) {
+  /* from chain-family-tabs.css */
+  #pasoCadena.chain-r2 .process-card-body {
+    grid-template-columns: 1fr 1.2fr;
+  }
+
+  /* from pro-insert-rack.css (was 1280px) */
+  .pir-grid {
+    grid-template-columns: repeat(4, minmax(170px, 1fr));
+  }
+
+  /* from studio.css (was 1200px) */
+  .lg-studio-shell {
+    grid-template-columns: 190px minmax(0, 1fr) 280px;
+  }
+  .studio-gr-grid {
+    grid-template-columns: 1fr;
+  }
+  .studio-telemetry-empty {
+    display: none;
+  }
+
+  /* from utilities.css (was 1120px) */
+  .preset-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+    TABLET UPPER: ≤ 959px (consolidated from 860, 900, 960)
+    ───────────────────────────────────────────────────────────────────────── */
+
+@media (max-width: 959px) {
+  /* from preview.css (was 900px) */
+  .preview-wrap canvas {
+    min-height: 220px;
+  }
+
+  /* from chain-family-tabs.css (was 900px) */
+  #pasoCadena.chain-r2 .process-card-body {
+    grid-template-columns: 1fr;
+  }
+
+  /* from pro-insert-rack.css (was 900px) */
+  .pir-grid {
+    grid-template-columns: repeat(3, minmax(160px, 1fr));
+  }
+
+  /* from studio.css (was 960px) */
+  .lg-studio-shell {
+    grid-template-columns: 1fr;
+  }
+  .lg-studio-left,
+  .lg-studio-right {
+    max-height: none;
+  }
+  .lg-studio-center {
+    order: -1;
+  }
+  .lg-studio-right {
+    order: 2;
+  }
+  .studio-family {
+    display: inline-block;
+    vertical-align: top;
+    width: 49%;
+  }
+
+  /* from utilities.css (was 860px and 900px) */
+  .workflow-hero,
+  .studio-focus,
+  .content-grid,
+  .analysis-grid,
+  .mb-crossover,
+  .control-card .eq4-wrap {
+    grid-template-columns: 1fr;
+  }
+  .content-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+    MOBILE/TABLET: ≤ 760px (consolidated from 640, 768, 780)
+    ───────────────────────────────────────────────────────────────────────── */
+
+@media (max-width: 760px) {
+  /* from themes.css */
+  .theme-switcher-btn {
+    width: 34px;
+    height: 32px;
+  }
+  .theme-switcher-menu {
+    right: 8px;
+    top: 52px;
+    min-width: 190px;
+  }
+
+  /* from pro-insert-rack.css (docked) */
+  .pro-insert-rack--docked {
+    right: 8px;
+    bottom: 8px;
+    width: calc(100vw - 16px);
+  }
+
+  /* from pro-insert-rack.css (floating) */
+  .pro-insert-rack--floating {
+    left: 16px;
+    top: 16px;
+    width: calc(100vw - 32px);
+  }
+
+  /* from studio-pro.css (was 768px) */
+  header {
+    padding: .52rem .7rem;
+  }
+  .pro-stereo-grid {
+    grid-template-columns: 1fr;
+  }
+  .pro-dialog [style*="grid-template-columns: 1fr 1fr"],
+  .pro-dialog [style*="grid-template-columns: 1.1fr 1fr"] {
+    grid-template-columns: 1fr;
+  }
+
+  /* from studio-pro.css (was 780px, minified) */
+  .pro-meters-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .pro-control-row {
+    grid-template-columns: 1fr;
+  }
+  .pro-control-row select {
+    grid-column: auto;
+  }
+  .pro-control-row output {
+    text-align: left;
+  }
+  .pro-dialog {
+    max-height: 95vh;
+  }
+
+  /* from studio.css (was 640px) */
+  .studio-family {
+    width: 100%;
+  }
+  .lg-studio-shell {
+    gap: 8px;
+  }
+  .lg-studio-column {
+    border-radius: 10px;
+  }
+  .studio-control-row {
+    grid-template-columns: 75px minmax(0, 1fr) 52px;
+  }
+
+  /* from utilities.css (was 640px) */
+  .api-url-input {
+    width: 100%;
+  }
+  .btn-group {
+    flex-direction: column;
+  }
+  .preset-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* from utilities.css (was 768px) */
+  .analysis-grid,
+  .workflow-hero,
+  .workflow-steps,
+  .studio-focus,
+  .studio-focus-pills {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+    MOBILE BASELINE: ≤ 480px (consolidated from 360, 480, 560)
+    ───────────────────────────────────────────────────────────────────────── */
+
+@media (max-width: 480px) {
+  /* from themes-professional-skin.css (was 560px) */
+  .theme-switcher-menu {
+    right: 8px;
+    width: min(94vw, 340px);
+    min-width: 0;
+  }
+
+  /* from utilities.css (was 480px) */
+  body {
+    font-size: 12px;
+  }
+  .app-header {
+    padding: 0 var(--space-2);
+    gap: var(--space-2);
+  }
+  .sidebar-tab {
+    font-size: var(--space-3);
+    padding: var(--space-1) var(--space-1);
+  }
+  .ai-panel {
+    right: var(--space-3);
+    left: var(--space-3);
+    width: auto;
+    bottom: 4.8rem;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+    LANDSCAPE MOBILE: height < 500px
+    ───────────────────────────────────────────────────────────────────────── */
+
+@media (max-height: 500px) and (orientation: landscape) {
+  .app-header {
+    padding: 4px 8px;
+  }
+
+  .sidebar {
+    max-height: 120px;
+  }
+
+  .live-spectrum-wrap canvas,
+  .fft-wrap canvas,
+  .waveform-wrap canvas,
+  .visualizer-container canvas {
+    height: 100px;
+  }
+
+  .process-card {
+    padding: 4px;
+  }
+}
+
+/* Smooth scrolling */
+@supports (scroll-behavior: smooth) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+

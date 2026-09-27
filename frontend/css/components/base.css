@@ -1,0 +1,174 @@
+      h1, h2, h3 {
+        text-wrap: balance;
+      }
+      /* ═══════════════════════════════════════════════════════════
+   MISC
+   ═══════════════════════════════════════════════════════════ */
+      ::-webkit-scrollbar {
+        width: 7px;
+        height: 7px;
+      }
+      ::-webkit-scrollbar-track {
+        background: var(--ui-bg);
+      }
+      ::-webkit-scrollbar-thumb {
+        background: var(--ui-border-2);
+        border-radius: var(--radius-xs);
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: var(--ui-warn-2);
+      }
+
+      h1,
+      h2,
+      h3,
+      h4 {
+        color: var(--ui-text);
+      }
+      ::selection {
+        background: color-mix(in srgb, var(--ui-warm) 35%, transparent);
+        color: #fff;
+      }
+
+      label:has(> input[type="checkbox"]:checked) {
+        border-color: var(--ui-warn);
+        background: var(--ui-warn-glow, color-mix(in srgb, var(--ui-warm) 10%, transparent));
+        color: var(--ui-text);
+      }
+/* Base desktop styling for .app-footer */
+.app-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background: var(--ui-surface);
+  border-top: 1px solid var(--ui-border);
+  color: var(--ui-muted);
+  font-size: var(--text-xs);
+}
+
+/* Hidden file inputs utility */
+.lgjs-s-6b99de8b {
+  display: none;
+}
+/* Compat wall overlay (migrated from compat-wall.css) */
+.compat-wall {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-compat);
+  background: linear-gradient(135deg, var(--ui-bg, #0a0e27) 0%, #1a1d3a 100%);
+  color: var(--ui-text, #f7f8ff);
+  font-family: var(--ui-font-display, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif);
+  overflow: auto;
+  padding: var(--space-8);
+  animation: compat-wall-fade-in 0.4s ease-out;
+}
+
+@keyframes compat-wall-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.compat-wall__content {
+  max-width: 480px;
+  width: 100%;
+  padding: 2.5rem;
+  background: var(--ui-surface, rgba(15, 18, 35, 0.95));
+  border-radius: var(--radius);
+  border: 1px solid var(--ui-border-strong, rgba(35, 231, 255, 0.3));
+  box-shadow: 0 0 40px rgba(35, 231, 255, 0.15),
+              0 10px 30px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
+}
+
+.compat-wall__content h1 {
+  font-size: var(--text-xl);
+  margin: 0 0 var(--space-4);
+  color: var(--ui-danger, #ff6b6b);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.compat-wall__content p {
+  margin: 0.75rem 0;
+  line-height: 1.5;
+}
+
+.compat-wall__content ul {
+  list-style: none;
+  padding: 0;
+  margin: var(--space-4) 0;
+}
+
+.compat-wall__content li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  margin: var(--space-2) 0;
+  background: var(--ui-accent-ghost, rgba(35, 231, 255, 0.08));
+  border-left: 3px solid var(--ui-accent, #23e7ff);
+  border-radius: var(--radius-xs);
+}
+
+.compat-wall__content li span {
+  font-weight: 500;
+}
+
+.compat-wall__content a {
+  color: var(--ui-accent, #23e7ff);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.875rem;
+  padding: var(--space-1) 0.75rem;
+  border: 1px solid var(--ui-accent, #23e7ff);
+  border-radius: var(--radius-xs);
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.compat-wall__content a:hover {
+  background: var(--ui-accent, #23e7ff);
+  color: var(--ui-bg, #0a0e27);
+}
+
+.compat-wall__small {
+  margin-top: var(--space-6);
+  font-size: 0.875rem;
+  opacity: 0.65;
+  font-style: italic;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .compat-wall {
+    animation: none;
+  }
+}
+/* Screen reader only — visually hidden but accessible */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.sr-only-focusable:focus,
+.sr-only-focusable:active {
+  position: static;
+  width: auto;
+  height: auto;
+  padding: var(--space-2) var(--space-4);
+  margin: 0;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+  background: var(--ui-warn);
+  color: var(--ui-bg);
+  z-index: var(--z-modal, 1200);
+}

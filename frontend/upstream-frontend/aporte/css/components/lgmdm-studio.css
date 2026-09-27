@@ -1,0 +1,730 @@
+/* ═══════════════════════════════════════════════════════════
+   LGMDM Studio Console & Workspace — reglas para clases HTML
+   huérfanas. Generadas en Fase 9 (2026-09-15) para resolver
+   la auditoría HTML→CSS de 109+ clases sin estilo.
+   Estas reglas NO duplican estilos canónicos; sólo dan
+   layout/visual mínimo coherente con el design system.
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── App grid / shell layout (geometry owned by layout-shell.css) ── */
+.lg-app-grid {
+  min-height: 0;
+}
+.lg-sidebar {
+  min-width: 0;
+}
+.lg-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.lg-content-shell {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  min-height: 0;
+  width: 100%;
+}
+.lg-workspace-region {
+  min-width: 0;
+}
+
+/* ── Workspace tabs (Studio Console / Analysis / Presets) ── */
+.lg-workspace-workspace-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.lg-workspace-workspace-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 4px;
+  background: var(--ui-panel);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--radius);
+}
+.lg-workspace-workspace-tab {
+  flex: 1;
+  padding: 8px 12px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  color: var(--ui-muted);
+  font: 600 12px var(--ui-font-display, inherit);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.lg-workspace-workspace-tab:hover {
+  color: var(--ui-text);
+  background: var(--ui-panel-strong);
+}
+.lg-workspace-workspace-tab.active {
+  color: var(--ui-text);
+  background: linear-gradient(135deg, var(--ui-accent2-ghost), var(--ui-accent-ghost));
+  border-color: var(--ui-border-strong);
+}
+.lg-workspace-tab-icon { margin-right: 6px; }
+.console-workspace { display: none; }
+.console-workspace.active { display: flex; flex-direction: column; gap: 10px; }
+
+/* ── Master Bus console ── */
+.lg-console {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: var(--ui-panel);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--radius-lg);
+  padding: 14px;
+}
+.lg-console-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.lg-console-title { display: flex; flex-direction: column; gap: 2px; }
+.lg-kicker {
+  font: 800 9px/1 var(--ui-font-mono, monospace);
+  letter-spacing: 0.18em;
+  color: var(--ui-accent);
+  text-transform: uppercase;
+}
+.lg-muted { color: var(--ui-muted); font-size: 11px; }
+.lg-console-actions { display: flex; gap: 6px; }
+.lg-workspace-preset-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(135deg, var(--ui-accent2-ghost), var(--ui-accent-ghost));
+  border: 1px solid var(--ui-border-strong);
+  font: 800 9px/1 var(--ui-font-mono, monospace);
+  letter-spacing: 0.16em;
+  color: var(--ui-text);
+}
+
+/* ── Main console panels ── */
+.lg-console-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1.75fr) minmax(260px, 0.85fr);
+  gap: 12px;
+}
+@media (max-width: 959px) {
+  .lg-console-main {
+    grid-template-columns: 1fr;
+  }
+}
+.lg-wave-panel {
+  background: var(--ui-panel-strong);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--radius);
+  padding: 12px;
+}
+.lg-panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.lg-panel-kicker {
+  font: 800 9px/1 var(--ui-font-mono, monospace);
+  letter-spacing: 0.16em;
+  color: var(--ui-accent);
+  text-transform: uppercase;
+}
+.lg-readouts {
+  display: flex;
+  gap: 12px;
+  font: 600 11px var(--ui-font-mono, monospace);
+  color: var(--ui-muted);
+}
+.lg-wave-stage {
+  position: relative;
+  width: 100%;
+  height: 120px;
+  background: var(--ui-bg);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.lg-wave-grid {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+.lg-wave-marker {
+  position: absolute;
+  top: 6px;
+  font: 600 10px var(--ui-font-mono, monospace);
+  color: var(--ui-muted);
+  pointer-events: none;
+}
+.lg-wave-marker-left { left: 8px; }
+.lg-wave-marker-right { right: 8px; }
+.lg-wave-playhead {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 2px;
+  height: 100%;
+  background: var(--ui-accent);
+  box-shadow: 0 0 8px var(--ui-accent-ghost);
+  pointer-events: none;
+  transform: translateX(0);
+}
+.lg-wave-footer {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+  font: 600 11px var(--ui-font-mono, monospace);
+  color: var(--ui-muted);
+}
+
+/* ── Meter rack (L/R meters) ── */
+.lg-meter-rack {
+  display: flex;
+  gap: 16px;
+  background: var(--ui-panel-strong);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--radius);
+  padding: 12px;
+}
+.lg-meter-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font: 800 9px var(--ui-font-mono, monospace);
+  letter-spacing: 0.16em;
+  color: var(--ui-accent);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.lg-meter-pair {
+  display: flex;
+  gap: 10px;
+  flex: 1;
+}
+.lg-tall-meter {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+}
+.lg-tall-meter span { font: 600 10px var(--ui-font-mono, monospace); color: var(--ui-muted); }
+.lg-meter-track {
+  width: 24px;
+  height: 90px;
+  background: var(--ui-surface-3);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--radius-xs);
+  position: relative;
+  overflow: hidden;
+}
+.lg-meter-fill {
+  position: absolute;
+  bottom: 0; left: 0;
+  width: 100%;
+  height: 0%;
+  background: linear-gradient(180deg, var(--ui-good), var(--ui-accent));
+  transition: height 0.05s ease;
+}
+.lg-meter-numbers {
+  display: flex;
+  justify-content: space-between;
+  font: 600 10px var(--ui-font-mono, monospace);
+  color: var(--ui-muted);
+  margin-top: 6px;
+}
+
+/* ── Health panel ── */
+.lg-health-panel {
+  background: var(--ui-panel-strong);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--radius);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.lg-health-head {
+  display: flex;
+  justify-content: space-between;
+  font: 800 9px var(--ui-font-mono, monospace);
+  letter-spacing: 0.14em;
+  color: var(--ui-accent);
+  text-transform: uppercase;
+}
+.lg-health-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.lg-health-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  background: var(--ui-bg);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--radius-md);
+}
+.lg-health-item b {
+  display: block;
+  font-size: var(--text-xs);
+  color: var(--ui-text);
+  font-weight: 600;
+}
+.lg-health-item small {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--ui-muted);
+  font-family: var(--ui-font-mono, monospace);
+}
+.lg-health-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ui-muted);
+  margin-right: 2px;
+  flex-shrink: 0;
+}
+.lg-health-dot.active { background: var(--ui-good); box-shadow: 0 0 8px var(--ui-good); }
+
+/* ── Transport group ── */
+.lg-transport-group {
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+  background: var(--ui-panel-strong);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--radius);
+  align-items: center;
+}
+.lg-transport-hint {
+  font: 600 10px var(--ui-font-mono, monospace);
+  color: var(--ui-muted);
+  margin-left: auto;
+}
+.lg-transport-status {
+  font: 700 11px var(--ui-font-mono, monospace);
+  color: var(--ui-text);
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--ui-bg);
+}
+
+/* ── Live indicator ── */
+.lg-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: 700 10px var(--ui-font-mono, monospace);
+  color: var(--ui-good);
+  text-transform: uppercase;
+}
+.lg-live::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ui-good);
+  box-shadow: 0 0 8px var(--ui-good);
+  animation: lg-live-pulse 1.6s ease-in-out infinite;
+}
+@keyframes lg-live-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* F5.12 — Pausar animaciones decorativas cuando el modal Pro está cerrado
+   (reduce CPU/GPU cuando el modal no está visible). El rAF loop se cancela
+   en teardownProFeatures(); aquí solo detenemos animaciones CSS decorativas. */
+.pro-overlay:not(.is-open) .lg-live::before,
+.pro-overlay:not(.is-open) [class*="-pulse"]:not(.is-active) {
+  animation-play-state: paused;
+}
+
+/* ── Inline note (helper text inline en labels) ── */
+.lg-inline-note {
+  display: inline-block;
+  margin-left: 6px;
+  font: 500 10px var(--ui-font-mono, monospace);
+  color: var(--ui-faint);
+  text-transform: none;
+}
+
+/* ── Workspace presets ── */
+.lg-workspace-presets-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+}
+.lg-workspace-preset-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font: 800 9px var(--ui-font-mono, monospace);
+  letter-spacing: 0.16em;
+  color: var(--ui-accent);
+  text-transform: uppercase;
+}
+.lg-workspace-preset-head h3 {
+  font-family: var(--ui-font-display, var(--sans));
+  font-size: var(--text-md);
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--ui-text);
+  margin: 0 0 2px 0;
+}
+.lg-workspace-preset-head p {
+  font-family: var(--ui-font-display, var(--sans));
+  font-size: var(--text-xs);
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--ui-muted);
+  margin: 0;
+}
+
+/* ── Workspace workspace (legacy alias) ── */
+.lg-workspace-workspace { display: flex; flex-direction: column; gap: 12px; }
+.lg-workspace-workspace.active { display: flex; }
+.lg-workspace-workspace:not(.active) { display: none; }
+
+/* ── Workspace context (header de Master Bus — oculto por redundancia con topbar) ── */
+.workspace-context {
+  display: none;
+}
+
+/* ── Spectrum stage (inside lg-spectrum-panel) ── */
+.lg-spectrum-panel {
+  background: var(--ui-panel-strong);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--radius);
+  padding: 12px;
+}
+.lg-spectrum-stage {
+  position: relative;
+  height: 160px;
+  background: var(--ui-bg);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+/* ── Chain (componente reactivo de masterización) ── */
+.lg-chain {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  align-items: stretch;
+  padding: 8px;
+  background: var(--ui-panel-strong);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--radius);
+}
+.lg-chain-panel { flex: 1; min-width: 0; }
+.lg-chain-arrow {
+  display: none;
+}
+
+/* ── Mixer side panel ── */
+.mxr-side-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  background: var(--ui-panel-strong);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--radius);
+}
+
+/* ── AB cluster (within lg-console-controlbar) ── */
+.ab-cluster {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--ui-bg);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--radius-md);
+}
+
+/* ── EQ bands container ── */
+.eq-bands-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+  gap: 6px;
+  padding: 8px;
+  background: var(--ui-panel-strong);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--radius-md);
+}
+
+/* ── Compact utility ── */
+.compact { font-size: 0.85em; }
+
+/* ── Brand lockup (header) ── */
+.brand-lockup { display: flex; align-items: center; gap: 10px; }
+.brand-copy { display: flex; flex-direction: column; line-height: 1.2; }
+.brand-subtitle {
+  font: 700 9px var(--ui-font-mono, monospace);
+  letter-spacing: 0.16em;
+  color: var(--ui-muted);
+  text-transform: uppercase;
+}
+
+/* ── Header button variants ── */
+.header-btn--wide { padding: 8px 14px; }
+
+/* ── Mixer channels (mxr-*) ── */
+.mxr-channel {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) 80px 80px 60px;
+  gap: 8px;
+  align-items: center;
+  padding: 10px;
+  background: var(--ui-panel);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--radius);
+}
+.mxr-ch-header { display: flex; align-items: center; gap: 8px; }
+.mxr-ch-emoji { font-size: 16px; }
+.mxr-ch-name { font: 700 12px var(--ui-font-display); color: var(--ui-text); flex: 1; }
+.mxr-ch-details { font: 500 10px var(--ui-font-mono, monospace); color: var(--ui-muted); }
+.mxr-ch-close {
+  width: 22px; height: 22px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--ui-border);
+  background: transparent;
+  color: var(--ui-muted);
+  cursor: pointer;
+}
+.mxr-ch-close:hover { background: var(--ui-danger); color: #fff; border-color: var(--ui-danger); }
+
+.mxr-fader-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.mxr-fader-val {
+  font: 600 10px var(--ui-font-mono, monospace);
+  color: var(--ui-muted);
+}
+.mxr-fader-placeholder {
+  width: 36px;
+  height: 80px;
+  background: var(--ui-surface-3);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--radius-xs);
+}
+
+.mxr-pan-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.mxr-pan-label {
+  font: 800 8px var(--ui-font-mono, monospace);
+  letter-spacing: 0.16em;
+  color: var(--ui-muted);
+  text-transform: uppercase;
+}
+.mxr-pan-slider {
+  width: 60px;
+  accent-color: var(--ui-accent);
+}
+.mxr-pan-val {
+  font: 600 10px var(--ui-font-mono, monospace);
+  color: var(--ui-text);
+}
+
+.mxr-vu-wrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.mxr-vu-bar {
+  position: relative;
+  width: 16px;
+  height: 60px;
+  background: var(--ui-surface-3);
+  border: 1px solid var(--ui-border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.mxr-vu-fill {
+  position: absolute;
+  bottom: 0; left: 0;
+  width: 100%;
+  height: 0%;
+  background: linear-gradient(180deg, var(--ui-good), var(--ui-warn), var(--ui-danger));
+}
+.mxr-db-scale {
+  font: 500 9px var(--ui-font-mono, monospace);
+  color: var(--ui-muted);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mxr-adv-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  background: var(--ui-panel-strong);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--radius-md);
+}
+.mxr-eqband-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.mxr-eqband { flex: 1; }
+.mxr-eqband-label {
+  font: 600 10px var(--ui-font-mono, monospace);
+  color: var(--ui-muted);
+}
+.mxr-eqband-val {
+  font: 700 10px var(--ui-font-mono, monospace);
+  color: var(--ui-text);
+}
+.mxr-eqband-tag {
+  display: inline-block;
+  padding: 1px 5px;
+  font: 700 8px var(--ui-font-mono, monospace);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border-radius: 3px;
+  background: var(--ui-accent-ghost);
+  color: var(--ui-accent);
+}
+.mxr-ms-row {
+  display: flex;
+  gap: 4px;
+}
+.mxr-btn-ms {
+  flex: 1;
+  padding: 4px;
+  background: var(--ui-bg);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--radius-xs);
+  color: var(--ui-muted);
+  font: 700 9px var(--ui-font-mono, monospace);
+  cursor: pointer;
+}
+.mxr-btn-ms.active { background: var(--ui-warn); color: #000; border-color: var(--ui-warn); }
+.mxr-reset-btn {
+  padding: 4px 10px;
+  background: transparent;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--radius-sm);
+  color: var(--ui-muted);
+  font: 600 10px var(--ui-font-display);
+  cursor: pointer;
+}
+.mxr-reset-btn:hover { color: var(--ui-text); border-color: var(--ui-border-strong); }
+
+/* ── Sidebar tab collapse variant ── */
+.sidebar-tab-collapse {
+  padding: 6px;
+  background: var(--ui-panel);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--radius-sm);
+  color: var(--ui-muted);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+/* ── System chip (header brand center) ── */
+.system-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: var(--ui-panel-strong);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--radius-pill);
+  font: 700 9px var(--ui-font-mono, monospace);
+  letter-spacing: 0.14em;
+  color: var(--ui-text);
+  text-transform: uppercase;
+}
+.system-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--ui-good);
+  box-shadow: 0 0 6px var(--ui-good);
+}
+
+/* ── Logo mark (LG inline en header) ── */
+.logo-mark {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--ui-accent), var(--ui-accent-2));
+  color: var(--ui-bg);
+  font: 900 13px var(--ui-font-mono, monospace);
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 12px var(--ui-accent-ghost);
+}
+
+/* ── Toast container (notifications) ── */
+.toast-container {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: var(--z-toast, 1100);
+  pointer-events: none;
+}
+
+/* ── Limiter stage chip (mastering chain visualization) ── */
+.limiter {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background: var(--ui-warn-glow);
+  border: 1px solid var(--ui-warn);
+  border-radius: var(--radius-sm);
+  font: 700 10px var(--ui-font-mono, monospace);
+  color: var(--ui-warn);
+  text-transform: uppercase;
+}
+
+/* ── ms-control-label variants ── */
+.ms-control-label--bottom { margin-bottom: 4px; }
+.ms-control-label--compact { font-size: 0.85em; }
+.ms-control-label--grid { display: grid; gap: 2px; }
+.ms-control-label--makeup { color: var(--ui-accent); }
+.ms-control-label--preview { color: var(--ui-muted); font-style: italic; }
+.ms-control-label--spaced { letter-spacing: 0.12em; }
+
+/* ── margin utility extras ── */
+.mt-xxs { margin-top: 4px; }
+
+/* ── Stems channel upload status ── */
+.mxr-ch-uploading {
+  display: none;
+  font-size: var(--text-xs);
+  color: var(--ui-warn);
+  text-align: center;
+  padding: 4px;
+  font-family: var(--mono);
+}

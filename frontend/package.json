@@ -1,0 +1,18 @@
+{
+  "name": "lgmdm-studio-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "description": "LGMDM Mastering Studio Frontend - rebuilt with TypeScript and ES modules",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build && node scripts/sri.mjs && node scripts/csp.mjs",
+    "serve": "vite preview"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "vite": "^4.0.0",
+    "@types/node": "^18.0.0"
+  }
+}

@@ -1,0 +1,140 @@
+      /* ═══════════════════════════════════════════════════════════
+   LAYOUT — sidebar + contenido
+   ═══════════════════════════════════════════════════════════ */
+      /* Main content area geometry is owned by layout-shell.css */
+
+      /* ── Sidebar visual styling (geometry owned by layout-shell.css) ── */
+      .sidebar {
+        padding: var(--space-2) var(--space-3);
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-1);
+        background: var(--ui-surface);
+        position: relative;
+        transition: border-color 0.15s;
+        scrollbar-width: thin;
+        scrollbar-color: var(--ui-border-2) transparent;
+      }
+
+      /* Sidebar collapsed state — see layout-shell.css for canonical .sidebar-toggle-btn */
+      .main-container > .sidebar.collapsed {
+        width: 0;
+        min-width: 0;
+        padding: 0;
+        overflow: hidden;
+        border-right-width: 0;
+      }
+      .main-container > .sidebar.collapsed ~ .resize-handle { display: none; }
+
+      /* Handle de resize drag ── */
+      .resize-handle {
+        width: var(--lg-handle-w);
+        background: var(--ui-border);
+        cursor: col-resize;
+        flex-shrink: 0;
+        position: relative;
+        transition: background 0.15s, width 0.15s;
+        user-select: none;
+        z-index: 10;
+      }
+      .resize-handle::before {
+        content: "";
+        position: absolute;
+        inset: 30% -3px;
+        background: var(--ui-border-2);
+        border-radius: 2px;
+        width: 3px;
+        left: 50%;
+        transform: translateX(-50%);
+      }
+      .resize-handle:hover,
+      .resize-handle.dragging {
+        background: var(--ui-warn);
+        box-shadow: 0 0 8px var(--ui-warn-glow);
+      }
+      .resize-handle:hover::before,
+      .resize-handle.dragging::before {
+        background: color-mix(in srgb, var(--ui-warm-bright) 60%, transparent);
+      }
+      .resize-handle::after {
+        content: "";
+        position: absolute;
+        inset: 0 -4px;  /* área clickeable más amplia */
+      }
+      .aside-scroll-hint {
+        position: sticky;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 2.5rem;
+        background: linear-gradient(to bottom, transparent, var(--ui-surface));
+        pointer-events: none;
+        transition: opacity 0.3s;
+      }
+      .aside-scroll-hint.hidden {
+        opacity: 0;
+      }
+
+      /* ═══════════════════════════════════════════════════════════
+   SIDEBAR TABS
+   ═══════════════════════════════════════════════════════════ */
+      .sidebar-tabs {
+        display: flex;
+        gap: 2px;
+        padding: 4px;
+        background: var(--ui-surface-2);
+        border-radius: var(--radius);
+        flex-shrink: 0;
+        margin-bottom: var(--space-2);
+        flex-wrap: wrap;
+      }
+      .sidebar-tab {
+        flex: 1;
+        min-width: 0;
+        padding: var(--space-1) var(--space-2);
+        font-size: clamp(var(--space-3), 1vw, 0.72rem);
+        font-family: var(--sans);
+        font-weight: 600;
+        color: var(--ui-muted);
+        background: transparent;
+        border: none;
+        border-radius: calc(var(--radius) - 2px);
+        cursor: pointer;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        transition: background 0.15s, border-color 0.15s, color 0.15s;
+        letter-spacing: 0.02em;
+      }
+      
+      .sidebar-tab:hover {
+        color: var(--ui-text);
+        background: var(--ui-panel-strong);
+      }
+
+      .sidebar-pane-archivo,
+      .sidebar-pane-mastering-ref,
+      .sidebar-pane-cadena,
+      .sidebar-pane-salida,
+      .sidebar-pane-mixer {
+        display: none;
+      }
+      .sidebar-showing-archivo .sidebar-pane-archivo,
+      .sidebar-showing-archivo .sidebar-pane-mastering-ref,
+      .sidebar-showing-cadena .sidebar-pane-cadena,
+      .sidebar-showing-salida .sidebar-pane-salida,
+      .sidebar-showing-mixer .sidebar-pane-mixer {
+        display: block;
+      }
+
+      .control-grid {
+        contain: layout;
+      }
+
+      #sidebarPaneContainer {
+        min-height: 0;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding: 4px;
+        flex: 1 1 auto;
+      }

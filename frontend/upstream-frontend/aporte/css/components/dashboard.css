@@ -1,0 +1,8 @@
+      /* ── Meters toggle (shared with meters section) ── */
+      .meters-toggle {
+        font-size: var(--text-xs);
+        color: var(--ui-muted);
+        font-family: var(--mono);
+        cursor: pointer;
+        margin-left: auto;
+      }

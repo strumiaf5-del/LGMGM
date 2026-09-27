@@ -1,0 +1,2429 @@
+<!DOCTYPE html>
+
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=5, user-scalable=yes" name="viewport"/>
+<meta content="yes" name="apple-mobile-web-app-capable"/>
+<meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"/>
+<meta content="#0a0a12" name="theme-color"/>
+<meta content="7.0.3" name="app-version" data-deploy="2026-09-15"/>
+<meta content="LGMDM Intelligent Mastering Console — professional audio mastering workspace" name="description"/>
+<title>LGMDM · Intelligent Mastering Console</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://masteringstudio-api.duckdns.org http://127.0.0.1:8000 http://localhost:8000 ws://127.0.0.1:8000 ws://localhost:8000 wss://masteringstudio-api.duckdns.org ws: wss: blob:; media-src 'self' blob: data: https:; img-src 'self' data: blob:; worker-src 'self' blob:; font-src 'self' data:; object-src 'none'; base-uri 'self';"/>
+<link href="favicon.svg" rel="icon" type="image/svg+xml"/>
+<link href="css/base/tokens.css" rel="stylesheet"/>
+<link href="css/base/reset.css" rel="stylesheet"/>
+<link href="css/base/themes.css" rel="stylesheet"/>
+<link href="css/base/themes-professional.css" rel="stylesheet"/>
+<link href="css/layout/layout-shell.css" rel="stylesheet"/>
+<link href="css/components/studio-pro.css" rel="stylesheet"/>
+<link href="css/components/lgmdm-studio.css" rel="stylesheet"/>
+<link href="css/components/base.css" rel="stylesheet"/>
+<link href="css/components/utilities.css" rel="stylesheet"/>
+<link href="css/components/buttons.css" rel="stylesheet"/>
+<link href="css/components/forms.css" rel="stylesheet"/>
+<link href="css/components/header.css" rel="stylesheet"/>
+<link href="css/components/sidebar.css" rel="stylesheet"/>
+<link href="css/components/panels.css" rel="stylesheet"/>
+<link href="css/components/content-area.css" rel="stylesheet"/>
+<link href="css/components/meters.css" rel="stylesheet"/>
+<link href="css/components/dashboard.css" rel="stylesheet"/>
+<link href="css/components/preview.css" rel="stylesheet"/>
+<link href="css/components/ai-panel.css" rel="stylesheet"/>
+<link href="css/components/workflow.css" rel="stylesheet"/>
+<link href="css/components/lgmdm.css" rel="stylesheet"/>
+<link href="css/widgets/chain-family-tabs.css" rel="stylesheet"/>
+<link href="css/widgets/pro-widgets-v2.css" rel="stylesheet"/>
+<link href="css/widgets/pro-insert-rack.css" rel="stylesheet"/>
+<link href="css/layout/responsive.css" rel="stylesheet"/>
+<link href="css/skin/themes-professional-skin.css" rel="stylesheet"/>
+</head>
+<body>
+<a href="#main" class="sr-only sr-only-focusable">Saltar al contenido principal</a>
+<div id="auth-overlay" class="hidden" style="display: none;"></div>
+<div id="app-container" class="app-container">
+<!-- HEADER -->
+<header class="app-header"><div class="header-left"><div class="brand-lockup"><div aria-hidden="true" class="logo-mark">LG</div><div class="brand-copy"><h1 class="logo">LGMDM</h1><span class="brand-subtitle">INTELLIGENT MASTERING CONSOLE</span></div></div></div><div class="header-center"><div class="system-chip"><span aria-hidden="true" class="system-dot"></span><span>ENGINE READY</span></div></div><div class="header-right"><button id="btnOpenPremiumSuite" class="header-btn header-btn--wide" type="button" title="Suite Premium (12 funciones avanzadas de masterización)"><svg class="header-btn-svg" viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2.5L2 6l6 7.5 6-7.5-2-3.5H4z"/><path d="M2 6h12"/><path d="M5.5 2.5L7 6l1 7.5 1-7.5 1.5-3.5"/></svg><span>SUITE PRO</span></button><button id="btnToggleInsertRack" class="header-btn header-btn--wide" type="button" title="Pro Insert Rack — 10 inserts DSP premium (arrastrable)"><svg class="header-btn-svg" viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2.5" width="12" height="3.5" rx="1"/><rect x="2" y="6.5" width="12" height="3.5" rx="1"/><rect x="2" y="10.5" width="12" height="3.5" rx="1"/><circle cx="5" cy="4.2" r="0.8" fill="currentColor"/><circle cx="11" cy="8.2" r="0.8" fill="currentColor"/><circle cx="5" cy="12.2" r="0.8" fill="currentColor"/></svg><span>RACK</span></button><button id="historyToggleBtn" class="header-btn" type="button" title="Historial de cambios (Ctrl+H)" aria-label="Mostrar historial de cambios (Ctrl+H)"><svg class="header-btn-svg" viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8a5.5 5.5 0 1 1 1.6 3.9"/><path d="M2 4v4h4"/><path d="M8 5v3.2l2.2 1.3"/></svg></button><button aria-label="Cambiar tema visual" class="header-btn" id="theme-switcher-btn" title="Cambiar tema visual" type="button"><svg class="header-btn-svg" viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"/><path d="M8 2a6 6 0 0 1 0 12V2z"/></svg></button><div id="auth-user-bar" hidden=""><span class="auth-user-name">Usuario</span><button id="admin-panel-btn" class="header-btn auth-admin-btn" type="button" title="Panel de administración de usuarios" aria-label="Panel de administración" hidden=""><svg class="header-btn-svg" viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="2.5"/><path d="M8 1.5v1.8M8 12.7v1.8M1.5 8h1.8M12.7 8h1.8M3.4 3.4l1.3 1.3M11.3 11.3l1.3 1.3M3.4 12.6l1.3-1.3M11.3 4.7l1.3-1.3"/></svg></button><button id="logout-btn" class="header-btn auth-logout-btn" type="button" title="Cerrar sesión" aria-label="Cerrar sesión">⎋</button></div></div></header>
+<!-- MAIN CONTAINER -->
+<div class="main-container lg-app-grid">
+<!-- SIDEBAR CON PESTAÑAS -->
+<!-- SIDEBAR ORIGINAL LGMDM: Archivo / Cadena / Salida / Proyectos -->
+<aside class="sidebar lg-sidebar" aria-label="Panel de control lateral">
+<div aria-label="Flujo de trabajo" class="sidebar-tabs" id="sidebarTabs" role="tablist">
+<button class="sidebar-tab active" data-pane="pane-mastering-ref" id="tabMasteringRef" type="button" role="tab" aria-selected="true" aria-controls="pasoArchivo" aria-label="Mastering-Ref" tabindex="0"><svg class="sidebar-tab-svg" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"/><circle cx="8" cy="8" r="2.5"/><line x1="8" y1="1" x2="8" y2="3.5"/><line x1="8" y1="12.5" x2="8" y2="15"/><line x1="1" y1="8" x2="3.5" y2="8"/><line x1="12.5" y1="8" x2="15" y2="8"/></svg>Mastering-Ref</button>
+<button class="sidebar-tab" data-pane="pane-cadena" id="tabCadena" type="button" role="tab" aria-selected="false" aria-controls="pasoCadena" aria-label="Cadena" tabindex="-1"><svg class="sidebar-tab-svg" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 4.5a2.5 2.5 0 0 1 3.5 0l1.5 1.5a2.5 2.5 0 0 1 0 3.5l-1 1a.5.5 0 0 1-.7-.7l1-1a1.5 1.5 0 0 0 0-2.1L10.3 5.2a1.5 1.5 0 0 0-2.1 0L7.1 6.3a.5.5 0 1 1-.7-.7l1.1-1.1zm-1 3.2a.5.5 0 0 1 .7.7l-1 1a1.5 1.5 0 0 0 0 2.1l1.5 1.5a1.5 1.5 0 0 0 2.1 0l1.1-1.1a.5.5 0 1 1 .7.7l-1.1 1.1a2.5 2.5 0 0 1-3.5 0l-1.5-1.5a2.5 2.5 0 0 1 0-3.5l1-1z"/></svg>Cadena</button>
+<button class="sidebar-tab" data-pane="pane-salida" id="tabSalida" type="button" role="tab" aria-selected="false" aria-controls="pasoSalida" aria-label="Salida" tabindex="-1"><svg class="sidebar-tab-svg" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><line x1="3.5" y1="2" x2="3.5" y2="14"/><line x1="8" y1="2" x2="8" y2="14"/><line x1="12.5" y1="2" x2="12.5" y2="14"/><rect x="1.5" y="8" width="4" height="3" rx="1" fill="currentColor"/><rect x="6" y="4" width="4" height="3" rx="1" fill="currentColor"/><rect x="10.5" y="6" width="4" height="3" rx="1" fill="currentColor"/></svg>Salida</button>
+<button class="sidebar-tab" data-pane="pane-mixer" id="tabMixer" type="button" role="tab" aria-selected="false" aria-controls="pasoMixer" aria-label="Mixer" tabindex="-1"><svg class="sidebar-tab-svg" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="4.5" cy="5" r="2.5"/><circle cx="11.5" cy="5" r="2.5"/><circle cx="4.5" cy="11.5" r="2.5"/><circle cx="11.5" cy="11.5" r="2.5"/><path d="M4.5 3.5v1.5h1.5"/><path d="M11.5 3.5v1.5h1.5"/><path d="M4.5 10v1.5h1.5"/><path d="M11.5 10v1.5h1.5"/></svg>Mixer</button>
+<button class="sidebar-tab-collapse" id="sidebarCollapseBtn" type="button" title="Colapsar sidebar" aria-label="Colapsar panel lateral">◀</button>
+</div>
+<div class="control-grid sidebar-showing-archivo" id="sidebarPaneContainer">
+<div class="control-stack">
+<!-- ══════ PASO 1 — Mastering y Referencia ══════ -->
+<details class="process-card process-card-collapsible sidebar-pane-archivo sidebar-pane-mastering-ref" id="pasoArchivo" open="">
+<summary class="process-card-header">
+<span class="process-card-step">Paso 1</span>
+<span class="process-card-copy">Carga y contexto</span>
+</summary>
+<div class="process-card-body">
+<div>
+<h3 class="section-label">Archivo de audio</h3>
+<div class="drop-zone" id="dropZone">
+<input accept=".wav,.mp3,.flac,.ogg,.aiff,.aif" aria-label="Archivo de audio principal" id="fileInput" type="file"/>
+<div class="drop-zone-icon-wrap"><svg class="drop-zone-svg" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg></div>
+<p>
+ Arrastrá tu audio aquí
+ <br/>
+<small>WAV · MP3 · FLAC · OGG · AIFF — máx <span data-lgmdm-max-file-mb=""></span> MB</small>
+</p>
+<div class="uppy-picker" id="uppyPicker"></div>
+<div class="file-name" id="fileName"></div>
+<div class="file-size-warn" id="fileSizeWarn"></div>
+</div>
+<div class="button-row">
+<button class="btn btn-primary" id="btnAnalyze" type="button">Analizar</button>
+<button class="btn btn-secondary" id="btnAdvice" type="button">Recomendaciones</button>
+</div>
+<div class="button-row">
+<button class="btn btn-automaster" id="btnMasterSync" type="button">Master (sync)</button>
+<button class="btn btn-ref" id="btnMasterAsync" type="button">Master (enqueue)</button>
+</div>
+<div class="button-row">
+<button class="btn btn-secondary full-width" id="btnPitchCorrection" type="button" aria-label="Pitch Correction"><svg class="btn-inline-svg" viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="11.5" r="2.5"/><circle cx="12" cy="9.5" r="2.5"/><path d="M7.5 11.5V3.5l7-2v8"/></svg><span>Pitch Correction &amp; Tuning</span></button>
+</div>
+<div class="panel-block panel-block-secondary">
+<div class="section-note"><span class="section-badge">LUFS</span> Normalizar por LUFS (sin procesar nada más)</div>
+<div class="param param--lg">
+<label for="s-normalize-lufs">LUFS objetivo</label>
+<span class="val" id="v-normalize-lufs">-14.0</span>
+<input id="s-normalize-lufs" max="-6" min="-23" step="0.5" type="range" value="-14"/>
+<p class="small-text">Solo ganancia — sin EQ, sin dinámica, sin referencia. -14 = streaming (Spotify/YouTube) · -23 = broadcast (EBU R128) · -6 = muy hot.</p>
+</div>
+<button class="btn btn-secondary full-width" id="btnNormalizeLufs" type="button">Normalizar</button>
+<div class="small-text space-top-sm" id="normalize-status" role="status" aria-live="polite"></div>
+</div>
+<label class="checkbox-row small-text mt-sm">
+<input checked="" id="saveToLibraryChk" type="checkbox"/>
+ Guardar en mi librería del servidor
+ </label>
+</div>
+<!-- Librería persistente: archivos ya guardados en el server -->
+<div>
+<h3 class="section-label section-header-row">
+<span>Mi librería</span>
+<button class="btn btn-secondary btn-small" id="btnRefreshLibrary" type="button"><svg class="btn-inline-svg" viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8a5.5 5.5 0 1 1 1.6 3.9"/><path d="M2 4v4h4"/></svg><span>actualizar</span></button>
+</h3>
+<div class="panel-block panel-block-secondary scroll-panel" id="libraryList">
+<div class="skeleton-loader" aria-busy="true" aria-label="Cargando librería">
+<div class="skeleton-line skeleton-line--lg"></div>
+<div class="skeleton-line skeleton-line--md"></div>
+<div class="skeleton-line skeleton-line--sm"></div>
+</div>
+</div>
+</div>
+<!-- Presets -->
+<div>
+<h3 class="section-label">Presets profesionales</h3>
+<div class="preset-grid" id="presetGrid">
+<button class="preset-btn" data-preset="rock" type="button" aria-label="Preset Rock"><span class="preset-led"></span><span>Rock</span></button>
+<button class="preset-btn" data-preset="metal" type="button" aria-label="Preset Metal"><span class="preset-led"></span><span>Metal</span></button>
+<button class="preset-btn" data-preset="trap" type="button" aria-label="Preset Trap"><span class="preset-led"></span><span>Trap</span></button>
+<button class="preset-btn" data-preset="rap" type="button" aria-label="Preset Rap"><span class="preset-led"></span><span>Hip-Hop / Rap</span></button>
+<button class="preset-btn" data-preset="reggaeton" type="button" aria-label="Preset Reggaeton"><span class="preset-led"></span><span>Reggaeton</span></button>
+<button class="preset-btn" data-preset="pop" type="button" aria-label="Preset Pop"><span class="preset-led"></span><span>Pop</span></button>
+<button class="preset-btn" data-preset="cd" type="button" aria-label="Preset CD"><span class="preset-led"></span><span>CD Master</span></button>
+<button class="preset-btn" data-preset="edm" type="button" aria-label="Preset EDM"><span class="preset-led"></span><span>EDM / House</span></button>
+<button class="preset-btn" data-preset="techno" type="button" aria-label="Preset Techno"><span class="preset-led"></span><span>Techno</span></button>
+<button class="preset-btn" data-preset="rnb" type="button" aria-label="Preset R&B"><span class="preset-led"></span><span>R&amp;B / Soul</span></button>
+<button class="preset-btn" data-preset="jazz" type="button" aria-label="Preset Jazz"><span class="preset-led"></span><span>Jazz</span></button>
+<button class="preset-btn" data-preset="classical" type="button" aria-label="Preset Clásica"><span class="preset-led"></span><span>Clásica</span></button>
+<button class="preset-btn" data-preset="lofi" type="button" aria-label="Preset Lo-Fi"><span class="preset-led"></span><span>Lo-Fi</span></button>
+<button class="preset-btn" data-preset="acoustic" type="button" aria-label="Preset Acústico"><span class="preset-led"></span><span>Acústico</span></button>
+<button class="preset-btn" data-preset="indie" type="button" aria-label="Preset Indie"><span class="preset-led"></span><span>Indie</span></button>
+<button class="preset-btn" data-preset="cumbia" type="button" aria-label="Preset Cumbia"><span class="preset-led"></span><span>Cumbia</span></button>
+<button class="preset-btn" data-preset="funk" type="button" aria-label="Preset Funk"><span class="preset-led"></span><span>Funk</span></button>
+<button class="preset-btn" data-preset="ambient" type="button" aria-label="Preset Ambient"><span class="preset-led"></span><span>Ambient</span></button>
+<button class="preset-btn" data-preset="podcast" type="button" aria-label="Preset Podcast"><span class="preset-led"></span><span>Podcast / Voice</span></button>
+</div>
+<button class="btn-preset-load" id="btnLoadPresetJson" type="button"><svg class="btn-inline-svg" viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 3.5A1.5 1.5 0 0 1 3 2h3.5l1.5 2H13a1.5 1.5 0 0 1 1.5 1.5v7A1.5 1.5 0 0 1 13 14H3a1.5 1.5 0 0 1-1.5-1.5v-9z"/></svg><span>Cargar preset (JSON)</span></button>
+<input accept=".json,application/json" aria-label="Archivo JSON de preset" class="hidden-input" id="presetJsonInput" type="file"/>
+<div class="status-text" id="presetLoadStatus" role="status"></div>
+<div class="param param--lg">
+<label for="s-platform">Objetivo de loudness (plataforma)</label>
+</div>
+<select aria-label="Plataforma o destino de loudness" class="select-full" id="s-platform">
+<option value="">— Manual —</option>
+<option value="spotify">Spotify (−14 LUFS)</option>
+<option value="youtube">YouTube (−14 LUFS)</option>
+<option value="apple_music">Apple Music (−16 LUFS)</option>
+<option value="tidal">Tidal (−14 LUFS)</option>
+<option value="club">Club / DJ (−9 LUFS)</option>
+<option value="cd">CD (−9 LUFS)</option>
+</select>
+</div>
+<!-- Match mastering -->
+<details class="mb-none">
+<summary class="summary-accent">
+<span class="summary-pill"></span>
+ Match Mastering (referencia)
+ <span class="summary-divider"></span>
+<span class="muted-small">▾</span>
+</summary>
+<div class="space-top-sm">
+<p class="summary-muted">
+ Subí un track masterizado y el sistema igualará el
+ <b class="text-on-surface">timbre</b>,
+ <b class="text-on-surface">loudness</b>,
+ <b class="text-on-surface">dinámica</b>,
+ <b class="text-on-surface">estéreo</b>,
+ <b class="text-on-surface">punch</b>
+ ,
+ <b class="text-on-surface">sub-graves</b>
+ ,
+ <b class="text-on-surface">sibilancia</b>
+ y
+ <b class="text-on-surface">carácter armónico</b>
+ .
+ </p>
+<div class="drop-zone-ref" id="dropZoneRef">
+<input accept=".wav,.mp3,.flac,.ogg,.aiff,.aif" aria-label="Archivo de audio de referencia" class="overlay-input" id="refFileInput" type="file"/>
+<div class="drop-zone-icon-wrap"><svg class="drop-zone-svg" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/></svg></div>
+<p class="drop-zone-text">
+ Arrastrá el track de referencia
+ </p>
+<p class="drop-zone-note">
+ WAV · MP3 · FLAC · OGG · AIFF — máx <span data-lgmdm-max-file-mb=""></span> MB
+ </p>
+<div class="file-name" id="refFileName"></div>
+</div>
+<!-- Biblioteca de referencias permanentes -->
+<button class="btn-ref-library" id="btnOpenRefLib" type="button">
+ <svg class="btn-inline-svg" viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 3h11v10h-11z"/><path d="M6 3v10"/><path d="M2.5 6.5h3.5"/></svg> <span>Elegir desde biblioteca de referencias</span>
+<span class="muted-small ml-auto" id="refLibCount"></span>
+</button>
+<div class="ref-actions">
+<label class="checkbox-row">
+<input checked="" id="saveRefToLibraryChk" type="checkbox"/>
+ Guardar referencia en mi librería
+ </label>
+<button class="link-inline" id="toggleRefLibraryList" type="button">
+ usar de mi librería ▾
+ </button>
+</div>
+<div class="ref-library-list hidden-panel" id="libraryListRef"></div>
+<div class="control-row">
+<label class="field-group" id="lbl-ref-loudness">
+<input checked="" class="field-input accent-amber" id="s-ref-loudness" type="checkbox"/>
+<span>Loudness</span>
+</label>
+<label class="field-group" id="lbl-ref-dynamics">
+<input checked="" class="field-input accent-amber" id="s-ref-dynamics" type="checkbox"/>
+<span>Dinámica</span>
+</label>
+<label class="field-group" id="lbl-ref-stereo">
+<input checked="" class="field-input accent-amber" id="s-ref-stereo" type="checkbox"/>
+<span>Estéreo</span>
+</label>
+<label class="ref-match-option" id="lbl-ref-eq">
+<input checked="" class="field-input accent-amber" id="s-ref-eq" type="checkbox"/>
+<span>EQ Tonal</span>
+</label>
+<label class="ref-match-option" id="lbl-ref-transient">
+<input checked="" class="field-input accent-amber" id="s-ref-transient" type="checkbox"/>
+<span>Punch</span>
+</label>
+<label class="ref-match-option" id="lbl-ref-subbass">
+<input checked="" class="field-input accent-amber" id="s-ref-subbass" type="checkbox"/>
+<span>Sub-graves</span>
+</label>
+<label class="ref-match-option" id="lbl-ref-desser">
+<input checked="" class="field-input accent-amber" id="s-ref-desser" type="checkbox"/>
+<span>De-esser</span>
+</label>
+<label class="field-group" id="lbl-ref-saturation">
+<input class="field-input accent-amber" id="s-ref-saturation" type="checkbox"/>
+<span>Carácter armónico <span class="note-small">(opcional)</span></span>
+</label>
+<label class="checkbox-row mt-sm">
+<input checked="" class="field-input accent2" id="s-ref-ms-eq" type="checkbox"/>
+<span>EQ M/S <span class="note-small">(Mid y Side independientes)</span></span>
+</label>
+</div>
+<details class="mt-sm">
+<summary class="details-summary">
+ Parámetros avanzados
+ </summary>
+<div class="mt-sm">
+<div class="param">
+<label for="s-ref-boost">Máx. boost EQ</label>
+<span class="val" id="v-ref-boost">6.0 dB</span>
+<input id="s-ref-boost" max="18" min="0" step="0.5" type="range" value="6"/>
+</div>
+<div class="param">
+<label for="s-ref-cut">Máx. corte EQ</label>
+<span class="val" id="v-ref-cut">-9.0 dB</span>
+<input id="s-ref-cut" max="0" min="-24" step="0.5" type="range" value="-9"/>
+</div>
+<div class="param mb-sm">
+<label for="s-ref-eqmethod">Método de ajuste EQ</label>
+<select class="mt-xs" id="s-ref-eqmethod">
+<option value="heuristic">Heurístico (rápido)</option>
+<option value="ddsp">DDSP (descenso de gradiente)</option>
+</select>
+</div>
+<div class="param">
+<label for="s-ref-dynmargin">Margen dinámica</label>
+<span class="val" id="v-ref-dynmargin">1.0 dB</span>
+<input id="s-ref-dynmargin" max="6" min="0" step="0.5" type="range" value="1"/>
+</div>
+<div class="param mb-xs">
+<label for="s-ref-stereoblend">Intensidad match estéreo</label>
+<span class="val" id="v-ref-stereoblend">85%</span>
+<input id="s-ref-stereoblend" max="100" min="0" step="5" type="range" value="85"/>
+</div>
+<div class="section-divider mt-lg">
+<div class="section-title-row">
+<span class="section-subtitle">Bandas de EQ manual</span>
+<div class="inline-row">
+<span class="note-mini">Bandas:</span>
+<input aria-label="Cantidad máxima de bandas para el matching de referencia" class="range-compact accent2" id="s-band-count" max="28" min="4" step="1" type="range" value="7"/>
+<span class="range-value" id="v-band-count">7</span>
+</div>
+</div>
+<div class="stack-col" id="ref-band-controls"></div>
+<button class="btn btn-tertiary" id="btn-band-reset" type="button">↺ Resetear bandas</button>
+</div>
+</div>
+</details>
+<details class="mt-sm">
+<summary class="details-summary details-summary--accent">
+ Funciones premium para match profesional
+ </summary>
+<div class="section-divider--highlight">
+<div class="param param--md">
+<label for="s-ref-premium-profile">Perfil de matching</label>
+<select class="mt-xs" id="s-ref-premium-profile">
+<option value="balanced">Balanceado / streaming</option>
+<option value="club">Club punchy</option>
+<option value="audiophile">Audiophile transparente</option>
+<option value="broadcast">Broadcast seguro</option>
+</select>
+</div>
+<label class="checkbox-row">
+<input checked="" class="field-input accent-amber" id="s-ref-adaptive-loudness" type="checkbox"/>
+<span>LUFS adaptativo al oído humano <span class="note-mini">(más sensible 3–6 kHz)</span></span>
+</label>
+<div class="param param--md">
+<label for="s-ref-loudness-sensitivity">Sensibilidad auditiva 3–6 kHz</label>
+<span class="val" id="v-ref-loudness-sensitivity">65%</span>
+<input id="s-ref-loudness-sensitivity" max="100" min="0" step="5" type="range" value="65"/>
+</div>
+<label class="checkbox-row">
+<input class="field-input accent-amber" id="s-ref-fixed-lufs" type="checkbox"/>
+<span>Fijar LUFS de salida <span class="note-mini">(ignora el loudness de la referencia)</span></span>
+</label>
+<div class="param param--md" id="fixed-lufs-row">
+<label for="s-ref-fixed-lufs-value">LUFS objetivo</label>
+<span class="val" id="v-ref-fixed-lufs">-14.0</span>
+<input id="s-ref-fixed-lufs-value" max="-6" min="-24" step="0.5" type="range" value="-14"/>
+<p class="note-mini">Si la referencia viene muy hot (-8/-7/-9 LUFS) y no la querés heredar, activá esto — el resto del matching (EQ, dinámica, estéreo) sigue igual, solo el volumen final queda fijo acá.</p>
+</div>
+<div class="param param--md">
+<label for="s-ref-max-lufs">Techo de loudness (máximo) <span class="lg-inline-note">nunca lo supera, sea cual sea la referencia</span></label>
+<span class="val" id="v-ref-max-lufs">-12.0</span>
+<input id="s-ref-max-lufs" max="-6" min="-18" step="0.5" type="range" value="-12"/>
+<p class="note-mini">El match siempre intenta llegar al LUFS de la referencia, pero nunca lo cruza — así controlás cuánto "hot" querés sin importar qué tan comprimida venga la referencia. -18 = conservador/dinámico · -6 = muy hot.</p>
+</div>
+<label class="checkbox-row">
+<input checked="" class="field-input accent-amber" id="s-ref-vocal-protect" type="checkbox"/>
+<span>Proteger voz líder y centro mono</span>
+</label>
+<label class="checkbox-row">
+<input checked="" class="field-input accent-amber" id="s-ref-translation-check" type="checkbox"/>
+<span>Chequeo de traducción: mono, auriculares y parlantes chicos</span>
+</label>
+<label class="checkbox-row toggle-label toggle-label--tight">
+<input class="field-input accent-amber" id="s-ref-alt-versions" type="checkbox"/>
+<span>Preparar metadata para versiones alternativas (clean, instrumental, TV)</span>
+</label>
+<p class="note-mini">
+ Estas opciones viajan al backend y quedan registradas en el reporte del job para habilitar flujos premium auditables.
+ </p>
+</div>
+</details>
+<details class="param param--lg">
+<summary class="details-summary">EQ avanzado</summary>
+<div class="mt-sm">
+<div class="param">
+<label for="s-ref-eq-passes">Pasadas EQ iterativo <span id="v-ref-eq-passes">3</span></label>
+<input id="s-ref-eq-passes" max="4" min="1" step="1" type="range" value="3"/>
+<p class="note-mini">1 = pasada única (anterior), 3 = recomendado, 4 = máximo</p>
+</div>
+<label class="checkbox-row">
+<input checked="" class="field-input accent2" id="s-ref-match-crest" type="checkbox"/>
+<span>Igualar crest factor (dinámica percibida) por banda</span>
+</label>
+<div class="param" id="crest-amount-row">
+<label for="s-ref-crest-amount">Intensidad crest matching <span id="v-ref-crest-amount">75</span>%</label>
+<input id="s-ref-crest-amount" max="100" min="0" step="5" type="range" value="75"/>
+</div>
+<label class="checkbox-row">
+<input checked="" class="field-input accent2" id="s-ref-spectral-dynamics" type="checkbox"/>
+<span>Igualar balance espectral por rango dinámico (suave vs fuerte)</span>
+</label>
+<div class="param">
+<label for="s-ref-spectral-dyn-amount">Intensidad spectral dynamics <span id="v-ref-spectral-dyn-amount">60</span>%</label>
+<input id="s-ref-spectral-dyn-amount" max="100" min="0" step="5" type="range" value="60"/>
+</div>
+<div class="param">
+<label for="s-ref-spectral-dyn-bins">Rangos dinámicos <span id="v-ref-spectral-dyn-bins">4</span></label>
+<input id="s-ref-spectral-dyn-bins" max="4" min="2" step="1" type="range" value="4"/>
+<p class="note-mini">2 = suave/fuerte · 4 = cuartiles</p>
+</div>
+</div>
+</details>
+<details class="param param--lg">
+<summary class="details-summary">Parallel Compression &amp; Saturación</summary>
+<div class="mt-sm">
+<label class="checkbox-row">
+<input class="field-input accent2" id="s-ref-parallel-comp" type="checkbox"/>
+<span>Parallel compression (New York style)</span>
+</label>
+<div class="param">
+<label for="s-ref-parallel-mix">Mix parallel <span id="v-ref-parallel-mix">28</span>%</label>
+<input id="s-ref-parallel-mix" max="60" min="0" step="2" type="range" value="28"/>
+</div>
+<div class="param">
+<label for="s-ref-parallel-thr">Threshold <span id="v-ref-parallel-thr">-20</span> dB</label>
+<input id="s-ref-parallel-thr" max="-6" min="-40" step="1" type="range" value="-20"/>
+</div>
+<div class="param">
+<label for="s-ref-parallel-ratio">Ratio <span id="v-ref-parallel-ratio">4.0</span>:1</label>
+<input id="s-ref-parallel-ratio" max="10" min="1.5" step="0.5" type="range" value="4"/>
+</div>
+<div class="param">
+<label for="s-ref-parallel-makeup">Makeup <span id="v-ref-parallel-makeup">6</span> dB</label>
+<input id="s-ref-parallel-makeup" max="18" min="0" step="0.5" type="range" value="6"/>
+</div>
+<label class="checkbox-row">
+<input class="field-input accent2" id="s-ref-mb-sat" type="checkbox"/>
+<span>Saturación armónica multibanda</span>
+</label>
+<div class="param">
+<label for="s-ref-mb-sat-mix">Mix saturación <span id="v-ref-mb-sat-mix">45</span>%</label>
+<input id="s-ref-mb-sat-mix" max="100" min="0" step="5" type="range" value="45"/>
+</div>
+<div class="param">
+<label for="s-ref-mb-sat-low">Drive bajos <span id="v-ref-mb-sat-low">7</span></label>
+<input id="s-ref-mb-sat-low" max="20" min="0" step="1" type="range" value="7"/>
+</div>
+<div class="param">
+<label for="s-ref-mb-sat-mid">Drive medios <span id="v-ref-mb-sat-mid">4</span></label>
+<input id="s-ref-mb-sat-mid" max="15" min="0" step="1" type="range" value="4"/>
+</div>
+<div class="param">
+<label for="s-ref-mb-sat-high">Drive agudos <span id="v-ref-mb-sat-high">2</span></label>
+<input id="s-ref-mb-sat-high" max="10" min="0" step="1" type="range" value="2"/>
+</div>
+<div class="param">
+<label for="s-ref-mb-sat-mode">Modo saturación</label>
+<select class="mt-xs" id="s-ref-mb-sat-mode">
+<option selected="" value="tape">Tape (3er armónico)</option>
+<option value="analog">Analog (2do+3er)</option>
+<option value="tube">Tube (2do armónico)</option>
+</select>
+</div>
+<label class="checkbox-row">
+<input checked="" class="field-input accent2" id="s-ref-two-stage-lim" type="checkbox"/>
+<span>Limitador dos etapas (gentle + brickwall)</span>
+</label>
+<div class="param">
+<label for="s-ref-gentle-ceil">Ceiling gentle <span id="v-ref-gentle-ceil">-2.5</span> dBTP</label>
+<input id="s-ref-gentle-ceil" max="-0.5" min="-12" step="0.5" type="range" value="-2.5"/>
+</div>
+<div class="param">
+<label for="s-ref-gentle-rel">Release gentle <span id="v-ref-gentle-rel">120</span> ms</label>
+<input id="s-ref-gentle-rel" max="500" min="20" step="10" type="range" value="120"/>
+</div>
+</div>
+</details>
+<button class="btn btn-ref btn-block" disabled="" id="btnMasterRef" type="button">
+ Masterizar con referencia
+ </button>
+<button class="btn btn-secondary btn-block" disabled="" id="btnRefPreview" type="button">
+ Preview 10s (seg. 40)
+ </button>
+<!-- Preview en tiempo real con referencia -->
+<div class="hidden-panel mt-lg" id="refPreviewPanel">
+<div class="section-title-row section-title-row--compact">
+<span class="note-mini">Preview en tiempo real — seg. 40–50</span>
+<button class="btn btn-tertiary" id="btnRefPreviewStop" type="button">Stop</button>
+</div>
+<!-- Métricas en tiempo real -->
+<div class="dash-metrics-row">
+<span>LUFS <b id="rp-lufs">--</b></span>
+<span>Peak <b id="rp-peak">--</b></span>
+<span>RMS <b id="rp-rms">--</b></span>
+<span>Corr <b id="rp-corr">--</b></span>
+</div>
+<!-- Curva EQ del matching -->
+<div class="hidden-panel mt-sm" id="refEqCurveWrap">
+<div class="note-small mb-sm">Curva EQ de matching aplicada</div>
+<canvas class="canvas-block" height="50" id="refEqCurveCanvas" width="320" aria-label="Curva EQ de referencia"></canvas>
+</div>
+<div class="note-mini mt-sm" id="rp-status"></div>
+</div>
+</div>
+</details>
+<!-- /match mastering -->
+</div>
+</details>
+<!-- ══════ PASO 2 — Cadena de mastering ══════ -->
+<details class="process-card process-card-collapsible sidebar-pane-cadena" id="pasoCadena">
+<summary class="process-card-header">
+<span class="process-card-step">Paso 2</span>
+<span class="process-card-copy">Cadena de mastering</span>
+</summary>
+<div class="process-card-body">
+<!-- ── Etapa 0: Reducción de Ruido ── -->
+<div>
+<h3 class="section-label">
+<span class="stage-num">0</span>
+ Reducción de Ruido
+ </h3>
+<label class="toggle-label">
+<input checked="" class="field-input" id="s-nr-bypass" type="checkbox"/>
+ Bypass reducción de ruido
+ </label>
+<div class="control-row-wide">
+<div>
+<label class="param-label" for="s-nr-strength">Intensidad</label>
+<input aria-label="Intensidad de reducción de ruido" id="s-nr-strength" max="1" min="0" step="0.05" type="range" value="0.5"/>
+<span class="val-badge" id="v-nr-strength">0.50</span>
+<span class="param-hint">0 = ninguna · 1 = máxima</span>
+</div>
+<div>
+<label class="param-label" for="s-nr-noise-sample-sec">Muestra de ruido (seg)</label>
+<input aria-label="Duración de la muestra de ruido, en segundos" id="s-nr-noise-sample-sec" max="5" min="0.1" step="0.1" type="range" value="0.5"/>
+<span class="val-badge" id="v-nr-noise-sample-sec">0.5s</span>
+<span class="param-hint">Zona inicial para perfil de ruido</span>
+</div>
+</div>
+</div>
+<!-- ── Etapa 1: Input Gain ── -->
+<div>
+<h3 class="section-label">
+<span class="stage-num">1</span>
+ Input Gain — trim
+ </h3>
+<div class="param">
+<label for="s-ingain">Ganancia de entrada</label>
+<span class="val" id="v-ingain">0.0 dB</span>
+<input id="s-ingain" max="24" min="-24" step="0.1" type="range" value="0"/>
+</div>
+</div>
+<!-- ── Etapas 2–3: EQ (filtros + cirugía) ── -->
+<div class="control-card">
+<div class="control-card-head">
+<div>
+<div class="control-card-kicker">EQ</div>
+<h2 class="control-card-title">Ecualización</h2>
+</div>
+<div class="control-card-badge">Forma tonal</div>
+</div>
+<div class="control-card-body">
+<div class="control-stack">
+<div class="interactive-eq-hud-card" id="interactiveEqHudCard">
+  <div class="eq-hud-header">
+    <span class="eq-hud-title">ANALOG VECTOR EQ TRANSFER CURVE</span>
+    <span class="eq-hud-badge" id="eqSplineModeBadge">WEISS LINEAR PHASE</span>
+  </div>
+  <div class="eq-curve-stage crt-screen">
+    <canvas id="lgmdmEqCurveCanvas" width="600" height="160" aria-label="Curva Vectorial de Ecualización Interactiva"></canvas>
+    <div class="eq-curve-grid-overlay"></div>
+  </div>
+  <div class="eq-hud-controls-row">
+    <div class="stepped-marconi-cell" id="marconiShelfCell" title="Selector Escalonado Marconi Pultec">
+      <span class="marconi-label">PULTEC LF SHELF</span>
+      <div class="marconi-assembly">
+        <div class="marconi-brass-ring">
+          <span class="step-tick" style="--step-deg: -90deg;" data-val="30">30</span>
+          <span class="step-tick" style="--step-deg: -45deg;" data-val="60">60</span>
+          <span class="step-tick" style="--step-deg: 0deg;" data-val="100">100</span>
+          <span class="step-tick" style="--step-deg: 45deg;" data-val="150">150</span>
+          <span class="step-tick" style="--step-deg: 90deg;" data-val="250">250</span>
+        </div>
+        <div class="marconi-pointer" id="marconiShelfFreq" tabindex="0" role="slider" aria-label="Frecuencia Pultec Escalonada" aria-valuemin="30" aria-valuemax="250" aria-valuenow="100">
+          <div class="marconi-wing"></div>
+          <div class="marconi-center-cap"></div>
+        </div>
+      </div>
+      <span class="marconi-val-pill" id="marconiShelfVal">100 Hz</span>
+    </div>
+    <div class="eq-dyn-bells-telemetry">
+      <div class="dyn-bell-item"><span class="dyn-bell-dot b1"></span><span>B1: 100Hz</span><strong id="dynBellVal1">0.0 dB</strong></div>
+      <div class="dyn-bell-item"><span class="dyn-bell-dot b3"></span><span>B3: 1kHz</span><strong id="dynBellVal3">0.0 dB</strong></div>
+      <div class="dyn-bell-item"><span class="dyn-bell-dot b6"></span><span>B6: 12kHz</span><strong id="dynBellVal6">0.0 dB</strong></div>
+    </div>
+  </div>
+</div>
+<h3 class="section-label">
+<span class="stage-num">2</span>
+ Filtros de borde
+ </h3>
+<div class="param">
+<label for="s-hp">High-pass cutoff</label>
+<span class="val" id="v-hp">30 Hz</span>
+<input id="s-hp" max="500" min="20" step="5" type="range" value="30"/>
+</div>
+<label class="toggle-label toggle-label--tight">
+<input checked="" class="field-input" id="s-lp-bypass" type="checkbox"/>
+ Bypass low-pass
+ </label>
+<div class="param">
+<label for="s-lp-cutoff">Low-pass cutoff</label>
+<span class="val" id="v-lp-cutoff">18.0 kHz</span>
+<input id="s-lp-cutoff" max="22000" min="1000" step="100" type="range" value="18000"/>
+</div>
+<h3 class="section-label mt-lg">
+<span class="stage-num">3</span>
+ EQ correctiva / cirugía
+ </h3>
+<div class="eq4-wrap">
+<div class="eq4-band">
+<div class="eq4-header"><span class="eq4-num">B1</span></div>
+<div class="param">
+<label for="s-eq1freq">Freq</label>
+<span class="val" id="v-eq1freq-disp">100 Hz</span>
+<input id="s-eq1freq" max="20000" min="20" step="10" type="range" value="100"/>
+</div>
+<div class="param">
+<label for="s-eq1gain">Gain</label>
+<span class="val" id="v-eq1gain">0 dB</span>
+<input id="s-eq1gain" max="18" min="-18" step="0.5" type="range" value="0"/>
+</div>
+<div class="param">
+<label for="s-eq1q">Q</label>
+<span class="val" id="v-eq1q">1.0</span>
+<input id="s-eq1q" max="10" min="0.1" step="0.1" type="range" value="1.0"/>
+</div>
+</div>
+<div class="eq4-band">
+<div class="eq4-header"><span class="eq4-num">B2</span></div>
+<div class="param">
+<label for="s-eq2freq">Freq</label>
+<span class="val" id="v-eq2freq-disp">500 Hz</span>
+<input id="s-eq2freq" max="20000" min="20" step="10" type="range" value="500"/>
+</div>
+<div class="param">
+<label for="s-eq2gain">Gain</label>
+<span class="val" id="v-eq2gain">0 dB</span>
+<input id="s-eq2gain" max="18" min="-18" step="0.5" type="range" value="0"/>
+</div>
+<div class="param">
+<label for="s-eq2q">Q</label>
+<span class="val" id="v-eq2q">1.0</span>
+<input id="s-eq2q" max="10" min="0.1" step="0.1" type="range" value="1.0"/>
+</div>
+</div>
+<div class="eq4-band">
+<div class="eq4-header"><span class="eq4-num">B3</span></div>
+<div class="param">
+<label for="s-eq3freq">Freq</label>
+<span class="val" id="v-eq3freq-disp">2 kHz</span>
+<input id="s-eq3freq" max="20000" min="20" step="10" type="range" value="2000"/>
+</div>
+<div class="param">
+<label for="s-eq3gain">Gain</label>
+<span class="val" id="v-eq3gain">0 dB</span>
+<input id="s-eq3gain" max="18" min="-18" step="0.5" type="range" value="0"/>
+</div>
+<div class="param">
+<label for="s-eq3q">Q</label>
+<span class="val" id="v-eq3q">1.0</span>
+<input id="s-eq3q" max="10" min="0.1" step="0.1" type="range" value="1.0"/>
+</div>
+</div>
+</div>
+<!-- Dynamic EQ resonancias — etapa 3 -->
+<h3 class="section-label space-top-sm">
+ Dynamic EQ — Resonancias
+ <label class="toggle-label-right">
+<input checked="" id="s-reso-bypass" type="checkbox"/>
+ Bypass
+ </label>
+</h3>
+<div class="param">
+<label for="s-reso-freq">Frecuencia (Hz)</label>
+<span class="val" id="v-reso-freq">1.2 kHz</span>
+<input id="s-reso-freq" max="16000" min="200" step="10" type="range" value="1200"/>
+</div>
+<div class="param">
+<label for="s-reso-q">Q (selectividad)</label>
+<span class="val" id="v-reso-q">3.0</span>
+<input id="s-reso-q" max="12.0" min="0.5" step="0.1" type="range" value="3.0"/>
+</div>
+<div class="param">
+<label for="s-reso-thresh">Threshold</label>
+<span class="val" id="v-reso-thresh">-18.0 dB</span>
+<input id="s-reso-thresh" max="0" min="-60" step="0.5" type="range" value="-18"/>
+</div>
+<div class="param">
+<label for="s-reso-ratio">Ratio</label>
+<span class="val" id="v-reso-ratio">3.0:1</span>
+<input id="s-reso-ratio" max="20.0" min="1.0" step="0.5" type="range" value="3.0"/>
+</div>
+<div class="param">
+<label for="s-reso-attack">Attack</label>
+<span class="val" id="v-reso-attack">5.0 ms</span>
+<input id="s-reso-attack" max="100" min="0.1" step="0.1" type="range" value="5.0"/>
+</div>
+<div class="param">
+<label for="s-reso-release">Release</label>
+<span class="val" id="v-reso-release">100 ms</span>
+<input id="s-reso-release" max="1000" min="5" step="5" type="range" value="100"/>
+</div>
+<div class="param">
+<label for="s-reso-maxred">Reducción máx.</label>
+<span class="val" id="v-reso-maxred">8.0 dB</span>
+<input id="s-reso-maxred" max="30" min="0" step="0.5" type="range" value="8"/>
+</div>
+<!-- Balance tonal automático (EQ inteligente sin referencia) — etapa 6 -->
+<h3 class="section-label space-top-sm">
+ Balance tonal automático
+ <label class="toggle-label-right">
+<input checked="" id="s-tonalbal-bypass" type="checkbox"/>
+ Bypass
+ </label>
+</h3>
+<div class="param">
+<label for="s-tonalbal-amount">Cantidad (mix)</label>
+<span class="val" id="v-tonalbal-amount">1.00</span>
+<input id="s-tonalbal-amount" max="1" min="0" step="0.01" type="range" value="1.0"/>
+</div>
+<div class="param">
+<label for="s-tonalbal-boost">Boost máx.</label>
+<span class="val" id="v-tonalbal-boost">3.5 dB</span>
+<input id="s-tonalbal-boost" max="12" min="0" step="0.5" type="range" value="3.5"/>
+</div>
+<div class="param">
+<label for="s-tonalbal-cut">Corte máx.</label>
+<span class="val" id="v-tonalbal-cut">-4.5 dB</span>
+<input id="s-tonalbal-cut" max="0" min="-12" step="0.5" type="range" value="-4.5"/>
+</div>
+<div class="param">
+<label for="s-tonalbal-bands">Bandas máx.</label>
+<span class="val" id="v-tonalbal-bands">6</span>
+<input id="s-tonalbal-bands" max="12" min="1" step="1" type="range" value="6"/>
+</div>
+<!-- EQ tonal sweetening — etapa 6 -->
+<h3 class="section-label space-top-sm">
+<span class="stage-num">6</span>
+ EQ tonal / sweetening
+ </h3>
+<div class="eq4-wrap">
+<div class="eq4-band">
+<div class="eq4-header"><span class="eq4-num">B4</span></div>
+<div class="param">
+<label for="s-eq4freq">Freq</label>
+<span class="val" id="v-eq4freq-disp">8 kHz</span>
+<input id="s-eq4freq" max="20000" min="20" step="10" type="range" value="8000"/>
+</div>
+<div class="param">
+<label for="s-eq4gain">Gain</label>
+<span class="val" id="v-eq4gain">0 dB</span>
+<input id="s-eq4gain" max="18" min="-18" step="0.5" type="range" value="0"/>
+</div>
+<div class="param">
+<label for="s-eq4q">Q</label>
+<span class="val" id="v-eq4q">1.0</span>
+<input id="s-eq4q" max="10" min="0.1" step="0.1" type="range" value="1.0"/>
+</div>
+</div>
+<div class="eq4-band">
+<div class="eq4-header"><span class="eq4-num">B5</span></div>
+<div class="param">
+<label for="s-eq5freq">Freq</label>
+<span class="val" id="v-eq5freq-disp">200 Hz</span>
+<input id="s-eq5freq" max="20000" min="20" step="10" type="range" value="200"/>
+</div>
+<div class="param">
+<label for="s-eq5gain">Gain</label>
+<span class="val" id="v-eq5gain">0 dB</span>
+<input id="s-eq5gain" max="18" min="-18" step="0.5" type="range" value="0"/>
+</div>
+<div class="param">
+<label for="s-eq5q">Q</label>
+<span class="val" id="v-eq5q">1.0</span>
+<input id="s-eq5q" max="10" min="0.1" step="0.1" type="range" value="1.0"/>
+</div>
+</div>
+<div class="eq4-band">
+<div class="eq4-header"><span class="eq4-num">B6</span></div>
+<div class="param">
+<label for="s-eq6freq">Freq</label>
+<span class="val" id="v-eq6freq-disp">1 kHz</span>
+<input id="s-eq6freq" max="20000" min="20" step="10" type="range" value="1000"/>
+</div>
+<div class="param">
+<label for="s-eq6gain">Gain</label>
+<span class="val" id="v-eq6gain">0 dB</span>
+<input id="s-eq6gain" max="18" min="-18" step="0.5" type="range" value="0"/>
+</div>
+<div class="param">
+<label for="s-eq6q">Q</label>
+<span class="val" id="v-eq6q">1.0</span>
+<input id="s-eq6q" max="10" min="0.1" step="0.1" type="range" value="1.0"/>
+</div>
+</div>
+</div>
+<div class="eq-curve-wrap"><canvas id="eqCurveCanvas" aria-label="Curva de ecualización" width="800" height="200"></canvas></div>
+<div class="param">
+<label for="s-air">Air / Brillo — High Shelf Gain</label>
+<span class="val" id="v-air">+2 dB</span>
+<input id="s-air" max="12" min="-12" step="0.5" type="range" value="2"/>
+</div>
+<div class="param">
+<label for="s-shelf-freq">High Shelf — Frecuencia</label>
+<span class="val" id="v-shelf-freq">8.0 kHz</span>
+<input id="s-shelf-freq" max="20000" min="1000" step="100" type="range" value="8000"/>
+</div>
+<!-- EQ Mode -->
+<h3 class="section-label space-top-sm">Modo EQ</h3>
+<div class="param">
+<label for="s-lowshelf">Calidez / Cuerpo — Low Shelf Gain</label>
+<span class="val" id="v-lowshelf">0 dB</span>
+<input id="s-lowshelf" max="12" min="-12" step="0.5" type="range" value="0"/>
+</div>
+<div class="param">
+<label for="s-lowshelf-freq">Low Shelf — Frecuencia</label>
+<span class="val" id="v-lowshelf-freq">100 Hz</span>
+<input id="s-lowshelf-freq" max="2000" min="20" step="10" type="range" value="100"/>
+</div>
+<select aria-label="Modo de ecualización" class="select-full" id="s-eq-mode">
+<option selected="" value="iir">IIR — Zero Phase (por defecto)</option>
+<option value="linear_phase">FIR — Fase Lineal</option>
+</select>
+<div class="param">
+<label for="s-lp-taps">FIR Taps (fase lineal)</label>
+<span class="val" id="v-lp-taps">2049</span>
+<input id="s-lp-taps" max="8193" min="257" step="256" type="range" value="2049"/>
+</div>
+</div>
+</div>
+</div>
+<!-- ── Etapa 4: Mid/Side ── -->
+<div>
+<h3 class="section-label">
+<span class="stage-num">4</span>
+ Mid / Side (EQ + Comp)
+ </h3>
+<div class="param">
+<label for="s-mgain">Ganancia Mid</label>
+<span class="val" id="v-mgain">0 dB</span>
+<input id="s-mgain" max="18" min="-18" step="0.5" type="range" value="0"/>
+</div>
+<div class="param">
+<label for="s-sgain">Ganancia Side</label>
+<span class="val" id="v-sgain">0 dB</span>
+<input id="s-sgain" max="18" min="-18" step="0.5" type="range" value="0"/>
+</div>
+<label class="ms-control-label ms-control-label--compact">
+<input checked="" class="field-input" id="s-mseq-bypass" type="checkbox"/>
+ Bypass EQ M/S bandeada
+ </label>
+<div class="control-row-wide">
+<div>
+<div class="param-label">
+ Mid
+ </div>
+<div class="param">
+<label for="s-mseq-mid-freq">Freq</label>
+<span class="val" id="v-mseq-mid-freq">250 Hz</span>
+<input id="s-mseq-mid-freq" max="2000" min="20" step="10" type="range" value="250"/>
+</div>
+<div class="param">
+<label for="s-mseq-mid-gain">Gain</label>
+<span class="val" id="v-mseq-mid-gain">0 dB</span>
+<input id="s-mseq-mid-gain" max="12" min="-12" step="0.5" type="range" value="0"/>
+</div>
+<div class="param">
+<label for="s-mseq-mid-q">Q</label>
+<span class="val" id="v-mseq-mid-q">1.0</span>
+<input id="s-mseq-mid-q" max="10" min="0.1" step="0.1" type="range" value="1.0"/>
+</div>
+</div>
+<div>
+<div class="param-label">
+ Side
+ </div>
+<div class="param">
+<label for="s-mseq-side-freq">Freq</label>
+<span class="val" id="v-mseq-side-freq">8.0 kHz</span>
+<input id="s-mseq-side-freq" max="20000" min="1000" step="100" type="range" value="8000"/>
+</div>
+<div class="param">
+<label for="s-mseq-side-gain">Gain</label>
+<span class="val" id="v-mseq-side-gain">0 dB</span>
+<input id="s-mseq-side-gain" max="12" min="-12" step="0.5" type="range" value="0"/>
+</div>
+<div class="param">
+<label for="s-mseq-side-q">Q</label>
+<span class="val" id="v-mseq-side-q">1.0</span>
+<input id="s-mseq-side-q" max="10" min="0.1" step="0.1" type="range" value="1.0"/>
+</div>
+</div>
+</div>
+<label class="ms-control-label ms-control-label--spaced">
+<input checked="" class="field-input" id="s-mscomp-bypass" type="checkbox"/>
+ Bypass Compresor M/S
+ </label>
+<div class="control-row-wide">
+<div>
+<div class="param-label">
+ Mid
+ </div>
+<div class="param">
+<label for="s-mscomp-mid-thresh">Threshold</label>
+<span class="val" id="v-mscomp-mid-thresh">-18.0 dB</span>
+<input id="s-mscomp-mid-thresh" max="0" min="-60" step="0.5" type="range" value="-18"/>
+</div>
+<div class="param">
+<label for="s-mscomp-mid-ratio">Ratio</label>
+<span class="val" id="v-mscomp-mid-ratio">2.0:1</span>
+<input id="s-mscomp-mid-ratio" max="20.0" min="1.0" step="0.5" type="range" value="2.0"/>
+</div>
+<div class="param">
+<label for="s-mscomp-mid-attack">Attack</label>
+<span class="val" id="v-mscomp-mid-attack">15.0 ms</span>
+<input id="s-mscomp-mid-attack" max="200" min="0.1" step="0.1" type="range" value="15"/>
+</div>
+<div class="param">
+<label for="s-mscomp-mid-release">Release</label>
+<span class="val" id="v-mscomp-mid-release">120 ms</span>
+<input id="s-mscomp-mid-release" max="2000" min="5" step="5" type="range" value="120"/>
+</div>
+<div class="param">
+<label for="s-mscomp-mid-makeup">Makeup</label>
+<span class="val" id="v-mscomp-mid-makeup">+0.0 dB</span>
+<input id="s-mscomp-mid-makeup" max="24" min="0" step="0.5" type="range" value="0"/>
+</div>
+</div>
+<div>
+<div class="param-label">
+ Side
+ </div>
+<div class="param">
+<label for="s-mscomp-side-thresh">Threshold</label>
+<span class="val" id="v-mscomp-side-thresh">-18.0 dB</span>
+<input id="s-mscomp-side-thresh" max="0" min="-60" step="0.5" type="range" value="-18"/>
+</div>
+<div class="param">
+<label for="s-mscomp-side-ratio">Ratio</label>
+<span class="val" id="v-mscomp-side-ratio">2.0:1</span>
+<input id="s-mscomp-side-ratio" max="20.0" min="1.0" step="0.5" type="range" value="2.0"/>
+</div>
+<div class="param">
+<label for="s-mscomp-side-attack">Attack</label>
+<span class="val" id="v-mscomp-side-attack">15.0 ms</span>
+<input id="s-mscomp-side-attack" max="200" min="0.1" step="0.1" type="range" value="15"/>
+</div>
+<div class="param">
+<label for="s-mscomp-side-release">Release</label>
+<span class="val" id="v-mscomp-side-release">120 ms</span>
+<input id="s-mscomp-side-release" max="2000" min="5" step="5" type="range" value="120"/>
+</div>
+<div class="param">
+<label for="s-mscomp-side-makeup">Makeup</label>
+<span class="val" id="v-mscomp-side-makeup">+0.0 dB</span>
+<input id="s-mscomp-side-makeup" max="24" min="0" step="0.5" type="range" value="0"/>
+</div>
+</div>
+<label class="ms-control-label ms-control-label--grid">
+<input checked="" class="field-input" id="s-mscomp-pdr" type="checkbox"/>
+ PDR (Program-Dependent Release, Mid + Side)
+ </label>
+<div class="param grid-full">
+<label for="s-mscomp-pdr-hold">PDR Hold</label>
+<span class="val" id="v-mscomp-pdr-hold">500 ms</span>
+<input id="s-mscomp-pdr-hold" max="2000" min="50" step="10" type="range" value="500"/>
+</div>
+</div>
+</div>
+<!-- ── Etapa 5: Compresión banda ancha ── -->
+<div class="control-card">
+<div class="control-card-head">
+<div>
+<div class="control-card-kicker">Comp</div>
+<h2 class="control-card-title">Compresión</h2>
+</div>
+<div class="control-card-badge">Control de dinámica</div>
+</div>
+<div class="control-card-body">
+<div class="control-stack">
+<h3 class="section-label">
+<span class="stage-num">5</span>
+ Dinámica — banda ancha VCA/Opto
+ </h3>
+<div class="param">
+<label for="s-thresh">Threshold (dB)</label>
+<span class="val" id="v-thresh">-18.0 dB</span>
+<input id="s-thresh" max="0" min="-60" step="0.5" type="range" value="-18"/>
+</div>
+<div class="param">
+<label for="s-ratio">Ratio</label>
+<span class="val" id="v-ratio">4.0:1</span>
+<input id="s-ratio" max="20.0" min="1.0" step="0.5" type="range" value="4.0"/>
+</div>
+<div class="param">
+<label for="s-cattack">Attack</label>
+<span class="val" id="v-cattack">10.0 ms</span>
+<input id="s-cattack" max="200" min="0.1" step="0.1" type="range" value="10"/>
+</div>
+<div class="param">
+<label for="s-crelease">Release</label>
+<span class="val" id="v-crelease">100 ms</span>
+<input id="s-crelease" max="1000" min="10" step="5" type="range" value="100"/>
+</div>
+<div class="param">
+<label for="s-cmakeup">Makeup</label>
+<span class="val" id="v-cmakeup">+0.0 dB</span>
+<input id="s-cmakeup" max="24" min="-12" step="0.5" type="range" value="0"/>
+</div>
+<label class="toggle-label">
+<input checked="" class="field-input" id="s-comp-link" type="checkbox"/>
+ Stereo link L/R
+ </label>
+<h3 class="section-label mt-lg">
+<span class="stage-num">5b</span>
+ Compresión paralela (New York)
+ <label class="toggle-label-right">
+<input checked="" data-parallel-bypass="" id="parallelBypass" type="checkbox"/>
+ Bypass
+ </label>
+</h3>
+<label class="toggle-label toggle-label--compact">
+<input checked="" class="field-input" id="s-comp-pdr" type="checkbox"/>
+ PDR (Program-Dependent Release)
+ </label>
+<div class="param">
+<label for="s-comp-pdr-hold">PDR Hold</label>
+<span class="val" id="v-comp-pdr-hold">500 ms</span>
+<input id="s-comp-pdr-hold" max="2000" min="50" step="10" type="range" value="500"/>
+</div>
+<div class="param">
+<label for="parallelMix">Mix (dry/wet)</label>
+<span class="val" id="parallelMixVal">0.12</span>
+<input id="parallelMix" max="1" min="0" step="0.01" type="range" value="0.12"/>
+</div>
+<div class="param">
+<label for="parallelThresh">Threshold</label>
+<span class="val" id="parallelThreshVal">-12 dB</span>
+<input id="parallelThresh" max="0" min="-60" step="0.5" type="range" value="-12"/>
+</div>
+<div class="param">
+<label for="parallelRatio">Ratio</label>
+<span class="val" id="parallelRatioVal">4:1</span>
+<input id="parallelRatio" max="20" min="1" step="0.5" type="range" value="4"/>
+</div>
+<div class="param">
+<label for="parallelAttack">Attack</label>
+<span class="val" id="parallelAttackVal">10 ms</span>
+<input id="parallelAttack" max="100" min="0.1" step="0.1" type="range" value="10"/>
+</div>
+<div class="param">
+<label for="parallelRelease">Release</label>
+<span class="val" id="parallelReleaseVal">100 ms</span>
+<input id="parallelRelease" max="1000" min="5" step="5" type="range" value="100"/>
+</div>
+</div>
+</div>
+</div>
+<!-- ── Etapa 7: De-esser ── -->
+<div>
+<h3 class="section-label">
+<span class="stage-num">7</span>
+ De-esser dedicado
+ <label class="toggle-label-right">
+<input checked="" id="s-dyneq-bypass" type="checkbox"/>
+ Bypass
+ </label>
+</h3>
+<div class="param">
+<label for="s-dyneq-freq">Frecuencia (Hz)</label>
+<span class="val" id="v-dyneq-freq">3.0 kHz</span>
+<input id="s-dyneq-freq" max="16000" min="200" step="50" type="range" value="3000"/>
+</div>
+<div class="param">
+<label for="s-dyneq-q">Q (selectividad)</label>
+<span class="val" id="v-dyneq-q">2.5</span>
+<input id="s-dyneq-q" max="12.0" min="0.5" step="0.1" type="range" value="2.5"/>
+</div>
+<div class="param">
+<label for="s-dyneq-thresh">Threshold</label>
+<span class="val" id="v-dyneq-thresh">-18.0 dB</span>
+<input id="s-dyneq-thresh" max="0" min="-60" step="0.5" type="range" value="-18"/>
+</div>
+<div class="param">
+<label for="s-dyneq-ratio">Ratio</label>
+<span class="val" id="v-dyneq-ratio">3.0:1</span>
+<input id="s-dyneq-ratio" max="20.0" min="1.0" step="0.5" type="range" value="3.0"/>
+</div>
+<div class="param">
+<label for="s-dyneq-attack">Attack</label>
+<span class="val" id="v-dyneq-attack">3.0 ms</span>
+<input id="s-dyneq-attack" max="100" min="0.1" step="0.1" type="range" value="3.0"/>
+</div>
+<div class="param">
+<label for="s-dyneq-release">Release</label>
+<span class="val" id="v-dyneq-release">80 ms</span>
+<input id="s-dyneq-release" max="1000" min="5" step="5" type="range" value="80"/>
+</div>
+<div class="param">
+<label for="s-dyneq-maxred">Reducción máx.</label>
+<span class="val" id="v-dyneq-maxred">12.0 dB</span>
+<input id="s-dyneq-maxred" max="30" min="0" step="0.5" type="range" value="12"/>
+</div>
+</div>
+<!-- ── Etapa 8: Compresor Multibanda ── -->
+ <div class="mb-wrap" id="mbWrap">
+<h2 class="control-card-title">
+<span class="stage-num stage-num--highlight">8</span>
+ Compresor Multibanda
+ <label class="toggle-label-right">
+<input checked="" id="mb-bypass" type="checkbox"/>
+ Bypass
+ </label>
+</h2>
+<div class="mb-crossover">
+<div class="param">
+<label for="s-mb-lowx">Cruce Low→Mid</label>
+<span class="val" id="v-mb-lowx">250 Hz</span>
+<input id="s-mb-lowx" max="2000" min="20" step="10" type="range" value="250"/>
+</div>
+<div class="param">
+<label for="s-mb-highx">Cruce Mid→High</label>
+<span class="val" id="v-mb-highx">4000 Hz</span>
+<input id="s-mb-highx" max="20000" min="500" step="50" type="range" value="4000"/>
+</div>
+</div>
+<div class="mb-tabs" role="tablist" aria-label="Bandas del compresor multibanda">
+<button class="mb-tab active" type="button" role="tab" data-band="low" aria-selected="true" aria-controls="mb-panel-low" tabindex="0" id="mb-tab-low">Low</button>
+<button class="mb-tab" type="button" role="tab" data-band="mid" aria-selected="false" aria-controls="mb-panel-mid" tabindex="-1" id="mb-tab-mid">Mid</button>
+<button class="mb-tab" type="button" role="tab" data-band="high" aria-selected="false" aria-controls="mb-panel-high" tabindex="-1" id="mb-tab-high">High</button>
+</div>
+<div class="mb-panel active" id="mb-panel-low">
+<div class="param">
+<label for="s-mb-low-th">Threshold (dB)</label>
+<span class="val" id="v-mb-low-th">-18.0 dB</span>
+<input id="s-mb-low-th" max="0" min="-60" step="0.5" type="range" value="-18"/>
+</div>
+<div class="param">
+<label for="s-mb-low-ratio">Ratio</label>
+<span class="val" id="v-mb-low-ratio">4.0:1</span>
+<input id="s-mb-low-ratio" max="20.0" min="1.0" step="0.5" type="range" value="4.0"/>
+</div>
+<div class="param">
+<label for="s-mb-low-att">Ataque</label>
+<span class="val" id="v-mb-low-att">10 ms</span>
+<input id="s-mb-low-att" max="200" min="0.1" step="0.1" type="range" value="10"/>
+</div>
+<div class="param">
+<label for="s-mb-low-rel">Release</label>
+<span class="val" id="v-mb-low-rel">100 ms</span>
+<input id="s-mb-low-rel" max="1000" min="10" step="5" type="range" value="100"/>
+</div>
+<div class="param">
+<label for="s-mb-low-mu">Make-up</label>
+<span class="val" id="v-mb-low-mu">0 dB</span>
+<input id="s-mb-low-mu" max="24" min="-12" step="0.5" type="range" value="0"/>
+</div>
+</div>
+<label class="ms-control-label ms-control-label--makeup">
+<input checked="" class="field-input" id="s-mb-pdr" type="checkbox"/>
+ PDR (Program-Dependent Release, comparte config las 3 bandas)
+ </label>
+<div class="param">
+<label for="s-mb-pdr-hold">PDR Hold</label>
+<span class="val" id="v-mb-pdr-hold">500 ms</span>
+<input id="s-mb-pdr-hold" max="2000" min="50" step="10" type="range" value="500"/>
+</div>
+<div class="mb-panel" id="mb-panel-mid">
+<div class="param">
+<label for="s-mb-mid-th">Threshold (dB)</label>
+<span class="val" id="v-mb-mid-th">-18.0 dB</span>
+<input id="s-mb-mid-th" max="0" min="-60" step="0.5" type="range" value="-18"/>
+</div>
+<div class="param">
+<label for="s-mb-mid-ratio">Ratio</label>
+<span class="val" id="v-mb-mid-ratio">4.0:1</span>
+<input id="s-mb-mid-ratio" max="20.0" min="1.0" step="0.5" type="range" value="4.0"/>
+</div>
+<div class="param">
+<label for="s-mb-mid-att">Ataque</label>
+<span class="val" id="v-mb-mid-att">10 ms</span>
+<input id="s-mb-mid-att" max="200" min="0.1" step="0.1" type="range" value="10"/>
+</div>
+<div class="param">
+<label for="s-mb-mid-rel">Release</label>
+<span class="val" id="v-mb-mid-rel">100 ms</span>
+<input id="s-mb-mid-rel" max="1000" min="10" step="5" type="range" value="100"/>
+</div>
+<div class="param">
+<label for="s-mb-mid-mu">Make-up</label>
+<span class="val" id="v-mb-mid-mu">0 dB</span>
+<input id="s-mb-mid-mu" max="24" min="-12" step="0.5" type="range" value="0"/>
+</div>
+</div>
+<div class="mb-panel" id="mb-panel-high">
+<div class="param">
+<label for="s-mb-high-th">Threshold (dB)</label>
+<span class="val" id="v-mb-high-th">-18.0 dB</span>
+<input id="s-mb-high-th" max="0" min="-60" step="0.5" type="range" value="-18"/>
+</div>
+<div class="param">
+<label for="s-mb-high-ratio">Ratio</label>
+<span class="val" id="v-mb-high-ratio">4.0:1</span>
+<input id="s-mb-high-ratio" max="20.0" min="1.0" step="0.5" type="range" value="4.0"/>
+</div>
+<div class="param">
+<label for="s-mb-high-att">Ataque</label>
+<span class="val" id="v-mb-high-att">10 ms</span>
+<input id="s-mb-high-att" max="200" min="0.1" step="0.1" type="range" value="10"/>
+</div>
+<div class="param">
+<label for="s-mb-high-rel">Release</label>
+<span class="val" id="v-mb-high-rel">100 ms</span>
+<input id="s-mb-high-rel" max="1000" min="10" step="5" type="range" value="100"/>
+</div>
+<div class="param">
+<label for="s-mb-high-mu">Make-up</label>
+<span class="val" id="v-mb-high-mu">0 dB</span>
+<input id="s-mb-high-mu" max="24" min="-12" step="0.5" type="range" value="0"/>
+</div>
+</div>
+</div>
+<!-- ── Etapa 9: Transient Shaper ── -->
+<div>
+<h3 class="section-label">
+<span class="stage-num">9</span>
+ Transient Shaper
+ </h3>
+<div class="param">
+<label for="s-tatt">Ataque (punch)</label>
+<span class="val" id="v-tatt">+0.00</span>
+<input id="s-tatt" max="1.0" min="-1.0" step="0.05" type="range" value="0"/>
+</div>
+<div class="param">
+<label for="s-tsus">Sustain (cuerpo)</label>
+<span class="val" id="v-tsus">+0.00</span>
+<input id="s-tsus" max="1.0" min="-1.0" step="0.05" type="range" value="0"/>
+</div>
+</div>
+<!-- ── Etapa 10: Saturación ── -->
+<div>
+<h3 class="section-label">
+<span class="stage-num">10</span>
+ Saturación armónica
+ </h3>
+<div class="param">
+<label for="s-satdrive">Drive</label>
+<span class="val" id="v-satdrive">0%</span>
+<input id="s-satdrive" max="1.0" min="0" step="0.01" type="range" value="0"/>
+</div>
+<div class="param">
+<label for="s-satmix">Mix</label>
+<span class="val" id="v-satmix">100%</span>
+<input id="s-satmix" max="1.0" min="0" step="0.01" type="range" value="1.0"/>
+</div>
+<select aria-label="Modo de saturación" class="mt-xs select-full" id="s-satmode">
+<option value="tape">Tape (cálido)</option>
+<option value="tube">Tube (válvula)</option>
+<option value="analog">Analog (consola/cinta)</option>
+</select>
+<div class="vacuum-tube-cell-rack" id="vacuumTubeStage10" title="Válvula Termiónica Mullard ECC83 / 12AX7">
+  <div class="tube-viewport-frame">
+    <div class="tube-glass-dome lg">
+      <div class="tube-getter-flash"></div>
+      <div class="tube-reflection-left"></div>
+      <div class="tube-reflection-right"></div>
+      <div class="tube-anode-plate lg"><div class="tube-grid-vents"></div></div>
+      <div class="tube-filament-core lg" id="rackFilamentGlow"></div>
+      <div class="tube-cathode-corona lg" id="rackFilamentCorona"></div>
+    </div>
+    <div class="tube-base-socket"><div class="tube-pin-reflection"></div></div>
+    <div class="tube-telemetry">
+      <span class="tube-type">MULLARD ECC83 / 12AX7</span>
+      <span class="tube-status" id="tubeFilamentTemp">WARM · CLASS A BIAS</span>
+    </div>
+  </div>
+</div>
+<div class="tape-deck-viewport" id="tapeDeckViewport" title="Grabadora de Cinta Studer A820 1/2 pulgada">
+  <div class="tape-deck-chassis">
+    <div class="tape-reel supply-reel" id="tapeSupplyReel">
+      <div class="reel-flange">
+        <div class="nab-hub"></div>
+        <div class="strobe-cutout s1"></div>
+        <div class="strobe-cutout s2"></div>
+        <div class="strobe-cutout s3"></div>
+      </div>
+      <div class="tape-pack supply-pack" id="tapeSupplyPack"></div>
+    </div>
+    <div class="tape-headblock">
+      <div class="tension-arm left" id="tensionArmL"></div>
+      <div class="guide-roller"></div>
+      <div class="tape-head-cluster">
+        <div class="head-shield"></div>
+        <span class="head-label">STUDER 30 IPS</span>
+      </div>
+      <div class="guide-roller"></div>
+      <div class="tension-arm right" id="tensionArmR"></div>
+    </div>
+    <div class="tape-reel takeup-reel" id="tapeTakeupReel">
+      <div class="reel-flange">
+        <div class="nab-hub"></div>
+        <div class="strobe-cutout s1"></div>
+        <div class="strobe-cutout s2"></div>
+        <div class="strobe-cutout s3"></div>
+      </div>
+      <div class="tape-pack takeup-pack" id="tapeTakeupPack"></div>
+    </div>
+  </div>
+  <div class="tape-telemetry-badge">
+    <span class="tape-speed">STUDER A820 · 30 IPS · NAB FLUX 510 nWb/m</span>
+    <span class="tape-status" id="tapeStatusText">TAPE STOPPED</span>
+  </div>
+</div>
+<div class="thd-harmonic-matrix-card" id="thdHarmonicMatrix" title="Matriz de Distorsión Armónica THD+N">
+  <div class="thd-header">
+    <span class="thd-title">THD+N HARMONIC OVERTONE SPECTRUM</span>
+    <span class="thd-badge" id="thdPercentBadge">THD: 0.12%</span>
+  </div>
+  <div class="thd-bars-grid">
+    <div class="thd-col"><span class="thd-label">f0 (1k)</span><div class="thd-track"><div class="thd-bar f0" style="height: 100%;"></div></div><span class="thd-val">0 dB</span></div>
+    <div class="thd-col"><span class="thd-label">2f0 (2k)</span><div class="thd-track"><div class="thd-bar f2" id="thdBar2" style="height: 25%;"></div></div><span class="thd-val" id="thdVal2">-48 dB</span></div>
+    <div class="thd-col"><span class="thd-label">3f0 (3k)</span><div class="thd-track"><div class="thd-bar f3" id="thdBar3" style="height: 18%;"></div></div><span class="thd-val" id="thdVal3">-56 dB</span></div>
+    <div class="thd-col"><span class="thd-label">4f0 (4k)</span><div class="thd-track"><div class="thd-bar f4" id="thdBar4" style="height: 8%;"></div></div><span class="thd-val" id="thdVal4">-68 dB</span></div>
+    <div class="thd-col"><span class="thd-label">5f0 (5k)</span><div class="thd-track"><div class="thd-bar f5" id="thdBar5" style="height: 5%;"></div></div><span class="thd-val" id="thdVal5">-74 dB</span></div>
+  </div>
+  <div class="thd-footer">
+    <span id="thdBalanceText">EVEN TUBE WARMTH: 65% · ODD TAPE PUNCH: 35%</span>
+  </div>
+</div>
+</div>
+<!-- ── Etapa 11: Espacio & Estéreo ── -->
+<div>
+<h3 class="section-label">
+<span class="stage-num">11</span>
+ Espacio &amp; Estéreo
+ </h3>
+<div class="param">
+<label for="s-width">Amplitud estéreo</label>
+<span class="val" id="v-width">1.2x</span>
+<input id="s-width" max="3.0" min="0" step="0.05" type="range" value="1.2"/>
+</div>
+<label class="toggle-label">
+<input class="field-input" id="s-enhancer" type="checkbox"/>
+ Stereo Enhancer (bass-mono + Haas)
+ </label>
+<div class="param">
+<label for="s-haas">Haas delay</label>
+<span class="val" id="v-haas">0 ms</span>
+<input id="s-haas" max="30" min="0" step="0.5" type="range" value="0"/>
+</div>
+<div class="param">
+<label for="s-bassmono">Bass-mono crossover</label>
+<span class="val" id="v-bassmono">120 Hz</span>
+<input id="s-bassmono" max="300" min="40" step="5" type="range" value="120"/>
+</div>
+<div class="param">
+<label for="s-rsize">Reverb — Room Size</label>
+<span class="val" id="v-rsize">0.30</span>
+<input id="s-rsize" max="2.0" min="0.05" step="0.05" type="range" value="0.3"/>
+</div>
+<div class="param">
+<label for="s-rwet">Reverb (wet)</label>
+<span class="val" id="v-rwet">0%</span>
+<input id="s-rwet" max="1.0" min="0" step="0.01" type="range" value="0"/>
+</div>
+<!-- Multiband Stereo Width — etapa 11 -->
+<h3 class="section-label mt-lg">
+ Multiband Stereo Width
+ <label class="toggle-label-right">
+<input checked="" id="mb-stereo-bypass" type="checkbox"/>
+ Bypass
+ </label>
+</h3>
+<div class="param">
+<label for="s-mb-sw-lowx">Cruce Low→Mid</label>
+<span class="val" id="v-mb-sw-lowx">150 Hz</span>
+<input id="s-mb-sw-lowx" max="1000" min="40" step="10" type="range" value="150"/>
+</div>
+<div class="param">
+<label for="s-mb-sw-highx">Cruce Mid→High</label>
+<span class="val" id="v-mb-sw-highx">4000 Hz</span>
+<input id="s-mb-sw-highx" max="18000" min="500" step="100" type="range" value="4000"/>
+</div>
+<div class="param">
+<label for="s-mb-sw-low">Width Graves (Low)</label>
+<span class="val" id="v-mb-sw-low">0.90x</span>
+<input id="s-mb-sw-low" max="3" min="0" step="0.05" type="range" value="0.9"/>
+</div>
+<div class="param">
+<label for="s-mb-sw-mid">Width Medios (Mid)</label>
+<span class="val" id="v-mb-sw-mid">1.20x</span>
+<input id="s-mb-sw-mid" max="3" min="0" step="0.05" type="range" value="1.2"/>
+</div>
+<div class="param">
+<label for="s-mb-sw-high">Width Agudos (High)</label>
+<span class="val" id="v-mb-sw-high">1.50x</span>
+<input id="s-mb-sw-high" max="3" min="0" step="0.05" type="range" value="1.5"/>
+</div>
+<div class="ms-stereo-heatmap-card" id="msStereoHeatmap">
+  <div class="heatmap-header">
+    <span class="heatmap-title">M/S STEREO IMAGING DIFFUSION MATRIX</span>
+    <span class="heatmap-badge" id="heatmapCorrBadge">MONO-SAFE</span>
+  </div>
+  <div class="heatmap-bands-grid">
+    <div class="heatmap-band-col" id="hmBandSub">
+      <span class="band-tag">SUB</span>
+      <span class="band-hz">20-150 Hz</span>
+      <div class="polar-spread-target">
+        <div class="spread-indicator sub-mono"></div>
+      </div>
+      <div class="ms-energy-meter"><div class="ms-bar mid-heavy" id="msBarSub" style="width: 95%;"></div></div>
+      <span class="band-status" id="msStatSub">MONO (0.00x)</span>
+    </div>
+    <div class="heatmap-band-col" id="hmBandLowMid">
+      <span class="band-tag">LOW-MID</span>
+      <span class="band-hz">150-800 Hz</span>
+      <div class="polar-spread-target">
+        <div class="spread-indicator lowmid-oval" id="hmSpreadLowMid"></div>
+      </div>
+      <div class="ms-energy-meter"><div class="ms-bar mid-bal" id="msBarLowMid" style="width: 78%;"></div></div>
+      <span class="band-status" id="msStatLowMid">0.90x SPREAD</span>
+    </div>
+    <div class="heatmap-band-col" id="hmBandHighMid">
+      <span class="band-tag">HIGH-MID</span>
+      <span class="band-hz">800-6k Hz</span>
+      <div class="polar-spread-target">
+        <div class="spread-indicator highmid-wide" id="hmSpreadHighMid"></div>
+      </div>
+      <div class="ms-energy-meter"><div class="ms-bar wide-bal" id="msBarHighMid" style="width: 65%;"></div></div>
+      <span class="band-status" id="msStatHighMid">1.20x SPREAD</span>
+    </div>
+    <div class="heatmap-band-col" id="hmBandAir">
+      <span class="band-tag">AIR</span>
+      <span class="band-hz">6k-20k Hz</span>
+      <div class="polar-spread-target">
+        <div class="spread-indicator air-diffuse" id="hmSpreadAir"></div>
+      </div>
+      <div class="ms-energy-meter"><div class="ms-bar air-aura" id="msBarAir" style="width: 50%;"></div></div>
+      <span class="band-status" id="msStatAir">1.50x DIFFUSE</span>
+    </div>
+  </div>
+</div>
+<div class="binaural-room-card" id="masteringRoomChamber" title="Cámara Acústica Virtual de Masterización">
+  <div class="room-header">
+    <span class="room-title">ACOUSTIC CONTROL ROOM DYNAMICS (60° BINAURAL FIELD)</span>
+    <span class="room-badge" id="roomAcousticBadge">GOLDEN RATIO 1:1.6</span>
+  </div>
+  <div class="room-stage crt-screen">
+    <canvas id="lgmdmRoomCanvas" width="480" height="150" aria-label="Simulador de Cámara Acústica de Sala"></canvas>
+    <div class="room-grid-overlay"></div>
+  </div>
+  <div class="room-telemetry">
+    <div class="room-stat"><small>LISTENING DIST</small><strong>2.4 m</strong></div>
+    <div class="room-stat"><small>CROSSFEED</small><strong id="roomCrossfeedVal">14%</strong></div>
+    <div class="room-stat"><small>ROOM RT60</small><strong>0.22 s</strong></div>
+    <div class="room-stat"><small>DIFFUSION</small><strong id="roomDiffVal">HIGH</strong></div>
+  </div>
+</div>
+</div>
+<!-- ── Etapa 12: Low-End Mono Maker ── -->
+<div>
+<h3 class="section-label">
+<span class="stage-num">12</span>
+ Low-End Mono Maker
+ </h3>
+<div class="param">
+<label for="s-mono-freq">Frecuencia corte (Hz)</label>
+<span class="val" id="v-mono-freq">120 Hz</span>
+<input id="s-mono-freq" max="300" min="40" step="5" type="range" value="120"/>
+</div>
+<div class="param">
+<label for="s-mono-amount">Cantidad mono</label>
+<span class="val" id="v-mono-amount">0%</span>
+<input id="s-mono-amount" max="1.0" min="0" step="0.01" type="range" value="0"/>
+</div>
+</div>
+<!-- ── Etapa 13: Glue Compressor ── -->
+<div>
+<h3 class="section-label">
+<span class="stage-num">13</span>
+ Glue Compressor — bus final
+ </h3>
+<label class="toggle-label">
+<input checked="" class="field-input" id="s-glue-bypass" type="checkbox"/>
+ Bypass glue compressor
+ </label>
+<div class="param">
+<label for="s-glue-thresh">Threshold (dB)</label>
+<span class="val" id="v-glue-thresh">-4.0 dB</span>
+<input id="s-glue-thresh" max="0" min="-24" step="0.5" type="range" value="-4"/>
+</div>
+<div class="param">
+<label for="s-glue-ratio">Ratio</label>
+<span class="val" id="v-glue-ratio">2.0:1</span>
+<input id="s-glue-ratio" max="10" min="1" step="0.5" type="range" value="2"/>
+</div>
+<div class="param">
+<label for="s-glue-attack">Attack</label>
+<span class="val" id="v-glue-attack">30.0 ms</span>
+<input id="s-glue-attack" max="200" min="0.1" step="0.1" type="range" value="30"/>
+</div>
+<div class="param">
+<label for="s-glue-release">Release</label>
+<span class="val" id="v-glue-release">120 ms</span>
+<input id="s-glue-release" max="1000" min="10" step="5" type="range" value="120"/>
+</div>
+<div class="param">
+<label for="s-glue-makeup">Makeup</label>
+<span class="val" id="v-glue-makeup">+0.0 dB</span>
+<input id="s-glue-makeup" max="12" min="-12" step="0.5" type="range" value="0"/>
+</div>
+</div>
+<label class="ms-control-label ms-control-label--bottom">
+<input checked="" class="field-input" id="s-glue-pdr" type="checkbox"/>
+ PDR (Program-Dependent Release)
+ </label>
+<div class="param">
+<label for="s-glue-pdr-hold">PDR Hold</label>
+<span class="val" id="v-glue-pdr-hold">500 ms</span>
+<input id="s-glue-pdr-hold" max="2000" min="50" step="10" type="range" value="500"/>
+</div>
+<!-- ── Etapa 14: Clipper ── -->
+<div>
+<h3 class="section-label">
+<span class="stage-num">14</span>
+ Soft/Hard Clipper
+ </h3>
+<label class="toggle-label toggle-label--compact">
+<input checked="" class="field-input" id="s-clip-bypass" type="checkbox"/>
+ Bypass clipper
+ </label>
+<select aria-label="Modo de clipping" class="select-full" id="s-clip-mode">
+<option selected="" value="soft">Soft (tanh, musical)</option>
+<option value="hard">Hard (corte duro)</option>
+</select>
+<div class="param">
+<label for="s-clip-ceiling">Techo (ceiling)</label>
+<span class="val" id="v-clip-ceiling">0.98</span>
+<input id="s-clip-ceiling" max="1.0" min="0.1" step="0.01" type="range" value="0.98"/>
+</div>
+<div class="param">
+<label for="s-clip-drive">Drive</label>
+<span class="val" id="v-clip-drive">+0.0 dB</span>
+<input id="s-clip-drive" max="24" min="0" step="0.5" type="range" value="0"/>
+</div>
+<div class="aircraft-switch-container">
+  <div class="aircraft-switch-wrap" id="safetyClipperWrap">
+    <div class="safety-guard-cover" id="safetyCoverClipper" title="Cubierta de seguridad: Clic para abrir/cerrar">
+      <div class="safety-cover-stripe"></div>
+      <span class="safety-cover-text">ARMED</span>
+    </div>
+    <div class="aircraft-toggle-lever" id="safetyLeverClipper" tabindex="0" role="switch" aria-checked="false" title="Hard Clipper Safety Switch">
+      <div class="toggle-bat-handle"></div>
+      <div class="toggle-base-bushing"></div>
+    </div>
+  </div>
+  <div class="safety-switch-info">
+    <span class="safety-switch-title">BRICKWALL HARD CLIP OVERRIDE</span>
+    <span class="safety-switch-status" id="safetyStatusClipper">COVER LOCKED · SOFT CLIP</span>
+  </div>
+  <div class="safety-led-indicator" id="safetyLedClipper"></div>
+</div>
+<div class="text-muted-body">
+ Le quita trabajo al limitador antes de que este entre a actuar.
+ </div>
+</div>
+<!-- ── Etapa 15: Normalización & Limiter ── -->
+<div class="control-card">
+<div class="control-card-head">
+<div>
+<div class="control-card-kicker">Limiter</div>
+<h2 class="control-card-title">Normalización y salida</h2>
+</div>
+<div class="control-card-badge">Peak / LUFS</div>
+</div>
+<div class="control-card-body">
+<div class="control-stack">
+<h3 class="section-label">
+<span class="stage-num">15</span>
+ Normalización &amp; Limiter
+ </h3>
+<label class="toggle-label">
+<input class="field-input" id="s-uselufs" type="checkbox"/>
+ Normalizar por LUFS
+ </label>
+<div class="param">
+<label for="s-peak">Target Peak (dBTP)</label>
+<span class="val" id="v-peak">-0.4 dBTP</span>
+<input id="s-peak" max="1.0" min="0.1" step="0.01" type="range" value="0.95"/>
+</div>
+<div class="param">
+<label for="s-lufstarget">LUFS objetivo</label>
+<span class="val" id="v-lufstarget">-14.0 LUFS</span>
+<input id="s-lufstarget" max="0" min="-40" step="0.5" type="range" value="-14"/>
+</div>
+<label class="toggle-label">
+<input class="field-input" id="s-uselufs-adaptive" type="checkbox"/>
+ LUFS adaptativo al oído humano <span class="note-mini">(más sensible 3–6 kHz, como en reference matching)</span>
+</label>
+<div class="param">
+<label for="s-uselufs-sensitivity">Sensibilidad auditiva 3–6 kHz</label>
+<span class="val" id="v-uselufs-sensitivity">65%</span>
+<input id="s-uselufs-sensitivity" max="100" min="0" step="5" type="range" value="65"/>
+</div>
+<div class="param">
+<label for="s-ceiling">Limiter — techo (dBTP)</label>
+<span class="val" id="v-ceiling">-0.1 dBTP</span>
+<input id="s-ceiling" max="1.0" min="0.5" step="0.01" type="range" value="0.99"/>
+</div>
+<div class="param">
+<label for="s-lrelease">Limiter — release</label>
+<span class="val" id="v-lrelease">50 ms</span>
+<input id="s-lrelease" max="500" min="1" step="1" type="range" value="50"/>
+</div>
+</div>
+</div>
+</div>
+<!-- ── Etapa 16: Salida / Oversampling ── -->
+<div>
+<h3 class="section-label">
+<span class="stage-num">16</span>
+ Salida &amp; Oversampling
+ </h3>
+<select aria-label="Modo de oversampling" class="select-full" id="s-oversample">
+<option value="off">Oversampling: off</option>
+<option value="draft">Oversampling: draft</option>
+<option value="fast">Oversampling: fast</option>
+<option selected="" value="quality">Oversampling: quality</option>
+<option value="ultra">Oversampling: ultra</option>
+</select>
+<select aria-label="Formato de salida" class="select-full" id="s-format">
+<option value="wav">WAV</option>
+<option value="flac">FLAC</option>
+<option value="mp3">MP3 320k</option>
+</select>
+<select class="select-full" id="s-bitdepth" aria-label="Bit depth de la salida WAV/FLAC">
+<option value="16">16-bit (dither TPDF)</option>
+<option selected="" value="24">24-bit (recomendado)</option>
+<option value="32">32-bit float</option>
+</select>
+<select class="select-full" id="s-dither-mode" aria-label="Modo de dither / noise shaping al reducir bit depth">
+<option selected="" value="f_weighted">Dither: F-weighted (recomendado)</option>
+<option value="high_shelf">Dither: High-shelf (simple)</option>
+<option value="tpdf">Dither: TPDF plano</option>
+</select>
+</div>
+</div>
+</details>
+<!-- ══════ PASO 3 — Preview y entrega ══════ -->
+<details class="process-card process-card-collapsible sidebar-pane-salida" id="pasoSalida">
+<summary class="process-card-header">
+<span class="process-card-step">Paso 3</span>
+<span class="process-card-copy">Preview y entrega</span>
+</summary>
+<div class="process-card-body">
+<div class="process-card process-card-accent">
+<button class="btn btn-automaster" disabled="" id="btnAutoMaster" type="button" aria-label="Auto-Mastering IA">
+ <svg class="btn-vector-svg" viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;vertical-align:-2px;"><rect x="2.5" y="2.5" width="11" height="11" rx="2.5"/><circle cx="8" cy="8" r="2.5"/><line x1="8" y1="1" x2="8" y2="2.5"/><line x1="8" y1="13.5" x2="8" y2="15"/><line x1="1" y1="8" x2="2.5" y2="8"/><line x1="13.5" y1="8" x2="15" y2="8"/></svg>Auto-Mastering DSP
+ </button>
+<button class="btn btn-secondary" disabled="" id="btnAiSuggest" type="button" aria-label="Sugerir con IA (sin masterizar)">
+ <svg class="btn-vector-svg" viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;vertical-align:-2px;"><path d="M8 2.5v2.5"/><path d="M8 11v2.5"/><path d="M2.5 8h2.5"/><path d="M11 8h2.5"/><circle cx="8" cy="8" r="2"/></svg>Sugerir Parámetros
+ </button>
+<button class="btn btn-primary" disabled="" id="btnMaster" type="button" aria-label="Masterizar">Masterizar</button>
+<div class="grid-2cols-tight" id="secondaryBtnGrid">
+<button class="btn btn-secondary" disabled="" id="btnAnalyzeGrid" type="button" aria-label="Analizar">
+ Analizar
+ </button>
+<button class="btn btn-secondary" disabled="" id="btnAdviceGrid" type="button" aria-label="Consejos">
+ Consejos
+ </button>
+<button class="btn btn-secondary" disabled="" id="btnSpectrum" type="button" aria-label="Spectrum">
+ Spectrum
+ </button>
+<select class="select-full" id="s-stems-mode" aria-label="Modo de separación de stems">
+<option selected="" value="demucs_4stem">Demucs v4 — 4 stems (Voz/Batería/Bajo/Otros)</option>
+<option value="vocals_hq">BS-Roformer — Vocal/Instrumental (HQ)</option>
+</select>
+<button class="btn btn-secondary" disabled="" id="btnStems" type="button" aria-label="Separar stems">Separar Stems</button>
+<button class="btn btn-ab grid-full" disabled="" id="btnAB" type="button" aria-label="Comparar A/B">
+ A/B Compare
+ </button>
+</div>
+<input aria-label="Nombre del tema para la descarga" class="hidden-panel" id="trackNameInput" maxlength="120" name="trackName" autocomplete="off" placeholder="Nombre del tema para la descarga" type="text"/>
+<button class="btn btn-download" id="btnDownload" type="button" aria-label="Descargar">Descargar Master</button>
+<button class="btn btn-report" id="btnReport" type="button" aria-label="Reporte JSON">Reporte JSON</button>
+</div>
+<div class="aside-scroll-hint" id="asideScrollHint"></div>
+</div>
+</details>
+<!-- ══════ PASO 4 — Mixer ══════ -->
+<div class="sidebar-pane-mixer" id="pasoMixer">
+<div id="mixerSidePanel" class="mxr-side-panel"></div>
+</div>
+</div>
+<!-- /control-stack -->
+</div>
+<!-- /sidebarPaneContainer -->
+</aside>
+<div aria-label="Redimensionar panel lateral" aria-orientation="vertical" class="resize-handle" id="sidebarResizeHandle" role="separator" tabindex="0"></div>
+<button aria-label="Expandir panel lateral" class="sidebar-tab-collapse sidebar-uncollapse-btn" id="sidebarUncollapseBtn" title="Expandir panel lateral" type="button" hidden>▶</button>
+<!-- CONTENT AREA PRINCIPAL -->
+<main class="content-area lg-workspace-region" id="main" tabindex="-1">
+<div aria-label="Contenido principal" class="content lg-content" id="content" tabindex="-1">
+<div class="content-shell lg-content-shell">
+<div class="lg-workspace-workspace-shell" id="lgmdmWorkspaceShell">
+<nav aria-label="Espacios de trabajo LGMDM" class="lg-workspace-workspace-tabs" role="tablist" aria-orientation="horizontal">
+<button id="tab-console" aria-selected="true" aria-controls="console-workspace" class="lg-workspace-workspace-tab active" data-workspace="console" role="tab" type="button" tabindex="0"><svg class="lg-workspace-tab-svg" aria-hidden="true" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="12" height="10" rx="2"/><line x1="5" y1="5.5" x2="5" y2="10.5"/><circle cx="5" cy="7" r="1" fill="currentColor"/><line x1="8" y1="5.5" x2="8" y2="10.5"/><circle cx="8" cy="9" r="1" fill="currentColor"/><line x1="11" y1="5.5" x2="11" y2="10.5"/><circle cx="11" cy="7" r="1" fill="currentColor"/></svg>Console</button>
+<button id="tab-analysis" aria-selected="false" aria-controls="analysis-workspace" class="lg-workspace-workspace-tab" data-workspace="analysis" role="tab" type="button" tabindex="-1"><svg class="lg-workspace-tab-svg" aria-hidden="true" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><line x1="2.5" y1="13" x2="2.5" y2="10"/><line x1="5.5" y1="13" x2="5.5" y2="6"/><line x1="8.5" y1="13" x2="8.5" y2="3"/><line x1="11.5" y1="13" x2="11.5" y2="7.5"/><line x1="14.5" y1="13" x2="14.5" y2="11"/></svg>Analysis</button>
+<button id="tab-presets" aria-selected="false" aria-controls="presets-workspace" class="lg-workspace-workspace-tab" data-workspace="presets" role="tab" type="button" tabindex="-1"><svg class="lg-workspace-tab-svg" aria-hidden="true" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3.5" width="12" height="9" rx="1.5"/><circle cx="5.5" cy="8" r="1.5"/><circle cx="10.5" cy="8" r="1.5"/><line x1="5.5" y1="8" x2="10.5" y2="8"/></svg>Presets</button>
+</nav>
+<div class="preview-controls-row">
+ <label class="ms-control-label ms-control-label--preview">
+ <input checked="" id="s-livepreview" type="checkbox"/>
+  Habilitar Live Preview
+ </label>
+ <span class="text-muted-body preview-controls-note">El servidor renderiza un Preview completo con los parámetros actuales. Solo cuando termina se habilita la reproducción.</span>
+</div>
+<section id="console-workspace" class="lg-workspace-workspace console-workspace active" data-workspace="console" role="tabpanel" aria-labelledby="tab-console">
+<section aria-label="LGMDM Mastering Console" class="lg-console" id="lgMasterConsole">
+<div class="lg-rack-ear lg-rack-ear-left" aria-hidden="true">
+  <div class="rack-screw-group top"><div class="rack-screw"><div class="hex-socket"></div></div></div>
+  <div class="rack-u-label">1U</div>
+  <div class="rack-slot"></div>
+  <div class="rack-u-label">2U</div>
+  <div class="rack-slot"></div>
+  <div class="rack-u-label">3U</div>
+  <div class="rack-screw-group bottom"><div class="rack-screw"><div class="hex-socket"></div></div></div>
+</div>
+<div class="lg-rack-ear lg-rack-ear-right" aria-hidden="true">
+  <div class="rack-screw-group top"><div class="rack-screw"><div class="hex-socket"></div></div></div>
+  <div class="rack-u-label">1U</div>
+  <div class="rack-slot"></div>
+  <div class="rack-u-label">2U</div>
+  <div class="rack-slot"></div>
+  <div class="rack-u-label">3U</div>
+  <div class="rack-screw-group bottom"><div class="rack-screw"><div class="hex-socket"></div></div></div>
+</div>
+<div class="lg-console-topbar">
+<div class="lg-console-title">
+<span class="lg-kicker">MASTER BUS</span>
+<strong id="consoleTrackTitle">Sin archivo cargado</strong>
+<span class="lg-muted" id="consoleTrackMeta">Esperando señal</span>
+</div>
+<div class="lg-console-toolbar">
+  <div class="vintage-jewel-lamp" id="jewelLampBeacon" title="True Peak & Inter-Sample Peak (ISP) Warning Beacon">
+    <div class="jewel-metal-bezel">
+      <div class="jewel-facet-glass">
+        <div class="jewel-sparkle"></div>
+      </div>
+    </div>
+    <span class="jewel-tag">ISP PEAK</span>
+  </div>
+  <div class="lg-chassis-selector" id="consoleChassisSelector" title="Hardware Chassis Skin (Acabado de Consola)">
+    <span class="chassis-label">CHASSIS</span>
+    <div class="chassis-buttons">
+      <button type="button" class="chassis-btn active" data-chassis="slate">SLATE</button>
+      <button type="button" class="chassis-btn" data-chassis="neve">NEVE</button>
+      <button type="button" class="chassis-btn" data-chassis="ssl">SSL</button>
+      <button type="button" class="chassis-btn" data-chassis="obsidian">OBSIDIAN</button>
+    </div>
+  </div>
+  <button type="button" class="lg-crt-btn active" id="consoleCrtToggle" title="Alternar filtro CRT phosphor & scanlines"><span class="crt-led-dot"></span>CRT SCOPE</button>
+</div>
+<div class="lg-console-actions">
+<button class="lg-ghost-btn" id="consoleAnalyzeBtn" type="button">ANALIZAR</button>
+<button class="lg-primary-btn" id="consoleMasterBtn" type="button">MASTER</button>
+</div>
+</div>
+<div class="lg-vfd-strip" id="consoleVfdStrip" aria-label="Pantalla VFD de Telemetría">
+  <div class="vfd-bezel">
+    <div class="vfd-screen">
+      <div class="vfd-grid-mesh"></div>
+      <div class="vfd-content">
+        <span class="vfd-pill vfd-pulse">DSP ACTIVE</span>
+        <span class="vfd-item"><span class="vfd-lbl">ENG</span><strong class="vfd-val" id="vfdEngine">64-BIT FP</strong></span>
+        <span class="vfd-item"><span class="vfd-lbl">SR</span><strong class="vfd-val" id="vfdSampleRate">48.0 kHz</strong></span>
+        <span class="vfd-item"><span class="vfd-lbl">CHAIN</span><strong class="vfd-val" id="vfdStages">16 STAGES</strong></span>
+        <span class="vfd-item"><span class="vfd-lbl">DYN</span><strong class="vfd-val" id="vfdDynRange">14.2 LU</strong></span>
+        <span class="vfd-item"><span class="vfd-lbl">TP-HEADROOM</span><strong class="vfd-val" id="vfdHeadroom">+1.4 dB</strong></span>
+        <span class="vfd-item"><span class="vfd-lbl">LATENCY</span><strong class="vfd-val" id="vfdLatency">0.8 ms</strong></span>
+        <span class="vfd-ticker" id="vfdTicker">CALIBRATED MASTER BUS · 0.00 dB CEILING · READY</span>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="dsp-signal-flow-ribbon" id="dspSignalFlow" aria-label="Ruta de Señal DSP">
+  <div class="dsp-flow-track">
+    <div class="dsp-flow-bus-line"><div class="dsp-flow-pulse" id="dspFlowPulse"></div></div>
+    <div class="dsp-flow-nodes">
+      <button type="button" class="dsp-node" data-stage="in" title="Audio In"><span class="dsp-node-led active"></span><span class="dsp-node-code">IN</span></button>
+      <button type="button" class="dsp-node" data-stage="0" data-pane="pane-filtros" title="00: Reducción de Ruido"><span class="dsp-node-led active"></span><span class="dsp-node-code">00 NR</span></button>
+      <button type="button" class="dsp-node" data-stage="1" data-pane="pane-filtros" title="01: Input Gain"><span class="dsp-node-led active"></span><span class="dsp-node-code">01 GAIN</span></button>
+      <button type="button" class="dsp-node" data-stage="2" data-pane="pane-filtros" title="02-03: Linear EQ"><span class="dsp-node-led active"></span><span class="dsp-node-code">02 EQ</span></button>
+      <button type="button" class="dsp-node" data-stage="4" data-pane="pane-dinamica" title="04: Mid / Side"><span class="dsp-node-led active"></span><span class="dsp-node-code">04 M/S</span></button>
+      <button type="button" class="dsp-node" data-stage="5" data-pane="pane-dinamica" title="05: Compresor Bus"><span class="dsp-node-led active"></span><span class="dsp-node-code">05 COMP</span></button>
+      <button type="button" class="dsp-node" data-stage="7" data-pane="pane-dinamica" title="07: Dynamic EQ / De-Ess"><span class="dsp-node-led active"></span><span class="dsp-node-code">07 DYN</span></button>
+      <button type="button" class="dsp-node" data-stage="8" data-pane="pane-dinamica" title="08: Compresor Multibanda"><span class="dsp-node-led active"></span><span class="dsp-node-code">08 MB</span></button>
+      <button type="button" class="dsp-node" data-stage="9" data-pane="pane-dinamica" title="09: Transient Shaper"><span class="dsp-node-led active"></span><span class="dsp-node-code">09 TRN</span></button>
+      <button type="button" class="dsp-node" data-stage="10" data-pane="pane-espacio" title="10: Saturación a Válvula"><span class="dsp-node-led active"></span><span class="dsp-node-code">10 TUBE</span></button>
+      <button type="button" class="dsp-node" data-stage="11" data-pane="pane-espacio" title="11: Espacio & Estéreo"><span class="dsp-node-led active"></span><span class="dsp-node-code">11 WID</span></button>
+      <button type="button" class="dsp-node" data-stage="12" data-pane="pane-espacio" title="12: Low-End Mono Maker"><span class="dsp-node-led active"></span><span class="dsp-node-code">12 MONO</span></button>
+      <button type="button" class="dsp-node" data-stage="13" data-pane="pane-final" title="13: Glue Compressor"><span class="dsp-node-led active"></span><span class="dsp-node-code">13 GLUE</span></button>
+      <button type="button" class="dsp-node" data-stage="14" data-pane="pane-final" title="14: Soft / Hard Clipper"><span class="dsp-node-led active"></span><span class="dsp-node-code">14 CLIP</span></button>
+      <button type="button" class="dsp-node" data-stage="15" data-pane="pane-final" title="15: Brickwall Limiter"><span class="dsp-node-led active"></span><span class="dsp-node-code">15 LIM</span></button>
+      <button type="button" class="dsp-node" data-stage="16" data-pane="pane-final" title="16: Oversampling Output"><span class="dsp-node-led active"></span><span class="dsp-node-code">16 OUT</span></button>
+    </div>
+  </div>
+</div>
+<div class="lg-console-main">
+<div class="lg-wave-panel">
+<div class="lg-panel-head">
+<div>
+<span class="lg-panel-kicker">SIGNAL SCOPE</span>
+<strong>Waveform / Dynamics</strong>
+</div>
+<div class="lg-readouts">
+<span><b id="consolePeak">-∞</b><small>PEAK</small></span>
+<span><b id="consoleLufs">-∞</b><small>LUFS</small></span>
+<span><b id="consoleCorr">--</b><small>CORR</small></span>
+</div>
+</div>
+<div class="lg-wave-stage crt-screen">
+<canvas aria-label="Visualización de señal" id="lgmdmWaveformCanvas" width="800" height="180"></canvas>
+<div class="lg-wave-grid"></div>
+<div class="lg-wave-marker lg-wave-marker-left">-∞</div>
+<div class="lg-wave-marker lg-wave-marker-right">0 dB</div>
+<div class="lg-wave-playhead" id="consolePlayhead"></div>
+</div>
+<div class="lg-wave-footer">
+<span>00:00</span><span id="consoleTime">00:00</span><span id="consoleDuration">--:--</span>
+</div>
+</div>
+<div class="lg-meter-rack" id="consoleMeterRack">
+<div class="lg-meter-head">
+  <div class="meter-view-selector">
+    <button type="button" class="meter-view-btn" data-view="bars">BARS</button>
+    <button type="button" class="meter-view-btn active" data-view="vu">ANALOG VU</button>
+    <button type="button" class="meter-view-btn" data-view="gonio">RADAR</button>
+    <button type="button" class="meter-view-btn" data-view="sphere">3D SPHERE</button>
+  </div>
+  <span id="consoleMeterMode">ANALOG VU</span>
+</div>
+<div class="lg-meter-pair" id="meterViewBars" style="display:none;">
+<div class="lg-tall-meter"><div class="lg-meter-track"><div class="lg-meter-fill" id="consoleMeterL"></div></div><span>L</span></div>
+<div class="lg-tall-meter"><div class="lg-meter-track"><div class="lg-meter-fill" id="consoleMeterR"></div></div><span>R</span></div>
+</div>
+<div class="lg-analog-vu-rack" id="meterViewVu">
+  <div class="analog-vu-meter left">
+    <div class="vu-dial-glass"></div>
+    <div class="vu-lamp-glow"></div>
+    <div class="vu-scale-plate">
+      <svg viewBox="0 0 160 90" class="vu-dial-svg">
+        <path d="M 20 80 A 70 70 0 0 1 140 80" fill="none" stroke="rgba(0,0,0,0.18)" stroke-width="4"/>
+        <path d="M 22 78 A 68 68 0 0 1 112 36" fill="none" stroke="#22252a" stroke-width="3"/>
+        <path d="M 112 36 A 68 68 0 0 1 138 78" fill="none" stroke="#d62828" stroke-width="4"/>
+        <text x="24" y="70" class="vu-num">-20</text>
+        <text x="46" y="44" class="vu-num">-10</text>
+        <text x="74" y="32" class="vu-num">-5</text>
+        <text x="110" y="30" class="vu-num vu-zero">0</text>
+        <text x="132" y="48" class="vu-num vu-red">+3</text>
+        <text x="80" y="60" class="vu-brand">VU</text>
+      </svg>
+      <div class="vu-needle-shadow" id="vuNeedleShadowL"></div>
+      <div class="vu-needle" id="vuNeedleL"></div>
+      <div class="vu-pivot"><div class="pivot-screw"></div></div>
+    </div>
+    <span class="vu-ch-label">CH 1 · LEFT</span>
+  </div>
+  <div class="analog-vu-meter right">
+    <div class="vu-dial-glass"></div>
+    <div class="vu-lamp-glow"></div>
+    <div class="vu-scale-plate">
+      <svg viewBox="0 0 160 90" class="vu-dial-svg">
+        <path d="M 20 80 A 70 70 0 0 1 140 80" fill="none" stroke="rgba(0,0,0,0.18)" stroke-width="4"/>
+        <path d="M 22 78 A 68 68 0 0 1 112 36" fill="none" stroke="#22252a" stroke-width="3"/>
+        <path d="M 112 36 A 68 68 0 0 1 138 78" fill="none" stroke="#d62828" stroke-width="4"/>
+        <text x="24" y="70" class="vu-num">-20</text>
+        <text x="46" y="44" class="vu-num">-10</text>
+        <text x="74" y="32" class="vu-num">-5</text>
+        <text x="110" y="30" class="vu-num vu-zero">0</text>
+        <text x="132" y="48" class="vu-num vu-red">+3</text>
+        <text x="80" y="60" class="vu-brand">VU</text>
+      </svg>
+      <div class="vu-needle-shadow" id="vuNeedleShadowR"></div>
+      <div class="vu-needle" id="vuNeedleR"></div>
+      <div class="vu-pivot"><div class="pivot-screw"></div></div>
+    </div>
+    <span class="vu-ch-label">CH 2 · RIGHT</span>
+  </div>
+</div>
+<div class="lg-goniometer-rack" id="meterViewGonio" style="display:none;">
+  <div class="goniometer-stage crt-screen">
+    <canvas id="lgmdmGoniometerCanvas" width="220" height="220" aria-label="Vectorscopio Lissajous Polar"></canvas>
+    <div class="gonio-reticle-overlay"></div>
+  </div>
+  <div class="gonio-footer">
+    <span class="gonio-tag">LISSAJOUS 360°</span>
+    <span class="gonio-phase-badge" id="gonioPhaseBadge">+0.95 OK</span>
+  </div>
+</div>
+<div class="lg-sphere-rack" id="meterViewSphere" style="display:none;">
+  <div class="sphere-stage crt-screen">
+    <canvas id="lgmdmVectorsphereCanvas" width="220" height="220" aria-label="Esfera Vectorial Estéreo 3D"></canvas>
+    <div class="sphere-reticle-overlay"></div>
+  </div>
+  <div class="sphere-footer">
+    <span class="sphere-tag">VECTORSPHERE 3D</span>
+    <span class="sphere-width-badge" id="sphereWidthBadge">STEREO 1.20x</span>
+  </div>
+</div>
+<div class="crest-factor-container" id="crestFactorContainer" title="Factor de Cresta & Rango Dinámico (DR)">
+  <div class="crest-factor-head">
+    <small>CREST / DYNAMICS</small>
+    <strong id="crestFactorVal">DR 12.4</strong>
+  </div>
+  <div class="crest-factor-track">
+    <div class="crest-target-zone"></div>
+    <div class="crest-indicator-bar" id="crestBar" style="left: 65%;"></div>
+  </div>
+  <div class="crest-zones-legend">
+    <span class="dr-warn">CRUSH</span>
+    <span class="dr-club">CLUB</span>
+    <span class="dr-stream">STREAM</span>
+    <span class="dr-hi">HI-DR</span>
+  </div>
+</div>
+<div class="lg-meter-numbers">
+<div><small>TRUE PEAK</small><strong id="consoleTruePeak">-∞ dBTP</strong></div>
+<div><small>RMS</small><strong id="consoleRms">-∞ dB</strong></div>
+</div>
+</div>
+</div>
+<div class="lg-spectrum-row">
+<div class="lg-spectrum-panel" id="consoleSpectrumPanel">
+<div class="lg-panel-head compact">
+  <div><span class="lg-panel-kicker">ANALYZER</span><strong>Frequency Spectrum (20 Hz – 20 kHz)</strong></div>
+  <div class="spectrum-view-selector">
+    <button type="button" class="spec-view-btn active" data-view="2d" id="btnSpec2d">2D FFT</button>
+    <button type="button" class="spec-view-btn" data-view="3d" id="btnSpec3d">3D WATERFALL</button>
+  </div>
+  <span class="lg-live"><i></i>LIVE</span>
+</div>
+<div class="lg-spectrum-stage crt-screen" id="consoleSpectrumStage">
+  <canvas aria-label="Analizador de espectro en tiempo real" id="lgmdmConsoleSpectrum" width="800" height="200"></canvas>
+  <canvas aria-label="Cascada espectrográfica 3D" id="lgmdmWaterfallCanvas" width="800" height="200" style="display:none;"></canvas>
+</div>
+<div class="spectrum-freq-scale" aria-hidden="true">
+<span>20Hz</span><span>50Hz</span><span>100Hz</span><span>250Hz</span><span>500Hz</span><span>1kHz</span><span>2.5kHz</span><span>5kHz</span><span>10kHz</span><span>20kHz</span>
+</div>
+</div>
+</div>
+<div class="lg-console-knob-strip">
+  <div class="knob-strip-label">ANALOG MASTERING BUS CONTROLS</div>
+  <div class="knobs-row">
+    <div class="pro-knob-cell" data-control="s-ingain" id="cellKnobInput">
+      <span class="knob-label">INPUT GAIN</span>
+      <div class="knob-assembly">
+        <svg class="knob-arc-svg" viewBox="0 0 100 100">
+          <circle class="arc-bg" cx="50" cy="50" r="42"/>
+          <circle class="arc-active" id="arcInputGain" cx="50" cy="50" r="42"/>
+        </svg>
+        <div class="knurled-rotor" id="rotorInputGain" tabindex="0" role="slider" aria-label="Input Gain" aria-valuemin="-12" aria-valuemax="12" aria-valuenow="0">
+          <div class="rotor-knurl-rim"></div>
+          <div class="rotor-face"><div class="rotor-notch"></div></div>
+        </div>
+      </div>
+      <span class="knob-val-pill" id="valInputGain">0.0 dB</span>
+    </div>
+    <div class="pro-knob-cell" data-control="s-thresh" id="cellKnobComp">
+      <span class="knob-label">THRESHOLD</span>
+      <div class="knob-assembly">
+        <svg class="knob-arc-svg" viewBox="0 0 100 100">
+          <circle class="arc-bg" cx="50" cy="50" r="42"/>
+          <circle class="arc-active" id="arcCompThresh" cx="50" cy="50" r="42"/>
+        </svg>
+        <div class="knurled-rotor" id="rotorCompThresh" tabindex="0" role="slider" aria-label="Comp Threshold" aria-valuemin="-40" aria-valuemax="0" aria-valuenow="-18">
+          <div class="rotor-knurl-rim"></div>
+          <div class="rotor-face"><div class="rotor-notch"></div></div>
+        </div>
+      </div>
+      <span class="knob-val-pill" id="valCompThresh">-18.0 dB</span>
+    </div>
+    <div class="vacuum-tube-cell-console" id="vacuumTubeConsole" title="Válvula Termiónica Mullard ECC83 / 12AX7 Saturación">
+      <div class="tube-glass-dome">
+        <div class="tube-getter-flash"></div>
+        <div class="tube-reflection-left"></div>
+        <div class="tube-reflection-right"></div>
+        <div class="tube-anode-plate"><div class="tube-grid-vents"></div></div>
+        <div class="tube-filament-core" id="consoleFilamentGlow"></div>
+        <div class="tube-cathode-corona" id="consoleFilamentCorona"></div>
+      </div>
+      <div class="tube-base-socket"><div class="tube-pin-reflection"></div></div>
+      <span class="tube-label">VALVE 12AX7</span>
+    </div>
+    <div class="pro-knob-cell" data-control="s-width" id="cellKnobWidth">
+      <span class="knob-label">STEREO WIDTH</span>
+      <div class="knob-assembly">
+        <svg class="knob-arc-svg" viewBox="0 0 100 100">
+          <circle class="arc-bg" cx="50" cy="50" r="42"/>
+          <circle class="arc-active" id="arcStereoWidth" cx="50" cy="50" r="42"/>
+        </svg>
+        <div class="knurled-rotor" id="rotorStereoWidth" tabindex="0" role="slider" aria-label="Stereo Width" aria-valuemin="0" aria-valuemax="3" aria-valuenow="1.2">
+          <div class="rotor-knurl-rim"></div>
+          <div class="rotor-face"><div class="rotor-notch"></div></div>
+        </div>
+      </div>
+      <span class="knob-val-pill" id="valStereoWidth">1.20x</span>
+    </div>
+    <div class="pro-knob-cell" data-control="s-satdrive" id="cellKnobDrive">
+      <span class="knob-label">TUBE DRIVE</span>
+      <div class="knob-assembly">
+        <svg class="knob-arc-svg" viewBox="0 0 100 100">
+          <circle class="arc-bg" cx="50" cy="50" r="42"/>
+          <circle class="arc-active" id="arcTubeDrive" cx="50" cy="50" r="42"/>
+        </svg>
+        <div class="knurled-rotor" id="rotorTubeDrive" tabindex="0" role="slider" aria-label="Tube Drive" aria-valuemin="0" aria-valuemax="1" aria-valuenow="0">
+          <div class="rotor-knurl-rim"></div>
+          <div class="rotor-face"><div class="rotor-notch"></div></div>
+        </div>
+      </div>
+      <span class="knob-val-pill" id="valTubeDrive">0%</span>
+    </div>
+    <div class="pro-knob-cell" data-control="s-ceiling" id="cellKnobCeil">
+      <span class="knob-label">CEILING</span>
+      <div class="knob-assembly">
+        <svg class="knob-arc-svg" viewBox="0 0 100 100">
+          <circle class="arc-bg" cx="50" cy="50" r="42"/>
+          <circle class="arc-active" id="arcLimiterCeil" cx="50" cy="50" r="42"/>
+        </svg>
+        <div class="knurled-rotor" id="rotorLimiterCeil" tabindex="0" role="slider" aria-label="Brickwall Ceiling" aria-valuemin="0.1" aria-valuemax="1.0" aria-valuenow="0.891">
+          <div class="rotor-knurl-rim"></div>
+          <div class="rotor-face"><div class="rotor-notch"></div></div>
+        </div>
+      </div>
+      <span class="knob-val-pill" id="valLimiterCeil">-0.1 dB</span>
+    </div>
+  </div>
+</div>
+<div class="lg-console-transport">
+<div class="lg-transport-group">
+<button aria-label="Reproducir preview" class="lg-transport-btn" id="consolePlayBtn" type="button">▶</button>
+<button aria-label="Detener preview" class="lg-transport-btn" id="consoleStopBtn" type="button">■</button>
+<button aria-label="Alternar A/B" class="lg-transport-btn" id="consoleABToggle" type="button">A/B</button>
+<button aria-label="A/B Master" class="lg-transport-btn" id="consoleABMaster" type="button">MASTER</button>
+<button aria-label="A/B Original" class="lg-transport-btn" id="consoleABOriginal" type="button">ORIG</button>
+<button aria-label="Mostrar cadena" class="lg-transport-btn" id="consoleShowChain" type="button">CHAIN</button>
+<div class="aircraft-switch-wrap" id="safetyMasterWrap" title="Interruptor de Seguridad Hard Limiting">
+  <div class="safety-guard-cover" id="safetyCoverMaster" title="Cubierta de seguridad: Clic para abrir/cerrar">
+    <div class="safety-cover-stripe"></div>
+    <span class="safety-cover-text">ARMED</span>
+  </div>
+  <div class="aircraft-toggle-lever" id="safetyLeverMaster" tabindex="0" role="switch" aria-checked="false" title="Hard Limiting Safety Switch">
+    <div class="toggle-bat-handle"></div>
+    <div class="toggle-base-bushing"></div>
+  </div>
+  <span class="safety-switch-label">HARD LIMIT</span>
+  <span class="safety-switch-led" id="safetyLedMaster"></span>
+</div>
+<span id="consoleABReadout" class="sr-only">—</span>
+<span id="consoleGlueGr" class="sr-only">GLUE — dB</span>
+<span id="consoleLimiterGr" class="sr-only">LIM — dB</span>
+<span id="consoleOutputReadout" class="sr-only">— dB</span>
+<span id="consoleSaved" class="sr-only">SAVED</span>
+</div>
+<input id="consoleInputFader" type="range" hidden="" aria-hidden="true" tabindex="-1"/>
+<input id="consoleCompThreshold" type="range" hidden="" aria-hidden="true" tabindex="-1"/>
+<input id="consoleCompRatio" type="range" hidden="" aria-hidden="true" tabindex="-1"/>
+<input id="consoleStereoFader" type="range" hidden="" aria-hidden="true" tabindex="-1"/>
+<input id="consoleLimiterFader" type="range" hidden="" aria-hidden="true" tabindex="-1"/>
+<span id="consoleInputReadout" class="sr-only">— dB</span>
+<span id="consoleCompReadout" class="sr-only">— dB · —:1</span>
+<span id="consoleStereoReadout" class="sr-only">—%</span>
+<span id="consoleLimiterControlReadout" class="sr-only">— dB</span>
+<span id="consoleInputGr" class="sr-only">— dB</span>
+<span id="consoleStereoGr" class="sr-only">WIDTH —%</span>
+<span id="consoleLimiterReadout" class="sr-only">CEILING —</span>
+<span id="consoleCompGr" class="sr-only">GR — dB</span>
+<div class="lg-transport-status"><span class="lg-status-dot"></span><span id="consoleStatus" role="status">Listo para recibir audio</span></div>
+<div aria-live="polite" class="preview-audio" id="previewAudioWrap"></div>
+<div class="lg-transport-hint">SPACE · Play/Pause   ·   Ctrl+Shift+M · Master</div>
+</div>
+</section>
+<div class="meters-wrap" id="metersWrap">
+<h2 class="control-card-title">
+ Peak · RMS · LUFS · Stereo
+ <button class="meters-toggle" id="metersToggle" type="button" aria-controls="metersBody" aria-expanded="true">ocultar</button>
+</h2>
+<div id="metersSummary" role="status" aria-live="polite" aria-atomic="true" class="sr-only"></div>
+<div id="metersBody">
+<div class="meters-grid">
+<div class="meter-col">
+<div class="meter-track"><div class="meter-fill" id="meterPeakFill" role="meter" aria-label="Nivel Peak" aria-valuemin="-60" aria-valuemax="0" aria-valuenow="0" aria-valuetext="0 dB"></div></div>
+<div class="meter-name">Peak</div>
+<div class="meter-readout" id="meterPeakReadout">-∞ dB</div>
+</div>
+<div class="meter-col">
+<div class="meter-track"><div class="meter-fill" id="meterRmsFill" role="meter" aria-label="Nivel RMS" aria-valuemin="-60" aria-valuemax="0" aria-valuenow="0" aria-valuetext="0 dB"></div></div>
+<div class="meter-name">RMS</div>
+<div class="meter-readout" id="meterRmsReadout">-∞ dB</div>
+</div>
+<div class="meter-col">
+<div class="meter-track"><div class="meter-fill" id="meterLufsFill" role="meter" aria-label="Loudness LUFS" aria-valuemin="-40" aria-valuemax="0" aria-valuenow="0" aria-valuetext="0 LUFS"></div></div>
+<div class="meter-name">LUFS</div>
+<div class="meter-readout" id="meterLufsReadout">-∞</div>
+</div>
+<div class="meter-col">
+<div class="meter-track"><div class="meter-fill" id="meterTruePeakFill" role="meter" aria-label="True Peak" aria-valuemin="-60" aria-valuemax="0" aria-valuenow="0" aria-valuetext="0 dBTP"></div></div>
+<div class="meter-name">True Peak</div>
+<div class="meter-readout" id="meterTruePeakReadout">-∞ dBTP</div>
+</div>
+</div>
+<div class="mt-lg">
+<div class="meter-name mb-sm">Stereo (correlación L/R)</div>
+<div class="stereo-meter-track">
+<div class="stereo-meter-center"></div>
+<div class="stereo-meter-fill" id="stereoMeterFill" role="meter" aria-label="Correlación estéreo" aria-valuemin="-1" aria-valuemax="1" aria-valuenow="0" aria-valuetext="corr: 0"></div>
+</div>
+<div class="meter-readout mt-xxs" id="stereoMeterReadout">corr: --</div>
+<div class="meter-readout mt-xxs" id="monoCompatReadout">mono: -- dB</div>
+</div>
+<div class="divider-top-lg">
+<div class="freqbands-grid">
+<div class="freqband-row">
+<span class="freqband-label">Sub 20-60</span>
+<div class="freqband-track"><div class="freqband-fill" id="fb-sub" role="meter" aria-label="Nivel Sub 20-60 Hz" aria-valuemin="-60" aria-valuemax="0" aria-valuenow="-60" aria-valuetext="-∞ dB"></div></div>
+<span class="freqband-val" id="fbv-sub">-∞</span>
+</div>
+<div class="freqband-row">
+<span class="freqband-label">Bass 60-250</span>
+<div class="freqband-track"><div class="freqband-fill" id="fb-bass" role="meter" aria-label="Nivel Bass 60-250 Hz" aria-valuemin="-60" aria-valuemax="0" aria-valuenow="-60" aria-valuetext="-∞ dB"></div></div>
+<span class="freqband-val" id="fbv-bass">-∞</span>
+</div>
+<div class="freqband-row">
+<span class="freqband-label">L-Mid 250-800</span>
+<div class="freqband-track"><div class="freqband-fill" id="fb-lowmid" role="meter" aria-label="Nivel Low-Mid 250-800 Hz" aria-valuemin="-60" aria-valuemax="0" aria-valuenow="-60" aria-valuetext="-∞ dB"></div></div>
+<span class="freqband-val" id="fbv-lowmid">-∞</span>
+</div>
+<div class="freqband-row">
+<span class="freqband-label">Mid .8-3k</span>
+<div class="freqband-track"><div class="freqband-fill" id="fb-mid" role="meter" aria-label="Nivel Mid 0.8-3 kHz" aria-valuemin="-60" aria-valuemax="0" aria-valuenow="-60" aria-valuetext="-∞ dB"></div></div>
+<span class="freqband-val" id="fbv-mid">-∞</span>
+</div>
+<div class="freqband-row">
+<span class="freqband-label">H-Mid 3-8k</span>
+<div class="freqband-track"><div class="freqband-fill" id="fb-highmid" role="meter" aria-label="Nivel High-Mid 3-8 kHz" aria-valuemin="-60" aria-valuemax="0" aria-valuenow="-60" aria-valuetext="-∞ dB"></div></div>
+<span class="freqband-val" id="fbv-highmid">-∞</span>
+</div>
+<div class="freqband-row">
+<span class="freqband-label">Air 8-20k</span>
+<div class="freqband-track"><div class="freqband-fill" id="fb-air" role="meter" aria-label="Nivel Air 8-20 kHz" aria-valuemin="-60" aria-valuemax="0" aria-valuenow="-60" aria-valuetext="-∞ dB"></div></div>
+<span class="freqband-val" id="fbv-air">-∞</span>
+</div>
+</div>
+<!-- FIX 2: Loudness Meter (LUFS) panel — siempre visible, se actualiza con metrics -->
+<div class="loudness-meter" id="loudnessMeterWrap">
+ <h3>Loudness Meter (LUFS)</h3>
+ <div class="lufs-display">
+  <div>
+   <div class="lufs-number" id="lufsNumber">---</div>
+   <div class="lufs-label">LUFS integrado</div>
+  </div>
+   <div>
+   <div class="lufs-bar-track">
+    <div class="lufs-bar-fill" id="lufsBarFill" style="width:0%"></div>
+   </div>
+   <div class="lufs-zones">
+    <span>-40</span><span>-24</span><span>-18</span><span>-14</span><span>-9</span><span>-6</span><span>0</span>
+   </div>
+  </div>
+ </div>
+  <div id="lufsTarget">Target Spotify/YouTube: -14 LUFS · Club: -9 LUFS</div>
+</div>
+</div>
+<!-- Multiband GR -->
+<div class="mb-gr-section" id="mbGrSection">
+<div class="mb-gr-title">Reducción de Ganancia Multibanda</div>
+<div class="mb-gr-grid">
+<div class="mb-gr-col">
+<div class="mb-gr-label">Low</div>
+<div class="mb-gr-bar-wrap"><div class="mb-gr-bar" id="grBarLow" role="meter" aria-label="Reducción de ganancia Low multibanda" aria-valuemin="-30" aria-valuemax="0" aria-valuenow="0" aria-valuetext="0 dB"></div></div>
+<div class="mb-gr-readout" id="grReadLow">0.0 dB</div>
+</div>
+<div class="mb-gr-col">
+<div class="mb-gr-label">Mid</div>
+<div class="mb-gr-bar-wrap"><div class="mb-gr-bar" id="grBarMid" role="meter" aria-label="Reducción de ganancia Mid multibanda" aria-valuemin="-30" aria-valuemax="0" aria-valuenow="0" aria-valuetext="0 dB"></div></div>
+<div class="mb-gr-readout" id="grReadMid">0.0 dB</div>
+</div>
+<div class="mb-gr-col">
+<div class="mb-gr-label">High</div>
+<div class="mb-gr-bar-wrap"><div class="mb-gr-bar" id="grBarHigh" role="meter" aria-label="Reducción de ganancia High multibanda" aria-valuemin="-30" aria-valuemax="0" aria-valuenow="0" aria-valuetext="0 dB"></div></div>
+<div class="mb-gr-readout" id="grReadHigh">0.0 dB</div>
+</div>
+</div>
+<div class="mb-gr-title mt-lg">Dinámica (banda ancha), Paralela &amp; Glue</div>
+<div class="mb-gr-grid">
+<div class="mb-gr-col">
+<div class="mb-gr-label">Comp</div>
+<div class="mb-gr-bar-wrap"><div class="mb-gr-bar" id="grBarComp" role="meter" aria-label="Reducción de ganancia Compresor principal" aria-valuemin="-30" aria-valuemax="0" aria-valuenow="0" aria-valuetext="0 dB"></div></div>
+<div class="mb-gr-readout" id="grReadComp">0.0 dB</div>
+</div>
+<div class="mb-gr-col">
+<div class="mb-gr-label">Glue</div>
+<div class="mb-gr-bar-wrap"><div class="mb-gr-bar" id="grBarGlue" role="meter" aria-label="Reducción de ganancia Compresor glue" aria-valuemin="-30" aria-valuemax="0" aria-valuenow="0" aria-valuetext="0 dB"></div></div>
+<div class="mb-gr-readout" id="grReadGlue">bypass</div>
+</div>
+<div class="mb-gr-col">
+<div class="mb-gr-label">Paralela</div>
+<div class="mb-gr-bar-wrap"><div class="mb-gr-bar" id="grBarParallel" role="meter" aria-label="Reducción de ganancia Compresión paralela" aria-valuemin="-30" aria-valuemax="0" aria-valuenow="0" aria-valuetext="0 dB"></div></div>
+<div class="mb-gr-readout" id="grReadParallel">bypass</div>
+</div>
+</div>
+<div class="mb-gr-title mt-lg">Compresor Mid/Side</div>
+<div class="mb-gr-grid">
+<div class="mb-gr-col">
+<div class="mb-gr-label">Mid</div>
+<div class="mb-gr-bar-wrap"><div class="mb-gr-bar" id="grBarMsCompMid" role="meter" aria-label="Reducción de ganancia Mid del compresor M/S" aria-valuemin="-30" aria-valuemax="0" aria-valuenow="0" aria-valuetext="0 dB"></div></div>
+<div class="mb-gr-readout" id="grReadMsCompMid">bypass</div>
+</div>
+<div class="mb-gr-col">
+<div class="mb-gr-label">Side</div>
+<div class="mb-gr-bar-wrap"><div class="mb-gr-bar" id="grBarMsCompSide" role="meter" aria-label="Reducción de ganancia Side del compresor M/S" aria-valuemin="-30" aria-valuemax="0" aria-valuenow="0" aria-valuetext="0 dB"></div></div>
+<div class="mb-gr-readout" id="grReadMsCompSide">bypass</div>
+</div>
+</div>
+<div class="mb-gr-title mt-lg">De-esser &amp; Dynamic EQ (resonancias)</div>
+<div class="mb-gr-grid">
+<div class="mb-gr-col">
+<div class="mb-gr-label">De-esser</div>
+<div class="mb-gr-bar-wrap"><div class="mb-gr-bar" id="grBarDeess" role="meter" aria-label="Reducción de ganancia De-esser" aria-valuemin="-30" aria-valuemax="0" aria-valuenow="0" aria-valuetext="0 dB"></div></div>
+<div class="mb-gr-readout" id="grReadDeess">0.0 dB</div>
+</div>
+<div class="mb-gr-col">
+<div class="mb-gr-label">Dinámico</div>
+<div class="mb-gr-bar-wrap"><div class="mb-gr-bar" id="grBarReso" role="meter" aria-label="Reducción de ganancia EQ dinámica (resonancias)" aria-valuemin="-30" aria-valuemax="0" aria-valuenow="0" aria-valuetext="0 dB"></div></div>
+<div class="mb-gr-readout" id="grReadReso">0.0 dB</div>
+</div>
+</div>
+<div class="mb-vu-section" id="mbVuSection">
+<div class="mb-vu-item">
+<div class="mb-vu-label">Pre-Limiter</div>
+<div class="mb-vu-row">
+<span class="mb-vu-key">RMS</span>
+<span class="mb-vu-val" id="vuPreRms" role="meter" aria-label="Pre-Limiter RMS" aria-valuemin="-60" aria-valuemax="0" aria-valuenow="0" aria-valuetext="--">--</span>
+</div>
+<div class="mb-vu-row">
+<span class="mb-vu-key">Peak</span>
+<span class="mb-vu-val" id="vuPrePeak" role="meter" aria-label="Pre-Limiter Peak" aria-valuemin="-60" aria-valuemax="0" aria-valuenow="0" aria-valuetext="--">--</span>
+</div>
+</div>
+<div class="mb-vu-item">
+<div class="mb-vu-label">Post-Limiter</div>
+<div class="mb-vu-row">
+<span class="mb-vu-key">RMS</span>
+<span class="mb-vu-val" id="vuPostRms" role="meter" aria-label="Post-Limiter RMS" aria-valuemin="-60" aria-valuemax="0" aria-valuenow="0" aria-valuetext="--">--</span>
+</div>
+<div class="mb-vu-row">
+<span class="mb-vu-key">Peak</span>
+<span class="mb-vu-val" id="vuPostPeak" role="meter" aria-label="Post-Limiter Peak" aria-valuemin="-60" aria-valuemax="0" aria-valuenow="0" aria-valuetext="--">--</span>
+</div>
+<div class="mb-vu-row">
+<span class="mb-vu-key">LUFS</span>
+<span class="mb-vu-val" id="vuPostLufs" role="meter" aria-label="Post-Limiter LUFS" aria-valuemin="-60" aria-valuemax="0" aria-valuenow="0" aria-valuetext="--">--</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section id="analysis-workspace" class="lg-workspace-workspace analysis-workspace" data-workspace="analysis" role="tabpanel" aria-labelledby="tab-analysis" hidden>
+<!-- BUGFIX: waveform / resultados de Analizar / panel perceptual se
+ insertaban vía LGMDM.ui.getContent(), que apuntaba a #content (el shell
+ entero, fuera de las pestañas) — quedaban siempre visibles y
+ desacomodaban todo el layout en lugar de vivir acá adentro. Este div es
+ el contenedor que 09-visualizers.js ya buscaba por id pero no existía. -->
+<div id="analysisDynamicContent"><p class="muted-small" role="status">Analiza un track para ver resultados</p></div>
+</section>
+<section id="presets-workspace" class="lg-workspace-workspace presets-workspace" data-workspace="presets" role="tabpanel" aria-labelledby="tab-presets" hidden>
+<div class="lg-workspace-preset-head"><div><h2 class="control-card-title">Preset Studio</h2><p>Aplicá un carácter al motor sin llenar la pantalla de controles.</p></div><span class="lg-workspace-preset-badge">EXPERT READY</span></div>
+<div class="lg-workspace-presets-grid" id="workspacePresetGrid">
+<div class="empty-state" role="status">
+<div class="empty-state-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.75;"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="7" y1="8" x2="7" y2="16"/><circle cx="7" cy="11" r="2" fill="currentColor"/><line x1="12" y1="8" x2="12" y2="16"/><circle cx="12" cy="14" r="2" fill="currentColor"/><line x1="17" y1="8" x2="17" y2="16"/><circle cx="17" cy="9" r="2" fill="currentColor"/></svg></div>
+<h3>Carga un preset para comenzar</h3>
+<p>Elegí un preset del panel lateral para aplicarlo al motor.</p>
+<button class="btn btn-primary" type="button" id="gotoPresetsSidebar">Ir a Presets</button>
+</div>
+</div>
+</section>
+</div>
+<!-- /content-shell -->
+</div>
+<!-- /content -->
+</div>
+</main>
+</div>
+<!-- FOOTER -->
+<footer class="app-footer"><span>App By Fede Strumia</span></footer></div>
+<!-- AI Assistant — canonical DOM contract -->
+<button aria-label="Abrir asistente de IA" class="ai-fab" id="aiFab" type="button" aria-expanded="false" aria-controls="aiPanel" aria-haspopup="dialog"><svg class="ai-fab-svg" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="9" cy="10" r="1.5" fill="currentColor"/><circle cx="15" cy="10" r="1.5" fill="currentColor"/><path d="M9 15h6"/><line x1="12" y1="1" x2="12" y2="4"/><line x1="1" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="23" y2="12"/></svg><span aria-hidden="true" class="ai-fab-dot"></span></button>
+<section class="ai-panel" id="aiPanel" role="dialog" aria-modal="true" aria-labelledby="aiPanelTitle">
+<header class="ai-panel-head">
+<div aria-hidden="true" class="ai-avatar"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="9" cy="10" r="1.5" fill="currentColor"/><circle cx="15" cy="10" r="1.5" fill="currentColor"/><path d="M9 15h6"/></svg></div>
+<div class="ai-title"><b id="aiPanelTitle">AI Mastering Assistant</b><small id="aiStatusLine">Conectando…</small></div>
+<button aria-label="Cerrar" class="ai-close" id="aiClose" type="button">&times;</button>
+</header>
+<div class="ai-messages" id="aiMessages" role="log" aria-live="polite" aria-relevant="additions"></div>
+<div class="ai-suggestions" id="aiSuggestions"></div>
+<div class="ai-inputrow">
+<textarea aria-label="Mensaje para el asistente" id="aiInput" placeholder="Preguntale algo sobre tu mezcla…" rows="1"></textarea>
+<button aria-label="Enviar" class="ai-send-btn" id="aiSend" type="button"><svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-1px;"><path d="M2.5 8h11M9.5 3.5l4.5 4.5-4.5 4.5"/></svg></button>
+</div>
+<div class="ai-panel-foot">El asistente usa el análisis técnico actual del track.</div>
+</section>
+<!-- SCRIPTS - Orden importante -->
+<script defer src="js/00-utils.js"></script>
+<script defer src="js/00-ui-core.js"></script>
+<script defer src="js/00-modal-helper.js"></script>
+<!-- 36-base-canvas-widget.js cargado en posición #4 (es base class para widgets canvas, debe ir antes que cualquier consumidor) -->
+<script defer src="js/36-base-canvas-widget.js"></script>
+<script defer src="js/00-config.js"></script>
+<script defer src="js/00-dom-safety.js"></script>
+<script defer src="js/00-storage.js"></script>
+<script defer src="js/00-api.js"></script>
+<script defer src="js/00-theme-manager.js"></script>
+<script defer src="js/00-audio-engine.js"></script>
+<script defer src="js/00-auth.js"></script>
+<script defer src="js/00-compat.js"></script>
+<script defer src="js/01-state.js"></script>
+<script type="application/json" id="sliders-meta" data-source="02-sliders-ui">[{"id":"s-ingain","vid":"v-ingain","fmt":"signedDb"},{"id":"s-peak","vid":"v-peak","fmt":"linearToDbT"},{"id":"s-lufstarget","vid":"v-lufstarget","fmt":"lufs"},{"id":"s-thresh","vid":"v-thresh","fmt":"db"},{"id":"s-ratio","vid":"v-ratio","fmt":"ratio"},{"id":"s-cattack","vid":"v-cattack","fmt":"ms1"},{"id":"s-crelease","vid":"v-crelease","fmt":"ms"},{"id":"s-cmakeup","vid":"v-cmakeup","fmt":"signedDb"},{"id":"s-glue-thresh","vid":"v-glue-thresh","fmt":"db"},{"id":"s-glue-ratio","vid":"v-glue-ratio","fmt":"ratio"},{"id":"s-glue-attack","vid":"v-glue-attack","fmt":"ms1"},{"id":"s-glue-release","vid":"v-glue-release","fmt":"ms"},{"id":"s-glue-makeup","vid":"v-glue-makeup","fmt":"signedDb"},{"id":"s-glue-pdr-hold","vid":"v-glue-pdr-hold","fmt":"ms"},{"id":"parallelMix","vid":"parallelMixVal","fmt":"float2"},{"id":"parallelThresh","vid":"parallelThreshVal","fmt":"db"},{"id":"parallelRatio","vid":"parallelRatioVal","fmt":"ratio"},{"id":"parallelAttack","vid":"parallelAttackVal","fmt":"ms1"},{"id":"parallelRelease","vid":"parallelReleaseVal","fmt":"ms"},{"id":"s-hp","vid":"v-hp","fmt":"khzRaw"},{"id":"s-eq1freq","vid":"v-eq1freq-disp","fmt":"parseHzKhz"},{"id":"s-eq1gain","vid":"v-eq1gain","fmt":"signedDb"},{"id":"s-eq1q","vid":"v-eq1q","fmt":"q"},{"id":"s-eq2freq","vid":"v-eq2freq-disp","fmt":"parseHzKhz"},{"id":"s-eq2gain","vid":"v-eq2gain","fmt":"signedDb"},{"id":"s-eq2q","vid":"v-eq2q","fmt":"q"},{"id":"s-eq3freq","vid":"v-eq3freq-disp","fmt":"parseHzKhz"},{"id":"s-eq3gain","vid":"v-eq3gain","fmt":"signedDb"},{"id":"s-eq3q","vid":"v-eq3q","fmt":"q"},{"id":"s-eq4freq","vid":"v-eq4freq-disp","fmt":"parseHzKhz"},{"id":"s-eq4gain","vid":"v-eq4gain","fmt":"signedDb"},{"id":"s-eq4q","vid":"v-eq4q","fmt":"q"},{"id":"s-eq5freq","vid":"v-eq5freq-disp","fmt":"parseHzKhz"},{"id":"s-eq5gain","vid":"v-eq5gain","fmt":"signedDb"},{"id":"s-eq5q","vid":"v-eq5q","fmt":"q"},{"id":"s-eq6freq","vid":"v-eq6freq-disp","fmt":"parseHzKhz"},{"id":"s-eq6gain","vid":"v-eq6gain","fmt":"signedDb"},{"id":"s-eq6q","vid":"v-eq6q","fmt":"q"},{"id":"s-tonalbal-amount","vid":"v-tonalbal-amount","fmt":"float2"},{"id":"s-tonalbal-boost","vid":"v-tonalbal-boost","fmt":"signedDb"},{"id":"s-tonalbal-cut","vid":"v-tonalbal-cut","fmt":"float2_dB"},{"id":"s-tonalbal-bands","vid":"v-tonalbal-bands","fmt":"int"},{"id":"s-air","vid":"v-air","fmt":"parseSignedDb"},{"id":"s-shelf-freq","vid":"v-shelf-freq","fmt":"parseHzKhzRaw"},{"id":"s-lowshelf","vid":"v-lowshelf","fmt":"parseSignedDb"},{"id":"s-lowshelf-freq","vid":"v-lowshelf-freq","fmt":"parseHzKhzF"},{"id":"s-comp-pdr-hold","vid":"v-comp-pdr-hold","fmt":"ms"},{"id":"s-mb-sw-lowx","vid":"v-mb-sw-lowx","fmt":"hzRaw"},{"id":"s-mb-sw-highx","vid":"v-mb-sw-highx","fmt":"khzRaw"},{"id":"s-mb-sw-low","vid":"v-mb-sw-low","fmt":"multi"},{"id":"s-mb-sw-mid","vid":"v-mb-sw-mid","fmt":"multi"},{"id":"s-mb-sw-high","vid":"v-mb-sw-high","fmt":"multi"},{"id":"s-tatt","vid":"v-tatt","fmt":"signedDb2"},{"id":"s-tsus","vid":"v-tsus","fmt":"signedDb2"},{"id":"s-satdrive","vid":"v-satdrive","fmt":"pct"},{"id":"s-satmix","vid":"v-satmix","fmt":"pct"},{"id":"s-mgain","vid":"v-mgain","fmt":"signedDb"},{"id":"s-sgain","vid":"v-sgain","fmt":"signedDb"},{"id":"s-width","vid":"v-width","fmt":"multi"},{"id":"s-haas","vid":"v-haas","fmt":"float2_ms"},{"id":"s-bassmono","vid":"v-bassmono","fmt":"hz"},{"id":"s-rsize","vid":"v-rsize","fmt":"float2"},{"id":"s-rwet","vid":"v-rwet","fmt":"pct"},{"id":"s-ceiling","vid":"v-ceiling","fmt":"linearToDbT"},{"id":"s-lrelease","vid":"v-lrelease","fmt":"ms"},{"id":"s-mb-lowx","vid":"v-mb-lowx","fmt":"khzRaw"},{"id":"s-dyneq-freq","vid":"v-dyneq-freq","fmt":"parseHzKhzF"},{"id":"s-dyneq-q","vid":"v-dyneq-q","fmt":"float2"},{"id":"s-dyneq-thresh","vid":"v-dyneq-thresh","fmt":"parseSignedDb"},{"id":"s-dyneq-ratio","vid":"v-dyneq-ratio","fmt":"parseRatio1"},{"id":"s-dyneq-attack","vid":"v-dyneq-attack","fmt":"parseMs1"},{"id":"s-dyneq-release","vid":"v-dyneq-release","fmt":"parseMs"},{"id":"s-dyneq-maxred","vid":"v-dyneq-maxred","fmt":"float2_dB"},{"id":"s-mono-freq","vid":"v-mono-freq","fmt":"hz"},{"id":"s-mono-amount","vid":"v-mono-amount","fmt":"pct"},{"id":"s-lp-taps","vid":"v-lp-taps","fmt":"int"},{"id":"s-mb-highx","vid":"v-mb-highx","fmt":"khzRaw"},{"id":"s-mb-low-th","vid":"v-mb-low-th","fmt":"db"},{"id":"s-mb-low-ratio","vid":"v-mb-low-ratio","fmt":"ratio"},{"id":"s-mb-low-att","vid":"v-mb-low-att","fmt":"ms1"},{"id":"s-mb-low-rel","vid":"v-mb-low-rel","fmt":"ms"},{"id":"s-mb-low-mu","vid":"v-mb-low-mu","fmt":"signedDb"},{"id":"s-mb-mid-th","vid":"v-mb-mid-th","fmt":"db"},{"id":"s-mb-mid-ratio","vid":"v-mb-mid-ratio","fmt":"ratio"},{"id":"s-mb-mid-att","vid":"v-mb-mid-att","fmt":"ms1"},{"id":"s-mb-mid-rel","vid":"v-mb-mid-rel","fmt":"ms"},{"id":"s-mb-mid-mu","vid":"v-mb-mid-mu","fmt":"signedDb"},{"id":"s-mb-high-th","vid":"v-mb-high-th","fmt":"db"},{"id":"s-mb-high-ratio","vid":"v-mb-high-ratio","fmt":"ratio"},{"id":"s-mb-high-att","vid":"v-mb-high-att","fmt":"ms1"},{"id":"s-mb-high-rel","vid":"v-mb-high-rel","fmt":"ms"},{"id":"s-mb-high-mu","vid":"v-mb-high-mu","fmt":"signedDb"},{"id":"s-mb-pdr-hold","vid":"v-mb-pdr-hold","fmt":"ms"},{"id":"s-ref-boost","vid":"v-ref-boost","fmt":"plusDb"},{"id":"s-ref-cut","vid":"v-ref-cut","fmt":"float1Db"},{"id":"s-ref-dynmargin","vid":"v-ref-dynmargin","fmt":"float1Db"},{"id":"s-ref-stereoblend","vid":"v-ref-stereoblend","fmt":"intPct"},{"id":"s-lp-cutoff","vid":"v-lp-cutoff","fmt":"parseHzKhzF"},{"id":"s-nr-strength","vid":"v-nr-strength","fmt":"float2"},{"id":"s-nr-noise-sample-sec","vid":"v-nr-noise-sample-sec","fmt":"float1s"},{"id":"s-reso-freq","vid":"v-reso-freq","fmt":"parseHzKhzF"},{"id":"s-reso-q","vid":"v-reso-q","fmt":"float2"},{"id":"s-reso-thresh","vid":"v-reso-thresh","fmt":"float2_dB"},{"id":"s-reso-ratio","vid":"v-reso-ratio","fmt":"float2_ratio"},{"id":"s-reso-attack","vid":"v-reso-attack","fmt":"float2_ms"},{"id":"s-reso-release","vid":"v-reso-release","fmt":"ms"},{"id":"s-reso-maxred","vid":"v-reso-maxred","fmt":"float2_dB"},{"id":"s-mseq-mid-freq","vid":"v-mseq-mid-freq","fmt":"parseHzKhzF"},{"id":"s-mseq-mid-gain","vid":"v-mseq-mid-gain","fmt":"parseSignedDb"},{"id":"s-mseq-mid-q","vid":"v-mseq-mid-q","fmt":"float2"},{"id":"s-mseq-side-freq","vid":"v-mseq-side-freq","fmt":"parseHzKhzF"},{"id":"s-mseq-side-gain","vid":"v-mseq-side-gain","fmt":"parseSignedDb"},{"id":"s-mseq-side-q","vid":"v-mseq-side-q","fmt":"float2"},{"id":"s-mscomp-mid-thresh","vid":"v-mscomp-mid-thresh","fmt":"float2_dB"},{"id":"s-mscomp-mid-ratio","vid":"v-mscomp-mid-ratio","fmt":"float2_ratio"},{"id":"s-mscomp-mid-attack","vid":"v-mscomp-mid-attack","fmt":"float2_ms"},{"id":"s-mscomp-mid-release","vid":"v-mscomp-mid-release","fmt":"ms"},{"id":"s-mscomp-mid-makeup","vid":"v-mscomp-mid-makeup","fmt":"parseSignedDb"},{"id":"s-mscomp-side-thresh","vid":"v-mscomp-side-thresh","fmt":"float2_dB"},{"id":"s-mscomp-side-ratio","vid":"v-mscomp-side-ratio","fmt":"float2_ratio"},{"id":"s-mscomp-side-attack","vid":"v-mscomp-side-attack","fmt":"float2_ms"},{"id":"s-mscomp-side-release","vid":"v-mscomp-side-release","fmt":"ms"},{"id":"s-mscomp-side-makeup","vid":"v-mscomp-side-makeup","fmt":"parseSignedDb"},{"id":"s-mscomp-pdr-hold","vid":"v-mscomp-pdr-hold","fmt":"ms"},{"id":"s-clip-ceiling","vid":"v-clip-ceiling","fmt":"float2"},{"id":"s-clip-drive","vid":"v-clip-drive","fmt":"parseSignedDb"}]</script>
+<script defer src="js/02-sliders-ui.js"></script>
+<script defer src="js/03-presets.js"></script>
+<script defer src="js/04-file-handling.js"></script>
+<script defer src="js/05-eq-waveform.js"></script>
+<script defer src="js/06-params-builder.js"></script>
+<script defer src="js/07-mastering-actions.js"></script>
+<script defer src="js/08-reference-mastering.js"></script>
+<script defer src="js/09-visualizers.js"></script>
+<script defer src="js/35-audio-tap.js"></script>
+<script defer src="js/30-metrics-store.js"></script>
+<script defer src="js/10-meters-dashboard.js"></script>
+<script defer src="js/11-ai-assistant-ux.js"></script>
+<script defer src="js/12-lufs-normalize.js"></script>
+<script defer src="js/13-mixer.js"></script>
+<script defer src="js/13-mixer-ui.js"></script>
+<script defer src="js/14-pitch-correction.js"></script>
+<script defer src="js/15-master-console.js"></script>
+<script defer src="js/15-master-visual-suite.js"></script>
+<script defer src="js/17-keyboard-shortcuts.js"></script>
+<script defer src="js/18-undo-redo.js"></script>
+<script defer src="js/20-pro-upgrades.js"></script>
+<script defer src="js/22-tabs-handler.js"></script>
+<script defer src="js/25-workspace-tabs.js"></script>
+<script defer src="js/29-analysis-view.js"></script>
+<script defer src="js/30-preview-controller.js"></script>
+<script defer src="js/32-chain-family-tabs.js"></script>
+<script defer src="js/32-flex-layout.js"></script>
+<script defer src="js/34-premium-suite.js"></script>
+<script defer src="js/40-tab-compliance.js"></script>
+<script defer src="js/41-tab-abx.js"></script>
+<script defer src="js/42-tab-codec.js"></script>
+<script defer src="js/43-tab-waterfall.js"></script>
+<script defer src="js/insert-base.js"></script>
+<script defer src="js/pro-insert-rack.js"></script>
+<script defer src="js/reference-library-picker.js"></script>
+<script defer src="js/pro-features/cross-demask-widget.js"></script>
+<script defer src="js/pro-features/dr-meter-widget.js"></script>
+<script defer src="js/pro-features/iso-compensation-widget.js"></script>
+<script defer src="js/pro-features/loudness-penalty-widget.js"></script>
+<script defer src="js/pro-features/loudness-war-widget.js"></script>
+<script defer src="js/pro-features/ms-imager-widget.js"></script>
+<script defer src="js/pro-features/multiband-transient-widget.js"></script>
+<script defer src="js/pro-features/phantom-sub-widget.js"></script>
+<script defer src="js/pro-features/phase-rotation-widget.js"></script>
+<script defer src="js/pro-features/reference-match-widget.js"></script>
+<script defer src="js/pro-features/resonance-tamer-widget.js"></script>
+<script defer src="js/pro-features/reverb-widget.js"></script>
+<script defer src="js/pro-features/saturation-widget.js"></script>
+<script defer src="js/pro-features/spectral-tilt-widget.js"></script>
+<!-- Global Notifications and Utility Targets -->
+<div id="errorDisplay" role="alert" class="sr-only" aria-live="assertive"></div>
+<div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+<!-- Templates para Mixer de Stems -->
+<template id="tmpl-eqband">
+ <div class="mxr-eqband">
+ <div class="mxr-eqband-label"></div>
+ <div class="mxr-eqband-row">
+ <span class="mxr-eqband-tag">Frec.</span>
+ <input type="range" data-param="eq_freq" min="40" max="18000" step="10" aria-label="Frecuencia de ecualización">
+ <span class="mxr-eqband-val"></span>
+ </div>
+ <div class="mxr-eqband-row">
+ <span class="mxr-eqband-tag">Gan.</span>
+ <input type="range" data-param="eq_gain_db" min="-12" max="12" step="0.5" aria-label="Ganancia de ecualización">
+ <span class="mxr-eqband-val"></span>
+ </div>
+ <div class="mxr-eqband-row">
+ <span class="mxr-eqband-tag">Q</span>
+ <input type="range" data-param="eq_q" min="0.3" max="4" step="0.1" aria-label="Q de ecualización">
+ <span class="mxr-eqband-val"></span>
+ </div>
+ </div>
+</template>
+
+<template id="tmpl-channel">
+ <div class="mxr-channel" data-stem="">
+ <div class="mxr-ch-header">
+ <span class="mxr-ch-emoji"></span>
+ <span class="mxr-ch-name"></span>
+ <button class="mxr-ch-close" data-stem="" aria-label="Cerrar canal" type="button">&times;</button>
+ </div>
+ <div class="mxr-ch-uploading">Subiendo…</div>
+ <div class="mxr-fader-area">
+ <div class="mxr-db-scale">
+ <span>+12</span><span>+6</span><span>0</span>
+ <span>-6</span><span>-12</span><span>-∞</span>
+ </div>
+ <div class="mxr-fader-placeholder"></div>
+ <div class="mxr-fader-val"></div>
+ </div>
+ <div class="mxr-vu-wrap">
+ <div class="mxr-vu-bar"><div class="mxr-vu-fill"></div></div>
+ <div class="mxr-vu-bar"><div class="mxr-vu-fill"></div></div>
+ </div>
+ <div class="mxr-pan-row">
+ <span class="mxr-pan-label">L</span>
+  <input type="range" class="mxr-pan-slider" data-param="pan" min="-1" max="1" step="0.05" value="0" aria-label="Paneo">
+ <span class="mxr-pan-label">R</span>
+ <span class="mxr-pan-val"></span>
+ </div>
+<div class="mxr-ms-row">
+<button class="mxr-btn-ms" data-action="mute" aria-label="Silenciar canal" type="button">M</button>
+<button class="mxr-btn-ms" data-action="solo" aria-label="Solo canal" type="button">S</button>
+<button class="mxr-btn-ms mxr-reset-btn" data-action="reset" aria-label="Resetear canal">↺</button>
+</div>
+ <details class="mxr-ch-details" open>
+ <summary class="details-summary">Controles del canal</summary>
+ <div class="mxr-adv-section">Filtros</div>
+  <div class="param"><label>HP</label><span class="val"></span><input type="range" data-param="hp_cutoff_hz" min="20" max="500" step="5" aria-label="Filtro pasa-altos"></div>
+  <div class="param"><label>LP</label><span class="val"></span><input type="range" data-param="lp_cutoff_hz" min="2000" max="20000" step="100" aria-label="Filtro pasa-bajos"></div>
+ <div class="mxr-adv-section">EQ 4 bandas</div>
+ <div class="eq-bands-container"></div>
+ </details>
+ </div>
+</template>
+</body></html>

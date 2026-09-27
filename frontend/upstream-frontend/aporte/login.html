@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0a0a14">
+  <meta content="7.0.3" name="app-version" data-deploy="2026-09-15">
+  <title>Acceso · LGMDM Studio</title>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://masteringstudio-api.duckdns.org http://127.0.0.1:8000 http://localhost:8000; img-src 'self' data:; font-src 'self' data:; object-src 'none'; base-uri 'self';">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", sans-serif;
+      background-color: #080b14;
+      background-image: 
+        radial-gradient(900px 500px at 15% 10%, rgba(140, 125, 255, 0.12), transparent 60%),
+        radial-gradient(800px 500px at 85% 90%, rgba(82, 242, 189, 0.08), transparent 60%),
+        linear-gradient(145deg, #070913 0%, #0d1222 100%);
+      color: #f1f5f9;
+      padding: 1.5rem;
+      overflow-x: hidden;
+    }
+
+    .auth-container {
+      width: 100%;
+      max-width: 420px;
+      margin: auto;
+    }
+
+    .auth-card {
+      background: linear-gradient(145deg, rgba(16, 22, 38, 0.95), rgba(24, 28, 50, 0.95));
+      border: 1px solid rgba(125, 232, 255, 0.22);
+      border-radius: 22px;
+      padding: 2.2rem 2rem;
+      box-shadow: 
+        0 30px 80px rgba(0, 0, 0, 0.7),
+        0 0 45px rgba(66, 232, 255, 0.07);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      position: relative;
+    }
+
+    .brand-header {
+      text-align: center;
+      margin-bottom: 1.8rem;
+    }
+
+    .brand-logo {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      font-size: 1.45rem;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      color: #ffffff;
+      text-shadow: 0 0 25px rgba(82, 242, 189, 0.35);
+    }
+
+    .brand-logo span.icon {
+      font-size: 1.6rem;
+      filter: drop-shadow(0 0 8px rgba(82, 242, 189, 0.5));
+    }
+
+    .brand-subtitle {
+      display: block;
+      margin-top: 0.35rem;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #8c7dff;
+    }
+
+    .auth-tabs {
+      display: flex;
+      background: rgba(255, 255, 255, 0.04);
+      padding: 4px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      margin-bottom: 1.6rem;
+    }
+
+    .auth-tab {
+      flex: 1;
+      padding: 0.65rem 0.85rem;
+      border: none;
+      background: transparent;
+      color: #94a3b8;
+      font-size: 0.88rem;
+      font-weight: 600;
+      border-radius: 9px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: center;
+    }
+
+    .auth-tab:hover {
+      color: #ffffff;
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .auth-tab.active {
+      background: linear-gradient(135deg, rgba(66, 232, 255, 0.2), rgba(167, 139, 255, 0.18));
+      color: #ffffff;
+      border: 1px solid rgba(66, 232, 255, 0.45);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+      font-weight: 700;
+    }
+
+    .auth-form {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .form-label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #94a3b8;
+      letter-spacing: 0.02em;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 0.8rem 1rem;
+      border-radius: 11px;
+      border: 1px solid rgba(125, 232, 255, 0.22);
+      background: rgba(13, 19, 36, 0.85);
+      color: #f1f5f9;
+      font-size: 0.95rem;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+
+    .form-input:focus {
+      border-color: #5ce8ff;
+      background: rgba(16, 24, 46, 0.95);
+      box-shadow: 0 0 0 3px rgba(92, 232, 255, 0.18);
+    }
+
+    .form-input::placeholder {
+      color: #64748b;
+    }
+
+    .auth-submit-btn {
+      width: 100%;
+      padding: 0.85rem 1rem;
+      margin-top: 0.4rem;
+      border-radius: 11px;
+      border: 1px solid rgba(92, 232, 255, 0.4);
+      background: linear-gradient(135deg, #42d9ff 0%, #9b59ff 100%);
+      color: #060c18;
+      font-size: 0.98rem;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 18px rgba(66, 217, 255, 0.28);
+    }
+
+    .auth-submit-btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 25px rgba(66, 217, 255, 0.45);
+      filter: brightness(1.06);
+    }
+
+    .auth-submit-btn:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    .auth-submit-btn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .auth-msg {
+      padding: 0.75rem 0.9rem;
+      border-radius: 9px;
+      font-size: 0.84rem;
+      line-height: 1.4;
+      text-align: center;
+      margin-top: 0.4rem;
+      animation: fadeIn 0.2s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .auth-msg.error {
+      background: rgba(255, 71, 87, 0.14);
+      border: 1px solid rgba(255, 71, 87, 0.38);
+      color: #ff6b81;
+    }
+
+    .auth-msg.success {
+      background: rgba(74, 222, 128, 0.14);
+      border: 1px solid rgba(74, 222, 128, 0.38);
+      color: #4ade80;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .auth-demo-btn {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      background: rgba(82, 242, 189, 0.1);
+      border: 1px solid rgba(82, 242, 189, 0.35);
+      border-radius: 12px;
+      color: #52f2bd;
+      font-weight: 700;
+      font-size: 0.88rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      transition: all 0.2s ease;
+    }
+
+    .auth-demo-btn:hover {
+      background: rgba(82, 242, 189, 0.2);
+      border-color: rgba(82, 242, 189, 0.6);
+      box-shadow: 0 4px 15px rgba(82, 242, 189, 0.2);
+      transform: translateY(-1px);
+    }
+
+    .footer-note {
+      text-align: center;
+      margin-top: 1.6rem;
+      font-size: 0.74rem;
+      color: #64748b;
+    }
+
+    .footer-note a {
+      color: #52f2bd;
+      text-decoration: none;
+    }
+
+    .footer-note a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="auth-container">
+    <div class="auth-card">
+      <div class="brand-header">
+        <div class="brand-logo">
+          <span class="icon"><svg viewBox="0 0 16 16" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;"><line x1="4" y1="2" x2="4" y2="14"/><circle cx="4" cy="6" r="1.8" fill="currentColor"/><line x1="8" y1="2" x2="8" y2="14"/><circle cx="8" cy="10" r="1.8" fill="currentColor"/><line x1="12" y1="2" x2="12" y2="14"/><circle cx="12" cy="5" r="1.8" fill="currentColor"/></svg></span>
+          <span>MASTER Studio</span>
+        </div>
+        <span class="brand-subtitle">INTELLIGENT MASTERING CONSOLE</span>
+      </div>
+
+      <div class="auth-tabs" role="tablist">
+        <button class="auth-tab active" id="tab-login" type="button" role="tab" aria-selected="true" aria-controls="form-login">Iniciar sesión</button>
+        <button class="auth-tab" id="tab-register" type="button" role="tab" aria-selected="false" aria-controls="form-register">Registrarse</button>
+      </div>
+
+      <!-- Login Form -->
+      <div id="form-login" class="auth-form" role="tabpanel" aria-labelledby="tab-login">
+        <form id="form-login-real" class="auth-form-inner" novalidate>
+          <div class="form-group">
+            <label class="form-label" for="login-email">Correo electrónico</label>
+            <input type="email" id="login-email" class="form-input" placeholder="tu@email.com" autocomplete="email" required autofocus>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="login-pwd">Contraseña</label>
+            <input type="password" id="login-pwd" class="form-input" placeholder="••••••••" autocomplete="current-password" required>
+          </div>
+          <button type="submit" class="auth-submit-btn" id="login-btn">Ingresar a la consola</button>
+          <div id="login-msg" class="auth-msg hidden" role="alert"></div>
+          <div style="margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid rgba(255, 255, 255, 0.08); text-align: center;">
+            <button type="button" class="auth-demo-btn" id="demo-btn">
+              <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;vertical-align:-2px;"><polygon points="9 1.5 2.5 9 8 9 7 14.5 13.5 7 8 7 9 1.5"/></svg><span>Acceder en Modo Offline / Demo</span>
+            </button>
+            <p style="margin-top: 0.5rem; font-size: 0.74rem; color: #94a3b8;">Operar la consola localmente sin conexión al servidor</p>
+          </div>
+        </form>
+      </div>
+
+      <!-- Register Form -->
+      <div id="form-register" class="auth-form hidden" role="tabpanel" aria-labelledby="tab-register">
+        <form id="form-register-real" class="auth-form-inner" novalidate>
+          <div class="form-group">
+            <label class="form-label" for="reg-name">Nombre completo</label>
+            <input type="text" id="reg-name" class="form-input" placeholder="Tu nombre" autocomplete="name">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="reg-email">Correo electrónico</label>
+            <input type="email" id="reg-email" class="form-input" placeholder="tu@email.com" autocomplete="email" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="reg-pwd">Contraseña</label>
+            <input type="password" id="reg-pwd" class="form-input" placeholder="Mínimo 8 caracteres" autocomplete="new-password" required minlength="8">
+          </div>
+          <button type="submit" class="auth-submit-btn" id="register-btn">Crear cuenta</button>
+          <div id="reg-msg" class="auth-msg hidden" role="alert"></div>
+        </form>
+      </div>
+
+      <div class="footer-note">
+        Audio Mastering Pro v7.0.3 · Plataforma privada de masterización
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      const TOKEN_KEY = 'master_auth_token';
+      const USER_KEY  = 'master_auth_user';
+
+      // 1. Detección automática del origen de la API
+      function getApiBase() {
+        try {
+          const stored = localStorage.getItem('lgmdm_api_origin');
+          if (stored) return stored;
+        } catch (_) {}
+        if (typeof location !== 'undefined' && (location.hostname === '127.0.0.1' || location.hostname === 'localhost')) {
+          return `${location.protocol}//${location.hostname}:8000`;
+        }
+        return 'https://masteringstudio-api.duckdns.org';
+      }
+
+      const API_BASE = getApiBase();
+
+      function showMsg(id, text, type) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.textContent = text;
+        el.className = `auth-msg ${type}`;
+        el.classList.remove('hidden');
+      }
+
+      function hideMsg(id) {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('hidden');
+      }
+
+      function saveSession(token, user) {
+        sessionStorage.setItem(TOKEN_KEY, token);
+        sessionStorage.setItem(USER_KEY, JSON.stringify(user));
+      }
+
+      // 2. Si ya hay una sesión válida, redirigir directo a la consola
+      const existingToken = sessionStorage.getItem(TOKEN_KEY);
+      if (existingToken) {
+        if (existingToken === 'demo_token') {
+          window.location.replace('index.html');
+        } else {
+          fetch(`${API_BASE}/auth/me`, {
+            headers: { 'Authorization': `Bearer ${existingToken}` }
+          }).then(res => {
+            if (res.ok) {
+              window.location.replace('index.html');
+            } else if (res.status === 401 || res.status === 403) {
+              sessionStorage.removeItem(TOKEN_KEY);
+              sessionStorage.removeItem(USER_KEY);
+            }
+          }).catch(() => {
+            // Servidor offline pero token local presente: permitir operar
+            window.location.replace('index.html');
+          });
+        }
+      }
+
+      // Handler para acceso Demo / Modo Offline
+      const btnDemo = document.getElementById('demo-btn');
+      if (btnDemo) {
+        btnDemo.addEventListener('click', () => {
+          saveSession('demo_token', { name: 'Operador Local', email: 'demo@lgmdm.local', role: 'admin' });
+          window.location.replace('index.html');
+        });
+      }
+
+      // 3. Control de pestañas
+      const tabLogin = document.getElementById('tab-login');
+      const tabRegister = document.getElementById('tab-register');
+      const formLogin = document.getElementById('form-login');
+      const formRegister = document.getElementById('form-register');
+      const formLoginReal = document.getElementById('form-login-real');
+      const formRegisterReal = document.getElementById('form-register-real');
+
+      tabLogin.addEventListener('click', () => {
+        formLogin.classList.remove('hidden');
+        formRegister.classList.add('hidden');
+        tabLogin.classList.add('active');
+        tabLogin.setAttribute('aria-selected', 'true');
+        tabRegister.classList.remove('active');
+        tabRegister.setAttribute('aria-selected', 'false');
+        hideMsg('login-msg');
+        document.getElementById('login-email').focus();
+      });
+
+      tabRegister.addEventListener('click', () => {
+        formLogin.classList.add('hidden');
+        formRegister.classList.remove('hidden');
+        tabLogin.classList.remove('active');
+        tabLogin.setAttribute('aria-selected', 'false');
+        tabRegister.classList.add('active');
+        tabRegister.setAttribute('aria-selected', 'true');
+        hideMsg('reg-msg');
+        document.getElementById('reg-name').focus();
+      });
+
+      // 4. Salto de teclado con Enter
+      document.getElementById('login-email').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          const pwd = document.getElementById('login-pwd');
+          if (!pwd.value) {
+            e.preventDefault();
+            pwd.focus();
+          }
+        }
+      });
+
+      document.getElementById('reg-name').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          document.getElementById('reg-email').focus();
+        }
+      });
+
+      document.getElementById('reg-email').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          document.getElementById('reg-pwd').focus();
+        }
+      });
+
+      // 5. Envío de Login
+      formLoginReal.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        hideMsg('login-msg');
+        const email = document.getElementById('login-email').value.trim();
+        const pwd = document.getElementById('login-pwd').value;
+        const btn = document.getElementById('login-btn');
+
+        if (!email || !pwd) {
+          showMsg('login-msg', 'Completá todos los campos', 'error');
+          return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = 'Ingresando…';
+
+        try {
+          const res = await fetch(`${API_BASE}/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password: pwd })
+          });
+
+          const data = await res.json().catch(() => ({}));
+
+          if (!res.ok) {
+            throw new Error(data.detail || `Error de autenticación (HTTP ${res.status})`);
+          }
+
+          saveSession(data.access_token, data.user);
+          btn.textContent = '[OK] Redirigiendo a la consola…';
+          window.location.replace('index.html');
+        } catch (err) {
+          showMsg('login-msg', err.message, 'error');
+          btn.disabled = false;
+          btn.textContent = 'Ingresar a la consola';
+        }
+      });
+
+      // 6. Envío de Registro
+      formRegisterReal.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        hideMsg('reg-msg');
+        const name = document.getElementById('reg-name').value.trim();
+        const email = document.getElementById('reg-email').value.trim();
+        const pwd = document.getElementById('reg-pwd').value;
+        const btn = document.getElementById('register-btn');
+
+        if (!email || !pwd) {
+          showMsg('reg-msg', 'Completá todos los campos', 'error');
+          return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = 'Creando cuenta…';
+
+        try {
+          const res = await fetch(`${API_BASE}/auth/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password: pwd, name })
+          });
+
+          const data = await res.json().catch(() => ({}));
+
+          if (!res.ok) {
+            throw new Error(data.detail || `Error al crear cuenta (HTTP ${res.status})`);
+          }
+
+          showMsg('reg-msg', '[OK] Cuenta creada con éxito. Aguardá la aprobación del administrador.', 'success');
+          document.getElementById('reg-name').value = '';
+          document.getElementById('reg-email').value = '';
+          document.getElementById('reg-pwd').value = '';
+        } catch (err) {
+          showMsg('reg-msg', err.message, 'error');
+        } finally {
+          btn.disabled = false;
+          btn.textContent = 'Crear cuenta';
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

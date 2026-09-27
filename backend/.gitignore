@@ -1,0 +1,24 @@
+# Backend runtime state — generated por el servidor en operación, no es código.
+
+# Base de datos de usuarios (incluye JWT secrets compartidos si los hubiera)
+users_db.json
+
+# Caches / directorios de trabajo que el server crea en runtime
+processed/
+processed_stems/
+preview/renders/
+preview/snapshots/
+library/
+reference_library/
+stem_library/
+
+# Logs del supervisor uvicorn
+supervisor.log
+backend.log
+
+# Byte-compiled
+__pycache__/
+*.pyc
+
+# Ya cubiertos por el .gitignore raíz, pero explícitos por seguridad:
+# .venv/ .env

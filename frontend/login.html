@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0a0a14">
+  <meta name="app-version" content="7.0.3" data-deploy="2026-09-26">
+  <title>Acceso · LGMDM Studio</title>
+
+  <!-- Strict CSP: no 'unsafe-inline' for scripts. Style-src allows 'unsafe-inline'
+       (Vite dev HMR, dyn style attrs, knobs con style="--step-deg:...").
+       FIX B1: el comentario original decía "production uses nonces or extracted
+       CSS" pero csp.mjs NO agrega nonces ni quita 'unsafe-inline' — solo remueve
+       orígenes dev de connect-src. Es deuda técnica documentada, no feature. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://masteringstudio-api.duckdns.org https://masteringstudio-api2.duckdns.org http://127.0.0.1:8000 http://127.0.0.1:8001 http://localhost:8000 http://localhost:8001 wss://masteringstudio-api.duckdns.org wss://masteringstudio-api2.duckdns.org ws://127.0.0.1:8000 ws://127.0.0.1:8001 ws://localhost:8000 ws://localhost:8001; img-src 'self' data: blob:; font-src 'self' data:; media-src 'self' blob:; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'self'; upgrade-insecure-requests;">
+  <!-- FIX CSP-warning: frame-ancestors removido del meta (browser lo ignora
+       vía <meta>). Se aplica via Caddy header en masteringstudio2 site block. -->
+
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <!-- SRI hashes added at build time by scripts/sri.mjs -->
+
+  <link href="css/base/reset.css" rel="stylesheet">
+  <link href="css/base/tokens.css" rel="stylesheet">
+  <link href="css/base/themes.css" rel="stylesheet">
+  <link href="css/base/themes-professional.css" rel="stylesheet">
+  <link href="css/components/auth.css" rel="stylesheet">
+  <link href="css/components/toast.css" rel="stylesheet">
+</head>
+<body class="login-page">
+  <div class="auth-container">
+    <div class="auth-card">
+      <div class="brand-header">
+        <div class="brand-logo">
+          <span class="icon" aria-hidden="true">
+            <svg viewBox="0 0 16 16" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="4" y1="2" x2="4" y2="14"/>
+              <circle cx="4" cy="6" r="1.8" fill="currentColor"/>
+              <line x1="8" y1="2" x2="8" y2="14"/>
+              <circle cx="8" cy="10" r="1.8" fill="currentColor"/>
+              <line x1="12" y1="2" x2="12" y2="14"/>
+              <circle cx="12" cy="5" r="1.8" fill="currentColor"/>
+            </svg>
+          </span>
+          <span>MASTER Studio</span>
+        </div>
+        <span class="brand-subtitle">INTELLIGENT MASTERING CONSOLE</span>
+      </div>
+
+      <div class="auth-tabs" role="tablist" aria-label="Autenticación">
+        <button class="auth-tab active" id="tab-login" type="button" role="tab" aria-selected="true" aria-controls="form-login">Iniciar sesión</button>
+        <button class="auth-tab" id="tab-register" type="button" role="tab" aria-selected="false" aria-controls="form-register">Registrarse</button>
+      </div>
+
+      <!-- Login Form -->
+      <div id="form-login" class="auth-form" role="tabpanel" aria-labelledby="tab-login">
+        <form id="form-login-real" novalidate>
+          <div class="form-group">
+            <label class="form-label" for="login-email">Correo electrónico</label>
+            <input type="email" id="login-email" class="form-input" placeholder="tu@email.com" autocomplete="email" required autofocus aria-describedby="login-msg">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="login-pwd">Contraseña</label>
+            <input type="password" id="login-pwd" class="form-input" placeholder="••••••••" autocomplete="current-password" required aria-describedby="login-msg">
+          </div>
+          <button type="submit" class="auth-submit-btn" id="login-btn">Ingresar a la consola</button>
+          <div id="login-msg" class="auth-msg hidden" role="alert" aria-live="assertive" aria-atomic="true"></div>
+        </form>
+      </div>
+
+      <!-- Register Form -->
+      <div id="form-register" class="auth-form hidden" role="tabpanel" aria-labelledby="tab-register">
+        <form id="form-register-real" novalidate>
+          <div class="form-group">
+            <label class="form-label" for="reg-name">Nombre completo</label>
+            <input type="text" id="reg-name" class="form-input" placeholder="Tu nombre" autocomplete="name" aria-describedby="reg-msg">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="reg-email">Correo electrónico</label>
+            <input type="email" id="reg-email" class="form-input" placeholder="tu@email.com" autocomplete="email" required aria-describedby="reg-msg">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="reg-pwd">Contraseña</label>
+            <input type="password" id="reg-pwd" class="form-input" placeholder="Mínimo 8 caracteres" autocomplete="new-password" required minlength="8" aria-describedby="reg-msg">
+          </div>
+          <button type="submit" class="auth-submit-btn" id="register-btn">Crear cuenta</button>
+          <div id="reg-msg" class="auth-msg hidden" role="alert" aria-live="assertive" aria-atomic="true"></div>
+        </form>
+      </div>
+
+      <div class="footer-note">
+        Audio Mastering Pro v7.0.3 · Plataforma privada de masterización
+      </div>
+    </div>
+  </div>
+
+  <noscript>
+    <div class="auth-card noscript-card">
+      <p class="noscript-msg">JavaScript es requerido para acceder a la consola.</p>
+    </div>
+  </noscript>
+
+  <script type="module" src="/src/entrypoints/login.ts"></script>
+</body>
+</html>
