@@ -34,6 +34,69 @@ Historial de bugs ya fixeados (referencia, no vigentes):
   Fixeado el 26-sep-2026. Export verificado en runtime:
   `window.LGMDM.visualizerRender.drawWaterfallFrame` es `function`.
 
+## 2.bis `ruff` y los 476 errores ( estado al 2026-09-27)
+
+`ruff check .` es el linter de Python (config en `backend/pyproject.toml`).
+Verificación: `cd backend && /root/diego/backend/.venv/bin/ruff check .`
+
+Estado real al 2026-09-27: **0 errores** (`All checks passed!`).
+
+Los 476 errores que existían fueron fixeados en 10 commits (bloques 1-10):
+
+| Bloque | Tipo | Cant. | Commit | Nota |
+|---|---|---|---|---|
+| 1 | W291/W292/W293 (whitespace) | 171 | `d2f92d8` | `ruff --fix` seguro |
+| 2 | I001 (isort) | 79 | `6565fbe` | `ruff --fix` seguro |
+| 3 | E401 (multi-import por línea) | 5 | (en `6565fbe`) | resuelto por isort |
+| 4 | F541 (f-string sin placeholder) | 2 | `ba32428` | `ruff --fix` seguro |
+| 5 | F811 (imports redundantes) | 2 | `64f36de` | a mano |
+| 6 | E741 (nombres `l`/`I`/`O`) | 2 | `c25e64d` | a mano, rename |
+| 7 | F841 (variables no usadas) | 18 | `bcd9afb` | a mano, eliminar |
+| 8 | **F821 (NameError críticos)** | 12 | `d20f7ca` | **bugs reales**, fix a mano |
+| 9 | E701/E702 (statements múltiples) | 89 | `f4f3901` | a mano, partir líneas |
+| 10 | F401 (imports no usados) | 93 | `99fb372` | a mano, peligroso |
+
+### F821 (NameError) — bugs reales fixeados
+
+`routers/streaming.py` y `analysis.py` tenían NameError latentes que crasheaban
+si se ejecutaban ciertas líneas:
+
+- `analysis.py:37`: `_analyze_from_file` (top-level) usaba `logger` que era
+  parámetro de `create_analysis_router`. Fix: `logging.getLogger(__name__)`.
+- `routers/streaming.py` (11 NameError): faltaban imports de
+  `WebSocketDisconnect` (3 except), `HTTPException` (3 raise),
+  `compute_lufs_corrected_gain` (1); y 4 funciones helpers que no existían
+  (`_mix_library_stem_path`, `_mix_session_stem_path`,
+  `_resolve_mix_stem_path`, `run_mix_job`). Implementadas basadas en `mixer.py`.
+
+Antes: si se llamaba a `/mix/submit` o se desconectaba un WebSocket,
+NameError. Ahora: funcionan.
+
+### F401 (imports no usados) — el bloque peligroso
+
+`ruff --fix` global **ROMPE** el código porque el backend usa imports dinámicos
+(`__import__`, import condicional en `try/except ImportError`, inyección
+vía `dict(globals())`). Ya probado y revertido.
+
+Cómo se fixeó (uno por uno, verificado):
+- **app.py (58)**: excluido en `pyproject.toml` `per-file-ignores` porque
+  los imports se inyectan a los routers vía `_audio_router_dependencies =
+  dict(globals())`. Verificado: ningún import se usa directo en app.py.
+- **23 eliminados** (dead code real, cada uno verificado con grep de uso
+  directo + dinámico + inspección de bloques try/except).
+- **6 marcados `# noqa: F401`** (en bloques `try/except ImportError` de
+  fallback paquete/módulo — patrón legítimo).
+- **6 routers agregados a `__all__`** en `routers/__init__.py` (estaban
+  importados pero no listados).
+
+### Regla de uso
+
+- `ruff check .` debe dar `All checks passed!` antes de commitear backend.
+- `ruff --fix` solo es seguro para W291/W292/W293, I001, E401, F541. Para
+  F401 NUNCA (rompe imports dinámicos).
+- F821 (NameError) es el único bloque que son bugs reales de runtime. Si
+  vuelve a aparecer, fixear YA.
+
 ## 3. El backend es READ-ONLY pero se LEE
 
 Nunca asumir que un endpoint existe. Siempre:
