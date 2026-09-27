@@ -1925,8 +1925,6 @@ def _validate_mix_params(params: dict, stems_analysis: dict) -> dict:
 
 def _fallback_mix_params(stems_analysis: dict) -> dict:
     """Heurística de respaldo cuando la IA no está disponible."""
-    import math
-
     results = {}
     stem_names = list(stems_analysis.keys())
 

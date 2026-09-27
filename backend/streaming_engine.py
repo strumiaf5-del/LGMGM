@@ -11,9 +11,6 @@ Optimizaciones de CPU:
 - recommend_dynamic_eq cada 8s (antes 6s)
 - true_peak y mono_compat solo cada 8 chunks
 """
-import atexit
-import os
-
 import numpy as np  # type: ignore
 
 try:

@@ -22,6 +22,13 @@ __all__ = [
     "create_projects_router",
     "create_reference_library_router",
     "create_audio_router",
+    # FIX ruff F401: agregar los 6 routers que faltaban en __all__.
+    "create_advanced_dsp_router",
+    "create_mastering_router",
+    "create_mixer_router",
+    "create_preview_router",
+    "create_stems_router",
+    "create_streaming_router",
 ]
 
 from .advanced_dsp import create_advanced_dsp_router

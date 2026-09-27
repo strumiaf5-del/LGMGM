@@ -23,7 +23,7 @@ from typing import Optional
 
 import numpy as np
 import soundfile as sf
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import FileResponse, JSONResponse
 
@@ -60,12 +60,12 @@ except ImportError:
     from codec_simulator import loudness_penalty as _codec_loudness_penalty
     from codec_simulator import simulate_codec
     from mastering import (
-        apply_matching_fir,
+        apply_matching_fir,  # noqa: F401
         band_crest_factors,
-        build_matching_fir,
-        compute_reference_eq_curve,
+        build_matching_fir,  # noqa: F401
+        compute_reference_eq_curve,  # noqa: F401
         linear_phase_eq,
-        measure_lufs_integrated,
+        measure_lufs_integrated,  # noqa: F401
         phase_rotation,
         process_audio_with_reference,
         short_term_loudness_and_lra,

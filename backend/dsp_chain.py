@@ -22,7 +22,7 @@ with a descriptive message so the chain caller can react gracefully.
 
 from __future__ import annotations
 
-from typing import Any, Callable, Dict, List, Tuple
+from typing import Any, Callable, Dict, List
 
 import numpy as np
 

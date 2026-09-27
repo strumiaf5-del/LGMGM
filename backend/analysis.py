@@ -21,7 +21,7 @@ try:
 except ImportError:
     from audio_service import AudioService
     from mastering import analyze_audio, mix_advice, spectrum_analysis_fft
-    from validation_utils import MAX_FILE_SIZE, validate_audio_file
+    from validation_utils import MAX_FILE_SIZE, validate_audio_file  # noqa: F401
 
 
 def _spectrum_from_file(file_path: str, n_fft: int, n_bins: int):

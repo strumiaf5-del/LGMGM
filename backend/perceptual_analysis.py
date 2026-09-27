@@ -5,9 +5,7 @@
 
 import logging
 import math
-from typing import Dict, Optional, Tuple
-
-import numpy as np
+from typing import Dict, Tuple
 
 logger = logging.getLogger(__name__)
 

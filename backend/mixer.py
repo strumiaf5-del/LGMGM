@@ -414,7 +414,6 @@ def mix_and_master(
 
     # ── 4. Mastering chain ────────────────────────────────────────────────────
     import os
-    import tempfile
 
     import soundfile as sf
 

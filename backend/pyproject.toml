@@ -18,3 +18,8 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["F401"]  # unused imports en tests (fixtures)
+"app.py" = ["F401"]  # FIX ruff F401: app.py importa módulos que se inyectan a los
+                    # routers vía `_audio_router_dependencies = dict(globals())`.
+                    # Los imports NO se usan dentro de app.py pero son necesarios
+                    # para que estén en el namespace y se pasen a los routers.
+                    # Verificado: ningún import listado se usa directamente en app.py.

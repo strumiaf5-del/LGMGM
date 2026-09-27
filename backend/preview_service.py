@@ -16,7 +16,6 @@ import multiprocessing as mp
 import re
 import shutil
 import signal
-import tempfile
 import time
 import uuid
 from pathlib import Path

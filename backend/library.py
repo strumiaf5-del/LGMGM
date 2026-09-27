@@ -21,7 +21,6 @@ Formato del índice ({LIBRARY_DIR}/_index.json):
 """
 import json
 import os
-import shutil
 import tempfile
 import threading
 import time

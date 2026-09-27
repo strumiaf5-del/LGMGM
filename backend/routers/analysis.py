@@ -22,7 +22,7 @@ except ImportError:  # pragma: no cover
         evaluate_streaming_compliance,
         mix_advice,
         normalize_to_streaming_target,
-        spectrum_analysis_fft,
+        spectrum_analysis_fft,  # noqa: F401
     )
     from validation_utils import validate_audio_file
 

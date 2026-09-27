@@ -22,7 +22,7 @@ Two entry points:
 from __future__ import annotations
 
 import functools
-from typing import Any, Dict
+from typing import Dict
 
 import numpy as np
 

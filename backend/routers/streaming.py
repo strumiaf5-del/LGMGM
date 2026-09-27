@@ -9,9 +9,9 @@ import uuid
 import librosa
 import numpy as np
 import soundfile as sf
-from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Query, WebSocket
-from fastapi.responses import FileResponse
+from fastapi import APIRouter, BackgroundTasks, Depends, Form, HTTPException, WebSocket
 from starlette.websockets import WebSocketDisconnect
+
 # FIX ruff F821 (12 NameError críticos en streaming.py):
 # - WebSocketDisconnect, HTTPException no estaban importadas (NameError en except/raise).
 # - compute_lufs_corrected_gain no se recibía de dependencies (NameError en línea 259).
@@ -148,7 +148,6 @@ def run_mix_job(job_id, stem_paths, sr, s_params_dict, m_params_dict, cleanup_pa
     """Job en background para /mix/submit: carga audios de los paths, parsea
     parámetros, ejecuta mix_and_master, guarda el resultado en PROCESSED_DIR y
     actualiza el job. Es el equivalente async del mix sync de mixer.py."""
-    import json as _json
     try:
         jobs.set_stage(job_id, "Cargando stems", progress=5, status="processing")
         stems = {}
