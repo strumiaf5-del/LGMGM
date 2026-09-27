@@ -428,8 +428,10 @@ def create_router(**dependencies):
         except Exception as exc:
             logger.exception("/master/multi-reference: combine failed: %s", exc)
             for p in ref_paths:
-                try: os.remove(p)
-                except Exception: pass
+                try:
+                    os.remove(p)
+                except Exception:
+                    pass
             raise HTTPException(500, f"Could not combine references: {exc}")
 
         # 5. Encolar el job async (como /master/reference). El job runner
@@ -530,8 +532,10 @@ def create_router(**dependencies):
         if time.time() - job.get("created", 0) > PITCH_JOB_TTL_SECONDS:
             path = job.get("path")
             if path and os.path.exists(path):
-                try: os.remove(path)
-                except Exception: pass
+                try:
+                    os.remove(path)
+                except Exception:
+                    pass
             PITCH_JOBS.pop(job_id, None)
             raise HTTPException(404, "Pitch job expired")
         status = job.get("status")
@@ -700,15 +704,19 @@ async def _run_multi_reference_job(
             # Cleanup de todos los temporales (input + refs originales + combinado)
             for p in [input_path] + list(ref_paths_to_cleanup) + [combined_ref_path]:
                 if p and os.path.exists(p):
-                    try: os.remove(p)
-                    except Exception: pass
+                    try:
+                        os.remove(p)
+                    except Exception:
+                        pass
     except Exception as exc:
         logger.exception("Multi-reference job failed: %s", exc)
         # Cleanup en caso de error (el finally de arriba no corre si file.read() falla)
         for p in list(ref_paths_to_cleanup) + [combined_ref_path]:
             if p and os.path.exists(p):
-                try: os.remove(p)
-                except Exception: pass
+                try:
+                    os.remove(p)
+                except Exception:
+                    pass
         return {"status": "error", "error": "Multi-reference mastering failed", "code": 500}
 
 
@@ -808,8 +816,10 @@ async def _run_pitch_job(job_id: str, file: UploadFile, mode: str, scale: Option
             return {"status": "done", "path": out_path, "cents": cents}
         finally:
             if os.path.exists(in_path):
-                try: os.remove(in_path)
-                except Exception: pass
+                try:
+                    os.remove(in_path)
+                except Exception:
+                    pass
     except Exception as exc:
         logger.exception("Pitch job failed: %s", exc)
         # FIX K10: marcar el job como error en el registry.

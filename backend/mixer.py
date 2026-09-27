@@ -72,10 +72,18 @@ class StemParams:
     lp_cutoff_hz: float = 20000.0 # low-pass
 
     # EQ 4 bandas paramétricas
-    eq_low_freq: float   = 100.0;  eq_low_gain_db: float   = 0.0;  eq_low_q: float   = 0.8
-    eq_lomid_freq: float = 500.0;  eq_lomid_gain_db: float = 0.0;  eq_lomid_q: float = 1.0
-    eq_himid_freq: float = 3000.0; eq_himid_gain_db: float = 0.0;  eq_himid_q: float = 1.0
-    eq_high_freq: float  = 10000.0;eq_high_gain_db: float  = 0.0;  eq_high_q: float  = 0.8
+    eq_low_freq: float   = 100.0
+    eq_low_gain_db: float   = 0.0
+    eq_low_q: float   = 0.8
+    eq_lomid_freq: float = 500.0
+    eq_lomid_gain_db: float = 0.0
+    eq_lomid_q: float = 1.0
+    eq_himid_freq: float = 3000.0
+    eq_himid_gain_db: float = 0.0
+    eq_himid_q: float = 1.0
+    eq_high_freq: float  = 10000.0
+    eq_high_gain_db: float  = 0.0
+    eq_high_q: float  = 0.8
 
     # Compresor
     comp_enabled: bool = False

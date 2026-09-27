@@ -236,8 +236,10 @@ def create_advanced_dsp_router(*, upload_dir: str = None, processed_dir: str = N
             raise HTTPException(500, "Error en Resonance Tamer: operación no completada")
         finally:
             if os.path.exists(tmp_in):
-                try: os.remove(tmp_in)
-                except Exception: pass
+                try:
+                    os.remove(tmp_in)
+                except Exception:
+                    pass
 
     # 2. POLYNOMIAL INFLATOR / VINTAGE WARMER
     @router.post("/inflator", dependencies=deps)
@@ -277,8 +279,10 @@ def create_advanced_dsp_router(*, upload_dir: str = None, processed_dir: str = N
             raise HTTPException(500, "Error en Inflator: operación no completada")
         finally:
             if os.path.exists(tmp_in):
-                try: os.remove(tmp_in)
-                except Exception: pass
+                try:
+                    os.remove(tmp_in)
+                except Exception:
+                    pass
 
     # 3. PHANTOM SUB BASS
     @router.post("/phantom-sub", dependencies=deps)
@@ -328,8 +332,10 @@ def create_advanced_dsp_router(*, upload_dir: str = None, processed_dir: str = N
             raise HTTPException(500, "Error en Phantom Sub: operación no completada")
         finally:
             if os.path.exists(tmp_in):
-                try: os.remove(tmp_in)
-                except Exception: pass
+                try:
+                    os.remove(tmp_in)
+                except Exception:
+                    pass
 
     # 4. EQUAL LOUDNESS ISO 226 COMPENSATION
     @router.post("/iso-compensation", dependencies=deps)
@@ -371,8 +377,10 @@ def create_advanced_dsp_router(*, upload_dir: str = None, processed_dir: str = N
             raise HTTPException(500, "Error en ISO Compensation: operación no completada")
         finally:
             if os.path.exists(tmp_in):
-                try: os.remove(tmp_in)
-                except Exception: pass
+                try:
+                    os.remove(tmp_in)
+                except Exception:
+                    pass
 
     # 5. SPECTRAL MATCH EQ
     @router.post("/match-eq", dependencies=deps)
@@ -434,8 +442,10 @@ def create_advanced_dsp_router(*, upload_dir: str = None, processed_dir: str = N
         finally:
             for p in (tmp_target, tmp_ref):
                 if os.path.exists(p):
-                    try: os.remove(p)
-                    except Exception: pass
+                    try:
+                        os.remove(p)
+                    except Exception:
+                        pass
 
     # 6. STEM CROSS-UNMASKING
     @router.post("/cross-demask", dependencies=deps)
@@ -500,8 +510,10 @@ def create_advanced_dsp_router(*, upload_dir: str = None, processed_dir: str = N
         finally:
             for p in (tmp_tgt, tmp_msk):
                 if os.path.exists(p):
-                    try: os.remove(p)
-                    except Exception: pass
+                    try:
+                        os.remove(p)
+                    except Exception:
+                        pass
 
     # ─────────────────────────────────────────────────────────────────────
     # 7. SPRINT 4 — B1.3: LOUDNESS PENALTY (codec simulation + LUFS delta)
@@ -565,8 +577,10 @@ def create_advanced_dsp_router(*, upload_dir: str = None, processed_dir: str = N
             raise HTTPException(500, "Error en Loudness Penalty: simulación de códec falló")
         finally:
             if os.path.exists(tmp_in):
-                try: os.remove(tmp_in)
-                except Exception: pass
+                try:
+                    os.remove(tmp_in)
+                except Exception:
+                    pass
 
     # ─────────────────────────────────────────────────────────────────────
     # 8. SPRINT 4 — B1.4: PHASE ROTATION (all-pass variable 0-360° en banda)
@@ -633,8 +647,10 @@ def create_advanced_dsp_router(*, upload_dir: str = None, processed_dir: str = N
             raise HTTPException(500, "Error en Phase Rotation: filtro AP no procesó el audio")
         finally:
             if os.path.exists(tmp_in):
-                try: os.remove(tmp_in)
-                except Exception: pass
+                try:
+                    os.remove(tmp_in)
+                except Exception:
+                    pass
 
     # ─────────────────────────────────────────────────────────────────────
     # 9. SPRINT 4 — B1.5: SPECTRAL TILT (linear-phase EQ alrededor de un pivot)
@@ -684,8 +700,10 @@ def create_advanced_dsp_router(*, upload_dir: str = None, processed_dir: str = N
                 )
             finally:
                 if os.path.exists(tmp_in):
-                    try: os.remove(tmp_in)
-                    except Exception: pass
+                    try:
+                        os.remove(tmp_in)
+                    except Exception:
+                        pass
 
         # Distribución de gains: -tilt_db/2 abajo del pivot, +tilt_db/2 arriba.
         half = tilt_db / 2.0
@@ -727,8 +745,10 @@ def create_advanced_dsp_router(*, upload_dir: str = None, processed_dir: str = N
             raise HTTPException(500, "Error en Spectral Tilt: linear_phase_eq falló")
         finally:
             if os.path.exists(tmp_in):
-                try: os.remove(tmp_in)
-                except Exception: pass
+                try:
+                    os.remove(tmp_in)
+                except Exception:
+                    pass
 
     # ─────────────────────────────────────────────────────────────────────
     # 10. SPRINT 4 — B1.6: DR METER (LRA + crest factors por banda + clasificación)
@@ -800,7 +820,9 @@ def create_advanced_dsp_router(*, upload_dir: str = None, processed_dir: str = N
             raise HTTPException(500, "Error en DR Meter: métricas no se pudieron calcular")
         finally:
             if os.path.exists(tmp_in):
-                try: os.remove(tmp_in)
-                except Exception: pass
+                try:
+                    os.remove(tmp_in)
+                except Exception:
+                    pass
 
     return router

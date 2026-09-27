@@ -707,10 +707,14 @@ def _analyze_perceptual_profile(analysis: dict) -> PerceptualProfile:
         profile.presence_feel = "present"
 
     fatigue = 0.0
-    if centroid > 6000: fatigue += 0.3
-    if plr < 4: fatigue += 0.2
-    if presence_band > 10: fatigue += 0.25
-    if lufs > -6: fatigue += 0.15
+    if centroid > 6000:
+        fatigue += 0.3
+    if plr < 4:
+        fatigue += 0.2
+    if presence_band > 10:
+        fatigue += 0.25
+    if lufs > -6:
+        fatigue += 0.15
     profile.fatigue_risk = min(1.0, fatigue)
 
     if plr < 3:
@@ -1330,7 +1334,10 @@ def _fallback_custom_params(analysis: Optional[dict]) -> dict:
         v = spectrum.get(key)
         return v if isinstance(v, (int, float)) else None
 
-    sub = band("sub_bass"); bass = band("bass"); air = band("air"); presence = band("presence")
+    sub = band("sub_bass")
+    bass = band("bass")
+    air = band("air")
+    presence = band("presence")
     if sub is not None and sub > -6:
         p["hp_cutoff"] = 45.0
     if bass is not None and bass < -18:

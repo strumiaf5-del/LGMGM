@@ -174,15 +174,24 @@ async def mix_ai_suggest(
 
         # Detectar stem_type del nombre
         n_low = name.lower()
-        if any(x in n_low for x in ["kick", "bd", "bombo"]):         stem_type = "kick"
-        elif any(x in n_low for x in ["snare", "caja", "rim"]):      stem_type = "snare"
-        elif any(x in n_low for x in ["bass", "bajo", "808"]):       stem_type = "bass"
-        elif any(x in n_low for x in ["voc", "voice", "vocal"]):     stem_type = "vocals"
-        elif any(x in n_low for x in ["guitar", "guit"]):            stem_type = "guitar"
-        elif any(x in n_low for x in ["synth", "pad", "keys"]):      stem_type = "synth"
-        elif any(x in n_low for x in ["drum", "perc", "hat"]):       stem_type = "drums"
-        elif any(x in n_low for x in ["fx", "effect", "atm"]):       stem_type = "fx"
-        else:                                                       stem_type = "other"
+        if any(x in n_low for x in ["kick", "bd", "bombo"]):
+            stem_type = "kick"
+        elif any(x in n_low for x in ["snare", "caja", "rim"]):
+            stem_type = "snare"
+        elif any(x in n_low for x in ["bass", "bajo", "808"]):
+            stem_type = "bass"
+        elif any(x in n_low for x in ["voc", "voice", "vocal"]):
+            stem_type = "vocals"
+        elif any(x in n_low for x in ["guitar", "guit"]):
+            stem_type = "guitar"
+        elif any(x in n_low for x in ["synth", "pad", "keys"]):
+            stem_type = "synth"
+        elif any(x in n_low for x in ["drum", "perc", "hat"]):
+            stem_type = "drums"
+        elif any(x in n_low for x in ["fx", "effect", "atm"]):
+            stem_type = "fx"
+        else:
+            stem_type = "other"
 
         analysis["stem_type"] = stem_type
         stems_analysis[name] = analysis

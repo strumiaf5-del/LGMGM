@@ -301,8 +301,10 @@ def simulate_codec(audio: np.ndarray, sr: int,
         except Exception as exc:
             raise RuntimeError(f"No se pudo decodificar el WAV de ffmpeg: {exc}") from exc
     finally:
-        try: os.remove(tmp_path)
-        except OSError: pass
+        try:
+            os.remove(tmp_path)
+        except OSError:
+            pass
 
     if decoded_sr != int(sr):
         # ffmpeg garantiza preservar sr para s16le → cualquier códec; por

@@ -165,8 +165,10 @@ def _save_db(db: dict) -> None:
             os.replace(tmp_path, USERS_DB_PATH)
         except Exception:
             if os.path.exists(tmp_path):
-                try: os.remove(tmp_path)
-                except OSError: pass
+                try:
+                    os.remove(tmp_path)
+                except OSError:
+                    pass
             raise
 
 def _get_user_by_email(email: str) -> Optional[dict]:

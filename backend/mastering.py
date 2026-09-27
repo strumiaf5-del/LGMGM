@@ -95,12 +95,24 @@ class MasteringParams:
     high_shelf_freq_hz: float = 8000.0
     low_shelf_gain_db: float = 0.0
     low_shelf_freq_hz: float = 100.0
-    eq1_freq: float = 100.0;  eq1_gain: float = 0.0;  eq1_q: float = 1.0
-    eq2_freq: float = 500.0;  eq2_gain: float = 0.0;  eq2_q: float = 1.0
-    eq3_freq: float = 2000.0; eq3_gain: float = 0.0;  eq3_q: float = 1.0
-    eq4_freq: float = 8000.0; eq4_gain: float = 0.0;  eq4_q: float = 1.0
-    eq5_freq: float = 200.0;  eq5_gain: float = 0.0;  eq5_q: float = 1.0
-    eq6_freq: float = 1000.0; eq6_gain: float = 0.0;  eq6_q: float = 1.0
+    eq1_freq: float = 100.0
+    eq1_gain: float = 0.0
+    eq1_q: float = 1.0
+    eq2_freq: float = 500.0
+    eq2_gain: float = 0.0
+    eq2_q: float = 1.0
+    eq3_freq: float = 2000.0
+    eq3_gain: float = 0.0
+    eq3_q: float = 1.0
+    eq4_freq: float = 8000.0
+    eq4_gain: float = 0.0
+    eq4_q: float = 1.0
+    eq5_freq: float = 200.0
+    eq5_gain: float = 0.0
+    eq5_q: float = 1.0
+    eq6_freq: float = 1000.0
+    eq6_gain: float = 0.0
+    eq6_q: float = 1.0
     # ── Balance tonal automático (EQ inteligente sin referencia, stage 6) ───
     tonal_balance_bypass: bool = True
     tonal_balance_amount: float = 1.0
@@ -109,15 +121,23 @@ class MasteringParams:
     tonal_balance_max_bands: int = 6
     # ── EQ Mid/Side (banded, stage 4) ───────────────────────────────────────
     ms_eq_bypass: bool = True
-    ms_mid_freq: float = 250.0;  ms_mid_gain: float = 0.0;  ms_mid_q: float = 1.0
-    ms_side_freq: float = 8000.0; ms_side_gain: float = 0.0; ms_side_q: float = 1.0
+    ms_mid_freq: float = 250.0
+    ms_mid_gain: float = 0.0
+    ms_mid_q: float = 1.0
+    ms_side_freq: float = 8000.0
+    ms_side_gain: float = 0.0
+    ms_side_q: float = 1.0
     # ── Compresor Mid/Side (stage 4, después del EQ M/S) ────────────────────
     ms_comp_bypass: bool = True
-    ms_comp_mid_threshold_db: float = -18.0; ms_comp_mid_ratio: float = 2.0
-    ms_comp_mid_attack_ms: float = 15.0; ms_comp_mid_release_ms: float = 120.0
+    ms_comp_mid_threshold_db: float = -18.0
+    ms_comp_mid_ratio: float = 2.0
+    ms_comp_mid_attack_ms: float = 15.0
+    ms_comp_mid_release_ms: float = 120.0
     ms_comp_mid_makeup_db: float = 0.0
-    ms_comp_side_threshold_db: float = -18.0; ms_comp_side_ratio: float = 2.0
-    ms_comp_side_attack_ms: float = 15.0; ms_comp_side_release_ms: float = 120.0
+    ms_comp_side_threshold_db: float = -18.0
+    ms_comp_side_ratio: float = 2.0
+    ms_comp_side_attack_ms: float = 15.0
+    ms_comp_side_release_ms: float = 120.0
     ms_comp_side_makeup_db: float = 0.0
     ms_comp_pdr: bool = True
     ms_comp_pdr_hold_ms: float = 500.0
@@ -146,12 +166,21 @@ class MasteringParams:
     mb_bypass: bool = True
     mb_low_crossover: float = 250.0
     mb_high_crossover: float = 4000.0
-    mb_low_threshold_db: float = -18.0; mb_low_ratio: float = 2.0
-    mb_low_attack_ms: float = 20.0; mb_low_release_ms: float = 150.0; mb_low_makeup_db: float = 0.0
-    mb_mid_threshold_db: float = -18.0; mb_mid_ratio: float = 2.0
-    mb_mid_attack_ms: float = 20.0; mb_mid_release_ms: float = 150.0; mb_mid_makeup_db: float = 0.0
-    mb_high_threshold_db: float = -18.0; mb_high_ratio: float = 2.0
-    mb_high_attack_ms: float = 20.0; mb_high_release_ms: float = 150.0; mb_high_makeup_db: float = 0.0
+    mb_low_threshold_db: float = -18.0
+    mb_low_ratio: float = 2.0
+    mb_low_attack_ms: float = 20.0
+    mb_low_release_ms: float = 150.0
+    mb_low_makeup_db: float = 0.0
+    mb_mid_threshold_db: float = -18.0
+    mb_mid_ratio: float = 2.0
+    mb_mid_attack_ms: float = 20.0
+    mb_mid_release_ms: float = 150.0
+    mb_mid_makeup_db: float = 0.0
+    mb_high_threshold_db: float = -18.0
+    mb_high_ratio: float = 2.0
+    mb_high_attack_ms: float = 20.0
+    mb_high_release_ms: float = 150.0
+    mb_high_makeup_db: float = 0.0
     mb_pdr: bool = True
     mb_pdr_hold_ms: float = 500.0
     # ── Compresor de banda ancha ─────────────────────────────────────────────
