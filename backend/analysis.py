@@ -95,7 +95,7 @@ def create_analysis_router(*, upload_dir: str, read_and_validate, logger, curren
         try:
             with open(tmp, "wb") as fh:
                 fh.write(data)
-            
+
             if audio_service:
                 return await run_in_threadpool(audio_service.spectrum_file, tmp, n_fft, n_bins)
             return await run_in_threadpool(_spectrum_from_file, tmp, n_fft, n_bins)

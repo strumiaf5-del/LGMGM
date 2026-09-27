@@ -44,17 +44,17 @@ def analyze_stem(file_path: str) -> dict:
         # BUGFIX: librosa.load puede tardar muchísimo si el archivo es enorme.
         # Limitar a 10 minutos de audio para que el análisis sea rápido.
         y, sr = librosa.load(file_path, sr=44100, mono=True, duration=600.0)  # 10 min max
-        
+
         if len(y) == 0:
             raise ValueError("Audio vacío después de cargar")
-        
+
         meter = pyln.Meter(sr)
         lufs = meter.integrated_loudness(y)
-        
+
         rms_db = 20 * np.log10(np.sqrt(np.mean(y**2)) + 1e-12)
         peak_db = 20 * np.log10(np.max(np.abs(y)) + 1e-12)
         crest = peak_db - rms_db
-        
+
         # Espectro de 32 bandas logarítmicas (20Hz – 20kHz)
         S = np.abs(librosa.stft(y, n_fft=2048, hop_length=512))
         freqs = librosa.fft_frequencies(sr=sr, n_fft=2048)
@@ -67,7 +67,7 @@ def analyze_stem(file_path: str) -> dict:
                 spec.append(10 * np.log10(power + 1e-12))
             else:
                 spec.append(-80)
-        
+
         return {
             "lufs": round(lufs, 2),
             "rms_db": round(rms_db, 2),
@@ -84,7 +84,7 @@ def get_stem_path(library_id: str) -> str | None:
     """
     Consulta tu base de datos y devuelve la ruta absoluta del archivo.
     EJEMPLO con SQLAlchemy (descomenta y adapta):
-    
+
     from your_database import SessionLocal, StemLibrary
     db = SessionLocal()
     stem = db.query(StemLibrary).filter(StemLibrary.id == library_id).first()
@@ -104,20 +104,20 @@ def get_stem_path(library_id: str) -> str | None:
 async def suggest_stems(request: StemSuggestionRequest):
     if model is None:
         raise HTTPException(503, "Gemini AI no está configurado. Configura GEMINI_API_KEY en variables de entorno.")
-    
+
     # 1. Validar y analizar cada stem
     stems_data = []
     for item in request.stems:
         file_path = get_stem_path(item.library_id)
         if not file_path or not os.path.exists(file_path):
             raise HTTPException(404, f"Stem '{item.name}' (ID {item.library_id}) no encontrado.")
-        
+
         analysis = analyze_stem(file_path)
         stems_data.append({
             "name": item.name,
             **analysis
         })
-    
+
     # 2. Construir el prompt para Gemini
     prompt = f"""
 Eres un ingeniero de mezcla experto. Recibirás datos de varios stems (pistas) de una canción.
@@ -186,19 +186,19 @@ Sé creativo pero realista. Devuelve SOLO el JSON.
         # response = model.generate_content(prompt, generation_config={"response_mime_type": "application/json"})
         response = model.generate_content(prompt)
         raw = response.text
-        
+
         # Limpiar posibles markdown
         raw = re.sub(r"```json\s*|\s*```", "", raw).strip()
         data = json.loads(raw)
         suggestions = data.get("suggestions", {})
-        
+
         if not suggestions and isinstance(data, dict):
             # Si el JSON es directamente el objeto de sugerencias
             if all(isinstance(v, dict) for v in data.values()):
                 suggestions = data
             else:
                 raise ValueError("El JSON no tiene la estructura esperada.")
-    
+
     except json.JSONDecodeError as e:
         logging.getLogger(__name__).exception("Gemini devolvió JSON inválido: %s", e)
         raise HTTPException(500, "Gemini devolvió JSON inválido: operación no completada")

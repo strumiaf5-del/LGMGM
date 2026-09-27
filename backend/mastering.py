@@ -5927,7 +5927,7 @@ def multiband_saturation(audio: np.ndarray, sr: int,
 
     Por qué multibanda:
     - Saturar bajos/medios/agudos con el mismo drive produce resultados
-      inconsistentes: los graves necesitan más drive para calentar sin 
+      inconsistentes: los graves necesitan más drive para calentar sin
       hacerse ásperos, los agudos necesitan menos para no volverse estridentes.
     - Separar en 3 bandas permite calentar los bajos con 2do armónico
       (modo 'analog'), dar cuerpo a los medios ('tape') y agregar aire

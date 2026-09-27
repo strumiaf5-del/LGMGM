@@ -101,7 +101,7 @@ def separate_stems(audio: np.ndarray, sr: int, progress_cb=None,
                 audio_2d = audio[:2, :]
             else:
                 audio_2d = audio
-        
+
         # Garantizar que sea estéreo (Demucs espera exactamente 2 canales)
         if audio_2d.shape[0] == 1:
             audio_2d = np.concatenate([audio_2d, audio_2d], axis=0)
@@ -128,13 +128,13 @@ def separate_stems(audio: np.ndarray, sr: int, progress_cb=None,
             model, wav_norm[None], device=dev, progress=False,
             split=True, overlap=0.25, shifts=1,
         )[0]
-    
+
     # BUGFIX: validar forma del output para evitar artefactos silenciosos
     if out.ndim != 3:
         raise ValueError(f"Forma inesperada de Demucs: {out.ndim}D (esperado 3D)")
     if out.shape[0] != len(model.sources):
         raise ValueError(f"Stems inesperados: {out.shape[0]} (esperado {len(model.sources)})")
-    
+
     _report(90, "Separación completa, reconstruyendo stems…")
 
     out = out * ref_std + ref_mean

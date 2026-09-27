@@ -542,7 +542,7 @@ def cleanup_old() -> None:
     now = time.time()
     deleted_files = 0
     deleted_dirs = 0
-    
+
     # Limpiar archivos individuales en PROCESSED_DIR
     try:
         for fname in os.listdir(PROCESSED_DIR):
@@ -555,7 +555,7 @@ def cleanup_old() -> None:
                 logger.warning(f"No se pudo borrar {fpath}: {e}")
     except OSError as e:
         logger.warning(f"Error accediendo PROCESSED_DIR: {e}")
-    
+
     # Limpiar directorios viejos en STEMS_DIR
     try:
         import shutil
@@ -569,7 +569,7 @@ def cleanup_old() -> None:
                 logger.warning(f"No se pudo borrar directorio {dpath}: {e}")
     except OSError as e:
         logger.warning(f"Error accediendo STEMS_DIR: {e}")
-    
+
     if deleted_files > 0 or deleted_dirs > 0:
         logger.info(f"🧹 Cleanup: {deleted_files} archivos + {deleted_dirs} directorios borrados (TTL: {PROCESSED_TTL}s)")
 

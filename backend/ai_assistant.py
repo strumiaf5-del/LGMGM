@@ -74,7 +74,7 @@ async def _gemini_generate_content(system_prompt: str, contents: list,
     Siempre se pide responseMimeType=application/json, así que el texto devuelto \
     debería ser JSON parseable (ver `_extract_json_object`). Devuelve None si la \
     llamada falla, no hay candidatos (p.ej. bloqueo de safety) o hay error de red.\
-    
+
     Con reintentos automáticos para transient errors (timeout, 5xx, connection issues)."""
     url = f"{GEMINI_API_BASE}/models/{AI_MODEL}:generateContent"
     generation_config = {
@@ -531,10 +531,10 @@ def _db_to_linear(db_value: float) -> float:
 def _linear_to_db(linear_value: float) -> float:
     import math
     return round(20 * math.log10(max(float(linear_value), 1e-6)), 2)
-    
+
 import math
 def linear_to_db(linear: float) -> float:
-    return 20 * math.log10(max(linear, 1e-6))    
+    return 20 * math.log10(max(linear, 1e-6))
 
 
 # Aclaraciones de escala/unidad para el resto de parámetros que no son dB reales
@@ -623,7 +623,7 @@ class PerceptualProfile:
         self.mix_cohesion = "unknown"
         self.frequency_balance = "unknown"
         self.headroom_feel = "unknown"
-    
+
     def to_dict(self):
         return {
             "clarity": self.clarity,
@@ -655,28 +655,28 @@ def _analyze_perceptual_profile(analysis: dict) -> PerceptualProfile:
     air_energy = band_energies.get("air", -20)
     presence_band = band_energies.get("presence", -20)
     subs_energy = band_energies.get("subs", -20)
-    
+
     if air_energy < -30 and centroid < 2000:
         profile.clarity = "muddy"
     elif flatness < 0.3 or centroid > 6000:
         profile.clarity = "harsh"
     else:
         profile.clarity = "balanced"
-    
+
     if plr > 14 and lra > 7:
         profile.dynamic_feel = "loose"
     elif plr < 6 and lra < 3:
         profile.dynamic_feel = "tight"
     else:
         profile.dynamic_feel = "balanced"
-    
+
     if centroid < 2000:
         profile.tonal_balance = "dark"
     elif centroid > 5000:
         profile.tonal_balance = "bright"
     else:
         profile.tonal_balance = "balanced"
-    
+
     if correlation_global > 0.9:
         profile.stereo_coherence = "mono"
     elif mono_compatibility < -6:
@@ -685,7 +685,7 @@ def _analyze_perceptual_profile(analysis: dict) -> PerceptualProfile:
         profile.stereo_coherence = "separated"
     else:
         profile.stereo_coherence = "coherent"
-    
+
     if flatness > 0.7 and presence_band < 5:
         profile.instrumental_definition = "clear"
     elif flatness < 0.3:
@@ -694,42 +694,42 @@ def _analyze_perceptual_profile(analysis: dict) -> PerceptualProfile:
         profile.instrumental_definition = "overly_defined"
     else:
         profile.instrumental_definition = "clear"
-    
+
     if centroid > 5500 and presence_band > 6:
         profile.presence_feel = "in_your_face"
     elif centroid < 2500 or (lufs < -18 and air_energy < -25):
         profile.presence_feel = "distant"
     else:
         profile.presence_feel = "present"
-    
+
     fatigue = 0.0
     if centroid > 6000: fatigue += 0.3
     if plr < 4: fatigue += 0.2
     if presence_band > 10: fatigue += 0.25
     if lufs > -6: fatigue += 0.15
     profile.fatigue_risk = min(1.0, fatigue)
-    
+
     if plr < 3:
         profile.mix_cohesion = "over_compressed"
     elif correlation_global < 0.6:
         profile.mix_cohesion = "disconnected"
     else:
         profile.mix_cohesion = "glued"
-    
+
     if subs_energy > 5 and band_energies.get("mids", -20) < -5:
         profile.frequency_balance = "bass_heavy"
     elif air_energy > 5 and subs_energy < -10:
         profile.frequency_balance = "treble_heavy"
     else:
         profile.frequency_balance = "balanced"
-    
+
     if true_peak > -0.5 or clipping_ratio > 0.1:
         profile.headroom_feel = "cramped"
     elif true_peak < -6 or lufs < -18:
         profile.headroom_feel = "empty"
     else:
         profile.headroom_feel = "comfortable"
-    
+
     return profile
 
 
@@ -741,7 +741,7 @@ def _get_genre_from_perceptual(profile: PerceptualProfile, analysis: dict) -> tu
     lra = analysis.get("lra_lu", 4)
     transient_density = analysis.get("transient_density", 0.5)
     centroid = analysis.get("spectral_centroid", 3000)
-    
+
     if lufs > -7 and profile.frequency_balance == "bass_heavy" and plr < 8:
         genre_scores["trap"] = 0.85
     if lufs < -13 and plr > 12 and lra > 6 and profile.dynamic_feel == "loose":
@@ -756,7 +756,7 @@ def _get_genre_from_perceptual(profile: PerceptualProfile, analysis: dict) -> tu
         genre_scores["pop"] = 0.70
     if lufs > -6 and plr < 6 and profile.frequency_balance == "bass_heavy":
         genre_scores["edm"] = 0.75
-    
+
     return max(genre_scores.items(), key=lambda x: x[1]) if genre_scores else ("mixed", 0.3)
 
 
@@ -769,22 +769,22 @@ def _get_perceptual_diagnosis(profile: PerceptualProfile) -> str:
         parts.append("Mezcla muy comprimida")
     else:
         parts.append("Mezcla con elementos desconectados")
-    
+
     if profile.dynamic_feel == "tight":
         parts.append(", dinámica limitada")
     elif profile.dynamic_feel == "loose":
         parts.append(", dinámica muy abierta")
-    
+
     if profile.tonal_balance == "dark":
         parts.append(", tonalidad oscura")
     elif profile.tonal_balance == "bright":
         parts.append(", tonalidad brillante")
-    
+
     if profile.fatigue_risk > 0.7:
         parts.append(f". FATIGA: {int(profile.fatigue_risk*100)}%")
     elif profile.fatigue_risk > 0.4:
         parts.append(f" ({int(profile.fatigue_risk*100)}% fatiga)")
-    
+
     return "".join(parts).rstrip(",") if parts else "Mezcla promedio"
 
 

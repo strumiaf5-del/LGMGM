@@ -15,7 +15,7 @@ def create_full_preset(base: dict, **overrides) -> dict:
         "target_peak": 0.95,
         "use_lufs_normalize": False,
         "target_lufs": -14.0,
-        
+
         # Compresión de banda ancha
         "comp_threshold_db": -18.0,
         "comp_ratio": 4.0,
@@ -25,10 +25,10 @@ def create_full_preset(base: dict, **overrides) -> dict:
         "comp_pdr": True,
         "comp_pdr_hold_ms": 500.0,
         "comp_stereo_link": True,
-        
+
         # Oversample
         "oversample_mode": "quality",
-        
+
         # Compresión paralela
         "parallel_bypass": True,
         "parallel_threshold_db": -12.0,
@@ -36,7 +36,7 @@ def create_full_preset(base: dict, **overrides) -> dict:
         "parallel_attack_ms": 10.0,
         "parallel_release_ms": 100.0,
         "parallel_mix": 0.0,
-        
+
         # EQ + Shelving
         "hp_cutoff": 30.0,
         "lp_bypass": True,
@@ -45,7 +45,7 @@ def create_full_preset(base: dict, **overrides) -> dict:
         "high_shelf_freq_hz": 8000.0,
         "low_shelf_gain_db": 0.0,
         "low_shelf_freq_hz": 100.0,
-        
+
         # Multibanda Stereo Width
         "mb_stereo_bypass": True,
         "mb_stereo_low_width": 0.9,
@@ -53,7 +53,7 @@ def create_full_preset(base: dict, **overrides) -> dict:
         "mb_stereo_high_width": 1.5,
         "mb_stereo_low_crossover": 150.0,
         "mb_stereo_high_crossover": 4000.0,
-        
+
         # EQs paramétricos
         "eq1_freq": 100.0, "eq1_gain": 0.0, "eq1_q": 1.0,
         "eq2_freq": 500.0, "eq2_gain": 0.0, "eq2_q": 1.0,
@@ -61,30 +61,30 @@ def create_full_preset(base: dict, **overrides) -> dict:
         "eq4_freq": 8000.0, "eq4_gain": 0.0, "eq4_q": 1.0,
         "eq5_freq": 200.0, "eq5_gain": 0.0, "eq5_q": 1.0,
         "eq6_freq": 1000.0, "eq6_gain": 0.0, "eq6_q": 1.0,
-        
+
         # Transiente
         "transient_attack": 0.0,
         "transient_sustain": 0.0,
-        
+
         # Saturación
         "saturation_drive": 0.0,
         "saturation_mode": "tape",
         "saturation_mix": 1.0,
-        
+
         # M/S
         "mid_gain_db": 0.0,
         "side_gain_db": 0.0,
         "stereo_width_amount": 1.0,
-        
+
         # Stereo Enhancer
         "use_stereo_enhancer": False,
         "enhancer_bass_mono_freq": 120.0,
         "haas_delay_ms": 0.0,
-        
+
         # Reverb
         "reverb_size": 0.3,
         "reverb_wet": 0.0,
-        
+
         # Glue Compressor
         "glue_bypass": True,
         "glue_threshold_db": -4.0,
@@ -94,19 +94,19 @@ def create_full_preset(base: dict, **overrides) -> dict:
         "glue_makeup_db": 0.0,
         "glue_pdr": True,
         "glue_pdr_hold_ms": 500.0,
-        
+
         # Limiter
         "limiter_ceiling": 0.95,
         "limiter_release_ms": 50.0,
-        
+
         # EQ Mode
         "eq_mode": "iir",
         "linear_phase_taps": 2049,
-        
+
         # Low-End Mono
         "low_end_mono_freq": 120.0,
         "low_end_mono_amount": 0.0,
-        
+
         # Dynamic EQ
         "dyneq_bypass": True,
         "dyneq_freq": 3000.0,
@@ -116,7 +116,7 @@ def create_full_preset(base: dict, **overrides) -> dict:
         "dyneq_attack_ms": 3.0,
         "dyneq_release_ms": 80.0,
         "dyneq_max_reduction_db": 12.0,
-        
+
         # M/S EQ
         "ms_eq_bypass": True,
         "ms_mid_freq": 250.0,
@@ -125,7 +125,7 @@ def create_full_preset(base: dict, **overrides) -> dict:
         "ms_side_freq": 8000.0,
         "ms_side_gain": 0.0,
         "ms_side_q": 1.0,
-        
+
         # M/S Compresor
         "ms_comp_bypass": True,
         "ms_comp_mid_threshold_db": -18.0,
@@ -140,7 +140,7 @@ def create_full_preset(base: dict, **overrides) -> dict:
         "ms_comp_side_makeup_db": 0.0,
         "ms_comp_pdr": True,
         "ms_comp_pdr_hold_ms": 500.0,
-        
+
         # Resonancia
         "reso_bypass": True,
         "reso_freq": 1200.0,
@@ -150,25 +150,25 @@ def create_full_preset(base: dict, **overrides) -> dict:
         "reso_attack_ms": 5.0,
         "reso_release_ms": 100.0,
         "reso_max_reduction_db": 8.0,
-        
+
         # Clipper
         "clipper_bypass": True,
         "clipper_mode": "soft",
         "clipper_ceiling": 0.98,
         "clipper_drive_db": 0.0,
-        
+
         # Noise Reduction
         "nr_bypass": True,
         "nr_strength": 0.5,
         "nr_noise_sample_sec": 0.5,
-        
+
         # Tonal Balance
         "tonal_balance_bypass": True,
         "tonal_balance_amount": 1.0,
         "tonal_balance_max_boost_db": 3.5,
         "tonal_balance_max_cut_db": -4.5,
         "tonal_balance_max_bands": 6,
-        
+
         # Multibanda
         "mb_bypass": False,
         "mb_low_crossover": 250.0,
@@ -190,19 +190,19 @@ def create_full_preset(base: dict, **overrides) -> dict:
         "mb_high_makeup_db": 0.0,
         "mb_pdr": True,
         "mb_pdr_hold_ms": 500.0,
-        
+
         # Output
         "output_format": "wav",
         "output_bit_depth": 24,
         "dither_mode": "f_weighted",
         "platform_target": None,
     }
-    
+
     # Mezclar base
     result = dict(defaults)
     result.update(base)
     result.update(overrides)
-    
+
     return result
 
 

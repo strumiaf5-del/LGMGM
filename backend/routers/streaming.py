@@ -292,7 +292,7 @@ async def ws_master_stream(websocket: WebSocket):
             if item is _SENTINEL:
                 break
             pcm_bytes, metrics = item
-            
+
             # Aplicar gain LUFS si está listo (solo después de que se calcule)
             if _lufs_gain_ready and abs(_lufs_gain_db) > 0.01:
                 gain_linear = 10.0 ** (_lufs_gain_db / 20.0)
@@ -316,7 +316,7 @@ async def ws_master_stream(websocket: WebSocket):
                     pcm_bytes = out_u8.tobytes()
                 else:
                     raise ValueError(f"Unsupported pcm_format: {stream_pcm_format}")
-            
+
             await websocket.send_json({"event": "chunk", "metrics": metrics, "sample_rate": sr, "channels": int(audio.shape[0])})
             await websocket.send_bytes(pcm_bytes)
 
