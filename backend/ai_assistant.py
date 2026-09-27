@@ -1721,7 +1721,7 @@ def _extract_json_object(raw: str) -> Optional[dict]:
     quita fences de markdown, recorta al primer '{'...último '}', y prueba
     arreglos comunes (comas colgantes, comillas simples) antes de rendirse.
     """
-    import json
+    # FIX ruff F811: json y re ya importados al top del módulo. Import local redundante.
     import re
 
     if not raw:

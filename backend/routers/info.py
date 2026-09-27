@@ -80,7 +80,7 @@ def create_info_router(*, app, jobs, upload_dir: str, processed_dir: str, stems_
             payload["reference_library"] = reference_library_module.diagnostics()
         # FIX #6: retornar 503 si deps críticas fallan (para que Caddy/systemd
         # sepan que el backend está degradado, no OK).
-        from fastapi import Response
+        # FIX ruff F811: Response ya importado al top del módulo (fastapi import).
         return Response(
             content=json.dumps(payload),
             status_code=http_status,
