@@ -1,5 +1,4 @@
 // core/state.ts — Estado global, cache de colores, tema, IA estado.
-// Port fiel de /root/aporte/js/01-state.js a TypeScript.
 // Side-effect: monta `window.LGMDM.state` (single source of truth).
 //
 // Auditoría 2026-09-18 eliminó el puente SHARED_KEYS → window.*.

@@ -1,4 +1,4 @@
-// tabs-handler.ts — sidebar tab navigation. Port of aporte/js/22-tabs-handler.js.
+// tabs-handler.ts — sidebar tab navigation
 
 import { bindOnce } from '../../core/ui';
 import { storage } from '../../core/storage';

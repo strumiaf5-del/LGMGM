@@ -1,5 +1,4 @@
 // Mixer domain model — pure helpers (no DOM, no audio).
-// Ported from aporte/js/13-mixer.js (lines 1-53).
 
 export type StemType = 'kick' | 'snare' | 'bass' | 'vocals' | 'guitar' | 'synth' | 'drums' | 'fx' | 'other';
 

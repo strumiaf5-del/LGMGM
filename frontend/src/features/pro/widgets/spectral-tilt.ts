@@ -1,4 +1,4 @@
-// spectral-tilt.ts — pro widget. Port of aporte/js/pro-features/spectral-tilt-widget.js.
+// spectral-tilt.ts — pro widget
 
 import {
   clamp,
@@ -103,7 +103,7 @@ export class SpectralTiltWidget {
   private _ro: ResizeObserver | null = null;
   private _ac: AbortController | null = null;
   private _beforeUnload: (() => void) | null = null;
-  private _draggingPivot = false; // vestigial (aporte) — kept for parity
+  private _draggingPivot = false; // FIX cleanup: este campo SÍ se usa (líneas 241, 247) — el comentario 'vestigial' era incorrecto.
 
   static Insert?: unknown;
 
@@ -475,9 +475,7 @@ function registerInRack(): void {
       rack.registry = rack.registry || {};
       rack.registry['spectral-tilt'] = inst;
     }
-  } catch (e) {
-    if (typeof console !== 'undefined') console.debug('[insert-migration]', 'spectral-tilt', e);
-  }
+  } catch { /* insert-migration ya ejecutado */ }
 }
 
 let _registered = false;
@@ -494,7 +492,6 @@ function bootstrap(): void {
     registerInRack();
   } catch (e) {
     _registered = false;
-    if (typeof console !== 'undefined') console.debug('[spectral-tilt] bootstrap', e);
   }
 }
 

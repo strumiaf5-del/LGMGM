@@ -1,5 +1,4 @@
 // features/mastering/reference-mastering.ts — Master con referencia, EQ dinámica, preview en vivo, análisis.
-// Port fiel de /root/nuevito/frontend/upstream-frontend/dist/js/08-reference-mastering.js
 // (PRODUCTION reference, NO del aporte experimental).
 //
 // FIX vs dist: tipos TS en todo el port.

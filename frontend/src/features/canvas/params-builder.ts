@@ -1,4 +1,4 @@
-// params-builder.ts — mastering params assembler. Port of aporte/js/06-params-builder.js.
+// params-builder.ts — mastering params assembler
 
 import { requireById } from '../../core/dom';
 

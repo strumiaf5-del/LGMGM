@@ -1,4 +1,4 @@
-// keyboard-shortcuts.ts — keyboard shortcuts. Port of aporte/js/17-keyboard-shortcuts.js.
+// keyboard-shortcuts.ts — keyboard shortcuts
 
 interface ShortcutAction {
   label: string;

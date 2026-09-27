@@ -1,5 +1,4 @@
 // features/workspace/file-handling.ts — Carga de archivo, librería persistente, referencia.
-// Port fiel de /root/aporte/js/04-file-handling.js a TypeScript.
 //
 // Carga tras `core/state.ts` (state central) — file-handling escribe en `state.selectedFile`.
 //
@@ -382,7 +381,8 @@ async function uploadCurrentFileToLibrary(f: File): Promise<void> {
 }
 
 async function useLibraryFile(fileId: string, filename: string): Promise<void> {
-  void document.getElementById('libraryList'); // mantiene paridad con el aporte (referencia a listEl)
+  // FIX cleanup bloque 2: 'void document.getElementById('libraryList');' era un perk
+  // (regla 7 AGENTS.md) que no hacía nada — listEl se gestiona en refreshLibraryList.
   const api = lgmdm().api;
   if (!api) return;
   try {

@@ -1,4 +1,4 @@
-// api.ts — API client with retry/backoff/CSRF/ws/download. Port of aporte/js/00-api.js.
+// api.ts — API client with retry/backoff/CSRF/ws/download
 
 import { buildUrl, API_BASE } from './api-config';
 

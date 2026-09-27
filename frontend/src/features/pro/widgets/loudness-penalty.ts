@@ -1,4 +1,4 @@
-// loudness-penalty.ts — pro widget. Port of aporte/js/pro-features/loudness-penalty-widget.js.
+// loudness-penalty.ts — pro widget
 
 import { apiUrl, type ApiError } from '../../../core/api';
 import { getPrefersReducedMotion } from '../../../core/utils';
@@ -485,8 +485,6 @@ function bootstrap(): void {
         rack.registry['loudness-penalty'] = inst;
       }
     }
-  } catch (e) {
-    console.debug('[insert-migration] loudness-penalty', e);
-  }
+  } catch { /* insert-migration ya ejecutado */ }
 }
 bootstrap();

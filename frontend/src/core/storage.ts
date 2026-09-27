@@ -1,4 +1,4 @@
-// localStorage wrapper — raw strings + JSON helpers. Port of aporte/js/00-storage.js.
+// localStorage wrapper — raw strings + JSON helpers
 
 /** Read a raw string. Returns `fallback` (default `null`) on miss or error. */
 export function get<T = null>(key: unknown, fallback?: T): string | T | null {

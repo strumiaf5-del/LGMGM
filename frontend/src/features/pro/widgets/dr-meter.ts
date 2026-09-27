@@ -1,4 +1,4 @@
-// dr-meter.ts — pro widget. Port of aporte/js/pro-features/dr-meter-widget.js.
+// dr-meter.ts — pro widget
 
 import { clamp, getPrefersReducedMotion } from '../../../core/utils';
 
@@ -578,9 +578,7 @@ function registerInRack(): void {
       rack.registry = rack.registry || {};
       rack.registry['dr-meter'] = inst;
     }
-  } catch (e) {
-    if (typeof console !== 'undefined') console.debug('[insert-migration]', 'dr-meter', e);
-  }
+  } catch { /* insert-migration ya ejecutado */ }
 }
 
 let _registered = false;
@@ -597,7 +595,6 @@ function bootstrap(): void {
     registerInRack();
   } catch (e) {
     _registered = false;
-    if (typeof console !== 'undefined') console.debug('[dr-meter] bootstrap', e);
   }
 }
 

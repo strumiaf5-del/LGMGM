@@ -1,5 +1,4 @@
 // features/workspace/pitch-correction.ts — Pitch Correction UI modal.
-// Port fiel de /root/aporte/js/14-pitch-correction.js a TypeScript.
 //
 // FIX vs aporte: tipos TS.
 // FIX vs aporte: HMR-safe (`window.LGMDM.pitchCorrectionBound`).

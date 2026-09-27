@@ -1,4 +1,4 @@
-// modal-helper.ts — accessible modal helper. Port of aporte/js/00-modal-helper.js.
+// modal-helper.ts — accessible modal helper
 
 export interface ModalOptions {
   /** HTMLElement overlay del modal (required). */

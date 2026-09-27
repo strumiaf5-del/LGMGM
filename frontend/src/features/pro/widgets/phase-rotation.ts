@@ -1,4 +1,4 @@
-// phase-rotation.ts — pro widget. Port of aporte/js/pro-features/phase-rotation-widget.js.
+// phase-rotation.ts — pro widget
 
 import { apiUrl } from '../../../core/api';
 import { logFreq, getPrefersReducedMotion } from '../../../core/utils';
@@ -672,8 +672,6 @@ function bootstrap(): void {
         rack.registry['phase-rotation'] = inst;
       }
     }
-  } catch (e) {
-    console.debug('[insert-migration] phase-rotation', e);
-  }
+  } catch { /* insert-migration ya ejecutado */ }
 }
 bootstrap();

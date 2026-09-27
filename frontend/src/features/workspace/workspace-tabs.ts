@@ -1,4 +1,4 @@
-// workspace-tabs.ts — workspace tabs (console/analysis/presets). Port of aporte/js/25-workspace-tabs.js.
+// workspace-tabs.ts — workspace tabs (console/analysis/presets)
 
 import { bindOnce } from '../../core/ui';
 import { storage } from '../../core/storage';

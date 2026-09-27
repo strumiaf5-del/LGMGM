@@ -1,4 +1,4 @@
-// UI core — bindOnce, escapeHtml, showToast, playback arbiter. Port of aporte/js/00-ui-core.js.
+// UI core — bindOnce, escapeHtml, showToast, playback arbiter
 
 import { getJSON, setJSON } from './storage';
 

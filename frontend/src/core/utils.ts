@@ -1,4 +1,4 @@
-// utils.ts — math + canvas helpers. Port of aporte/js/00-utils.js.
+// utils.ts — math + canvas helpers
 // `safeApiBase()` reads API_BASE from ./api-config; prefersReducedMotion is cached.
 import { API_BASE } from './api-config';
 

@@ -1,4 +1,4 @@
-// ms-imager.ts — pro widget. Port of aporte/js/pro-features/ms-imager-widget.js.
+// ms-imager.ts — pro widget
 
 import { getPrefersReducedMotion } from '../../../core/utils';
 
@@ -394,8 +394,6 @@ function bootstrap(): void {
         rack.registry['ms-imager'] = inst;
       }
     }
-  } catch (e) {
-    console.debug('[insert-migration] ms-imager', e);
-  }
+  } catch { /* insert-migration ya ejecutado */ }
 }
 bootstrap();

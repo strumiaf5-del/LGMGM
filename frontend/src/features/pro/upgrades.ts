@@ -1,4 +1,4 @@
-// upgrades.ts — pro upgrades (mini-metrics + undo patches). Port of aporte/js/20-pro-upgrades.js.
+// upgrades.ts — pro upgrades (mini-metrics + undo patches)
 
 import { bindOnce } from '../../core/ui';
 

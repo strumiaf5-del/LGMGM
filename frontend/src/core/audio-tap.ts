@@ -2,7 +2,6 @@
 // audio source (mixer master out, A/B node, or preview <audio> element).
 // Reused by goniometer, waterfall, aurora and multiband visualizers.
 //
-// Ported from aporte/js/35-audio-tap.js with TypeScript types.
 // FIX vs aporte: source candidate resolution is explicit (no `?` on globals).
 
 import { audioEngine } from './audio-engine';

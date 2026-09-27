@@ -1,4 +1,4 @@
-// login.ts — login page controller. Port of aporte/js/00-auth.js.
+// login.ts — login page controller
 
 import { login, register, validateSession, clearSession } from './session';
 

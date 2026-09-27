@@ -1,4 +1,4 @@
-// chain-family-tabs.ts — chain family tabstrip. Port of aporte/js/32-chain-family-tabs.js.
+// chain-family-tabs.ts — chain family tabstrip
 
 import { storage } from '../../core/storage';
 import { prefersReducedMotion } from '../../core/utils';

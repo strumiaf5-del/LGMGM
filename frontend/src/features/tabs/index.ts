@@ -1,4 +1,4 @@
-// index.ts — pro suite tab wrappers (compliance/abx/codec/waterfall). Port of aporte/js/{40,41,42,43}-tab-*.js.
+// index.ts — pro suite tab wrappers (compliance/abx/codec/waterfall)
 
 import { escapeHtml } from '../../core/ui';
 

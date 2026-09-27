@@ -1,5 +1,4 @@
 // features/audio/mixer-ui.ts — Mixer UI/orquestación.
-// Port fiel de /root/aporte/js/13-mixer-ui.js a TypeScript.
 //
 // Carga tras `features/audio/mixer-engine.ts` (necesita `window.LGMDM.mixerEngine`).
 //

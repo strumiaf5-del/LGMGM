@@ -1,4 +1,4 @@
-// resonance-tamer.ts — pro widget. Port of aporte/js/pro-features/resonance-tamer-widget.js.
+// resonance-tamer.ts — pro widget
 
 import { getPrefersReducedMotion } from '../../../core/utils';
 
@@ -283,8 +283,6 @@ function bootstrap(): void {
         rack.registry['resonance-tamer'] = inst;
       }
     }
-  } catch (e) {
-    console.debug('[insert-migration] resonance-tamer', e);
-  }
+  } catch { /* insert-migration ya ejecutado */ }
 }
 bootstrap();

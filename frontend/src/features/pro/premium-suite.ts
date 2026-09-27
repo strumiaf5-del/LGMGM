@@ -1,4 +1,4 @@
-// premium-suite.ts — 23 pro modules. Port of aporte/js/34-premium-suite.js.
+// premium-suite.ts — 23 pro modules
 // FIX B2: el conteo era "22" (línea 1 y línea 3128) pero hay 23 data-premium-tab
 // (verificado con grep). Off-by-one en el comentario.
 // Pragma TS REMOVIDO 2026-09-27 (FIX FINAL): tipar los 323 errores TS restantes.

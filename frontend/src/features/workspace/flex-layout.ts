@@ -1,4 +1,4 @@
-// flex-layout.ts — sidebar resize + collapse. Port of aporte/js/32-flex-layout.js.
+// flex-layout.ts — sidebar resize + collapse
 
 import { bindOnce } from '../../core/ui';
 import { storage } from '../../core/storage';

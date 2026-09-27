@@ -1,4 +1,4 @@
-// iso-compensation.ts — pro widget. Port of aporte/js/pro-features/iso-compensation-widget.js.
+// iso-compensation.ts — pro widget
 
 interface IsoCompensationState {
   playback_phon: number;
@@ -260,8 +260,6 @@ function bootstrap(): void {
         rack.registry['iso-compensation'] = inst;
       }
     }
-  } catch (e) {
-    console.debug('[insert-migration] iso-compensation', e);
-  }
+  } catch { /* insert-migration ya ejecutado */ }
 }
 bootstrap();

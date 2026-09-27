@@ -1,4 +1,4 @@
-// saturation.ts — pro widget. Port of aporte/js/pro-features/saturation-widget.js.
+// saturation.ts — pro widget
 
 import { xFromFreq, yFromDb, logFreq, getPrefersReducedMotion } from '../../../core/utils';
 
@@ -568,8 +568,6 @@ function bootstrap(): void {
         rack.registry['inflator'] = inst;
       }
     }
-  } catch (e) {
-    console.debug('[insert-migration] saturation', e);
-  }
+  } catch { /* insert-migration ya ejecutado */ }
 }
 bootstrap();

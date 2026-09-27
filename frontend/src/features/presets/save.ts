@@ -1,4 +1,4 @@
-// save.ts — preset persistence. Port of aporte/js/03-presets.js.
+// save.ts — preset persistence
 
 const PRESETS_KEY = 'lgmdm-presets';
 const DEFAULT_PRESET_NAME = 'current';

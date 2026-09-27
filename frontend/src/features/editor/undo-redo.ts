@@ -1,4 +1,4 @@
-// undo-redo.ts — history panel. Port of aporte/js/18-undo-redo.js.
+// undo-redo.ts — history panel
 // Exposes window.LGMDM.undo.{manager, undoLastChange, redoLastChange, toggleHistoryPanel}.
 import { getPrefersReducedMotion } from '../../core/utils';
 import { showToast } from '../../core/ui';

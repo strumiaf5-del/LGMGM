@@ -1,4 +1,4 @@
-// view.ts — analysis tab renderer. Port of aporte/js/29-analysis-view.js.
+// view.ts — analysis tab renderer
 
 import { apiUrl } from '../../core/api';
 import { escapeHtml } from '../../core/ui';

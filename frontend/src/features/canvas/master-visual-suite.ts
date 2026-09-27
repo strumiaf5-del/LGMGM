@@ -1,4 +1,4 @@
-// master-visual-suite.ts — 20 visual enhancements. Port of aporte/js/15-master-visual-suite.js.
+// master-visual-suite.ts — 20 visual enhancements
 // Pragma de supresión TS REMOVIDO 2026-09-27 (FIX FINAL): tipar los 156 errores TS restantes.
 
 import { audioTap } from '../../core/audio-tap';

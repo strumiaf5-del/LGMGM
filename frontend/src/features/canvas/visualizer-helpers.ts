@@ -1,4 +1,4 @@
-// visualizer-helpers.ts — FFT/EQ/preview/A-B helpers. Port of aporte/js/09-visualizers.js.
+// visualizer-helpers.ts — FFT/EQ/preview/A-B helpers
 
 import { audioEngine } from '../../core/audio-engine';
 

@@ -1,4 +1,4 @@
-// insert-rack.ts — pro insert rack orchestrator. Port of aporte/js/pro-insert-rack.js.
+// insert-rack.ts — pro insert rack orchestrator
 
 import { byId } from '../../core/dom';
 import { apiUrl } from '../../core/api';

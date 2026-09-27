@@ -1,4 +1,4 @@
-// phantom-sub.ts — pro widget. Port of aporte/js/pro-features/phantom-sub-widget.js.
+// phantom-sub.ts — pro widget
 
 type HarmonicMode = 'octave' | 'fifth' | 'rich';
 
@@ -239,8 +239,6 @@ function bootstrap(): void {
         rack.registry['phantom-sub'] = inst;
       }
     }
-  } catch (e) {
-    console.debug('[insert-migration] phantom-sub', e);
-  }
+  } catch { /* insert-migration ya ejecutado */ }
 }
 bootstrap();

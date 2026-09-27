@@ -1,4 +1,4 @@
-// mixer-engine.ts — mixer preview engine + server preview. Port of aporte/js/13-mixer.js.
+// mixer-engine.ts — mixer preview engine + server preview
 
 import { audioEngine } from '../../core/audio-engine';
 import { audioTap } from '../../core/audio-tap';
@@ -572,8 +572,9 @@ let _stemLibrary: MixerLibraryItem[] = [];
 let _stemLibraryLoaded = false;
 
 function _freezeStem(_stem: { params: unknown }): void {
-  // FIX A2: perk `void stem;` quitado. La función es un placeholder para
-  // paridad con el aporte JS original; hoy no aplica el freeze.
+  // No-op intencional: el freeze de stems del aporte original no se porta al TS.
+  // Se llama desde _onStemChange (línea 611) para mantener el contrato de la API
+  // interna, pero hoy no aplica ninguna lógica de freeze.
 }
 
 function normalizeStemName(name: string | undefined, fallback: string | undefined): string {

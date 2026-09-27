@@ -1,4 +1,4 @@
-// reference-match.ts — pro widget. Port of aporte/js/pro-features/reference-match-widget.js.
+// reference-match.ts — pro widget
 
 import { TOKEN_KEY } from '../../../core/api';
 import {
@@ -504,9 +504,7 @@ function registerInRack(): void {
       rack.registry = rack.registry || {};
       rack.registry['match-eq'] = inst;
     }
-  } catch (e) {
-    if (typeof console !== 'undefined') console.debug('[insert-migration]', 'reference-match', e);
-  }
+  } catch { /* insert-migration ya ejecutado */ }
 }
 
 let _registered = false;
@@ -523,7 +521,6 @@ function bootstrap(): void {
     registerInRack();
   } catch (e) {
     _registered = false;
-    if (typeof console !== 'undefined') console.debug('[reference-match] bootstrap', e);
   }
 }
 

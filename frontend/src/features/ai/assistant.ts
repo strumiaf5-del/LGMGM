@@ -1,5 +1,4 @@
 // features/ai/assistant.ts — Asistente de IA (estilo LANDR AI).
-// Port fiel de /root/aporte/js/11-ai-assistant-ux.js a TypeScript.
 //
 // FIX vs aporte: tipos TS.
 // FIX vs aporte: HMR-safe (`window.LGMDM.aiAssistantBound`).

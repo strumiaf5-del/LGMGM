@@ -1,5 +1,4 @@
 // features/workspace/sliders-ui.ts — Sliders, tabs multiband, workflow rail.
-// Port fiel de /root/aporte/js/02-sliders-ui.js a TypeScript.
 //
 // Carga tras `core/state.ts` (necesita el state) y antes de `mastering-actions.ts`
 // (los sliders alimentan el payload de mastering).

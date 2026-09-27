@@ -2,7 +2,6 @@
 // Consumers subscribe; producers publish. Defensive: subscriber errors are
 // isolated so one broken consumer doesn't break the others.
 //
-// Ported from aporte/js/30-metrics-store.js with TypeScript types added.
 
 export interface Spectrum {
   bands_db?: number[];

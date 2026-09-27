@@ -1,5 +1,4 @@
 // features/canvas/eq-waveform.ts — Curva de EQ, waveform, loudness meter.
-// Port fiel de /root/aporte/js/05-eq-waveform.js a TypeScript.
 //
 // Carga tras `core/state.ts` (necesita themeColors) y `workspace/sliders-ui.ts`
 // (los sliders de EQ disparan el redraw).

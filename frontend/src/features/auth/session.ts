@@ -1,4 +1,4 @@
-// session.ts — JWT session management. Port of aporte/js/00-auth.js.
+// session.ts — JWT session management
 
 import { apiFetch, TOKEN_KEY, USER_KEY } from '../../core/api';
 import type { User } from '../../types/auth';

@@ -1,4 +1,4 @@
-// insert-base.ts — ProInsertBase class + CATALOG. Port of aporte/js/insert-base.js.
+// insert-base.ts — ProInsertBase class + CATALOG
 
 import { apiUrl } from '../../core/api';
 import { getPrefersReducedMotion } from '../../core/utils';

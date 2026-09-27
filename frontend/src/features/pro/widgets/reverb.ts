@@ -1,4 +1,4 @@
-// reverb.ts — pro widget. Port of aporte/js/pro-features/reverb-widget.js.
+// reverb.ts — pro widget
 
 import { clamp } from '../../../core/utils';
 
@@ -621,9 +621,7 @@ function registerInRack(): void {
       rack.registry = rack.registry || {};
       rack.registry['reverb'] = inst;
     }
-  } catch (e) {
-    if (typeof console !== 'undefined') console.debug('[insert-migration]', 'reverb', e);
-  }
+  } catch { /* insert-migration ya ejecutado */ }
 }
 
 let _registered = false;
@@ -640,7 +638,6 @@ function bootstrap(): void {
     registerInRack();
   } catch (e) {
     _registered = false;
-    if (typeof console !== 'undefined') console.debug('[reverb] bootstrap', e);
   }
 }
 

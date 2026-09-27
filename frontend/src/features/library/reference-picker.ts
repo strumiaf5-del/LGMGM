@@ -1,4 +1,4 @@
-// reference-picker.ts — reference library picker. Port of aporte/js/reference-library-picker.js.
+// reference-picker.ts — reference library picker
 
 import { apiFetch, client, TOKEN_KEY } from '../../core/api';
 import type { ApiError } from '../../core/api';

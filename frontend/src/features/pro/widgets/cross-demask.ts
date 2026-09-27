@@ -1,4 +1,4 @@
-// cross-demask.ts — pro widget. Port of aporte/js/pro-features/cross-demask-widget.js.
+// cross-demask.ts — pro widget
 
 import { escapeHtml, showToast } from '../../../core/ui';
 

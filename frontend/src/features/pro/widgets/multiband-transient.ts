@@ -1,4 +1,4 @@
-// multiband-transient.ts — pro widget. Port of aporte/js/pro-features/multiband-transient-widget.js.
+// multiband-transient.ts — pro widget
 
 import { clamp01, getPrefersReducedMotion } from '../../../core/utils';
 
@@ -550,8 +550,6 @@ function bootstrap(): void {
         rack.registry['multiband-transient'] = inst;
       }
     }
-  } catch (e) {
-    console.debug('[insert-migration] multiband-transient', e);
-  }
+  } catch { /* insert-migration ya ejecutado */ }
 }
 bootstrap();

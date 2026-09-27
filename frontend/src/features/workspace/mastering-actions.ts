@@ -1,5 +1,4 @@
 // features/workspace/mastering-actions.ts — Master, Auto-Mastering IA, Analyze, Advice, Spectrum, Stems, Polling.
-// Port fiel de /root/aporte/js/07-mastering-actions.js a TypeScript.
 //
 // Carga tras `core/state.ts` (necesita state.selectedFile), `workspace/sliders-ui.ts`
 // (sliders alimentan params), `canvas/eq-waveform.ts` (no requiere), y `canvas/params-builder.ts`

@@ -1,5 +1,4 @@
 // features/workspace/lufs-normalize.ts — Normalización pura por LUFS (sin pipeline).
-// Port fiel de /root/aporte/js/12-lufs-normalize.js a TypeScript.
 //
 // FIX vs aporte: tipos TS.
 // FIX vs aporte: HMR-safe (`window.LGMDM.lufsNormalizeBound`).

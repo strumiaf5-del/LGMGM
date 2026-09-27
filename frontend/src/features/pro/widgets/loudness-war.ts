@@ -1,4 +1,4 @@
-// loudness-war.ts — pro widget. Port of aporte/js/pro-features/loudness-war-widget.js.
+// loudness-war.ts — pro widget
 
 import { clamp, getPrefersReducedMotion } from '../../../core/utils';
 
@@ -592,8 +592,6 @@ function bootstrap(): void {
         rack.registry['loudness-war'] = inst;
       }
     }
-  } catch (e) {
-    console.debug('[insert-migration] loudness-war', e);
-  }
+  } catch { /* insert-migration ya ejecutado */ }
 }
 bootstrap();
