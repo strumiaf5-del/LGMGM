@@ -550,7 +550,9 @@ if (typeof (library as { saveLocalFile?: unknown }).saveLocalFile !== 'function'
   };
 }
 
-void refState; // referencia legacy (mantiene paridad con el aporte)
+// FIX cleanup bloque 2: 'void refState;' era un perk (regla 7 AGENTS.md) para
+// silenciar el unused. refState se define línea 448 y se usa en el accessor
+// pattern de state.reference (líneas 451-456). Sin el void, tsc sigue EXIT 0.
 
 // Marcar como inicializado (HMR-safe)
 (window.LGMDM as Record<string, unknown>).fileHandlingBound = true;
