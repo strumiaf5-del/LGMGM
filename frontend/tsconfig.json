@@ -13,6 +13,28 @@
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true,
+    "noImplicitOverride": true,
+    "exactOptionalPropertyTypes": true,
+    // TODO(U-1/TP1): `noUncheckedIndexedAccess` produce 207 errores al activarse
+    // (TS2532/TS2345/TS18048: index access `arr[i]` y `record[k]` se vuelve `T | undefined`).
+    // Migración enfocada pendiente: agregar guards/null-checks en los archivos
+    // restantes. El agente C (typescript-pro, sesión 2026-09-28) ya fixeó los
+    // 11 errores de sus archivos asignados (api.ts:2, mixer-ui.ts:1,
+    // mastering-actions.ts:1, tabs-handler.ts:7). Quedan 207 en archivos fuera
+    // de su scope de edición:
+    //   - Agent A legacy (128): premium-suite (53), master-visual-suite (38),
+    //     reference-mastering (23), master-console (8), mixer-engine (2),
+    //     eq-waveform (3), insert-rack (1).
+    //   - Otros archivos (79): widgets/reverb (22), widgets/phase-rotation (20),
+    //     widgets/loudness-penalty (7), widgets/multiband-transient (5),
+    //     compat.ts (5), widgets/saturation (3), workspace-tabs (2),
+    //     widgets/spectral-tilt (2), widgets/reference-match (2),
+    //     widgets/loudness-war (2), login (2), modal-helper (2),
+    //     keyboard-shortcuts (2), lufs-normalize (1), widgets/resonance-tamer (1),
+    //     timeline-meters (1).
+    // Umbral >100 respetado: flag deshabilitado hasta migración dedicada.
+    "noUncheckedIndexedAccess": false,
     "outDir": "./dist",
     "rootDir": "./src",
     "declaration": false,

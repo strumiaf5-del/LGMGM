@@ -28,8 +28,14 @@ interface LgmdmGlobal {
   [key: string]: unknown;
 }
 
+// NOTE: `as unknown as` (no `as any`): el cast puro falla bajo
+// `exactOptionalPropertyTypes` porque la declaración global de `Window.LGMDM`
+// en core/state.ts es deliberadamente mínima y su `config` no incluye
+// `previewDurationSec`. El hop por `unknown` es el escape recomendado por el
+// propio compilador ("convert the expression to 'unknown' first"); el slice
+// local `LgmdmGlobal` sigue tipando los accesos posteriores.
 function lgmdm(): LgmdmGlobal {
-  const w = window as Window & { LGMDM?: LgmdmGlobal };
+  const w = window as unknown as Window & { LGMDM?: LgmdmGlobal };
   if (!w.LGMDM) w.LGMDM = {};
   return w.LGMDM;
 }

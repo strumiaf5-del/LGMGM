@@ -146,6 +146,15 @@ export function ensureAudioTap(candidate?: AudioNode | HTMLAudioElement): AudioT
 
   if (!source) return null;
 
+  // U-3: forzar 2 canales antes del splitter. Sin esto, una fuente mono
+  // alimenta solo el canal 0 y analyserR (canal 1) ve silencio -> imagen
+  // "hard-left" falsa. Web Audio upmixea mono->stereo con channelCount=2 +
+  // channelCountMode='explicit'.
+  try {
+    source.channelCount = 2;
+    source.channelCountMode = 'explicit';
+  } catch { /* algunos nodos rechazan config explícita de canales */ }
+
   const splitter = ctx.createChannelSplitter(2);
   try { source.connect(splitter); } catch { /* ignore */ }
 

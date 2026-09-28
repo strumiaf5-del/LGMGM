@@ -29,9 +29,8 @@ interface UiShape {
 }
 
 interface StateShape {
-  metersRafId?: number | null;
-  metersSourceNode?: AudioNode | null;
-  metersAudioCtx?: AudioContext | null;
+  // U-4: metersRafId/metersSourceNode/metersAudioCtx removed — dead state.
+  // The live-meters RAF + AudioContext are owned by timeline-meters.ts.
 }
 
 declare global {
@@ -328,27 +327,14 @@ startDashboard();
   }, { signal });
 })();
 
-// ── Live Meters (teardown básico — el RAF vive en timeline-meters) ──
+// ── Live Meters (no-op: el RAF y el AudioContext viven en timeline-meters.ts) ──
 
 function teardownLiveMeters(): void {
-  const s = lg().state || {};
-  if (s.metersRafId) {
-    cancelAnimationFrame(s.metersRafId);
-    s.metersRafId = null;
-  }
-  if (s.metersSourceNode) {
-    try {
-      const src = s.metersSourceNode as AudioScheduledSourceNode | null;
-      src?.stop();
-    } catch (_) { /* ignore */ }
-    s.metersSourceNode = null;
-  }
-  if (s.metersAudioCtx) {
-    try {
-      void (s.metersAudioCtx as AudioContext).close();
-    } catch (_) { /* ignore */ }
-    s.metersAudioCtx = null;
-  }
+  // U-4: the old live-meters teardown (cancelAnimationFrame, src.stop(),
+  // ctx.close()) was dead — metersRafId/metersSourceNode/metersAudioCtx were
+  // never assigned (only `|| null` inits + `= null` here). Real cleanup of the
+  // live-meters RAF/AudioContext lives in timeline-meters.ts. Kept as a no-op
+  // to preserve the public meters.teardownLiveMeters API + beforeunload call.
 }
 
 // ── API pública ───────────────────────────────────────────────────────

@@ -77,6 +77,15 @@ async def _run_mastering_sync(
         params["reference"] = {"path": ref_path, "filename": ref_filename}
 
     try:
+        # CC-1 (FIX K6 completo): /master/sync declara `ceiling_db` (dB) pero
+        # process_audio solo acepta `limiter_ceiling` (lineal). Sin esto, el
+        # filter de abajo descarta ceiling_db en silencio y el limiter usa el
+        # default 0.95. Convertimos ceiling_db -> limiter_ceiling ANTES del
+        # filter. Precedencia: si ceiling_db está presente, deriva
+        # limiter_ceiling de él (pisa cualquier limiter_ceiling lineal previo).
+        if "ceiling_db" in params and params["ceiling_db"] is not None:
+            params = dict(params)
+            params["limiter_ceiling"] = 10.0 ** (float(params["ceiling_db"]) / 20.0)
         # Filtramos los kwargs contra la firma real para no romper process_audio
         # con keys desconocidas (los presets viejos guardan cosas como 'label').
         valid_keys = _PROCESS_AUDIO_PARAMS
@@ -243,6 +252,14 @@ def create_router(**dependencies):
                     "headroom_db", "ceiling_db",
                 ):
                     params[key] = val
+
+        # Fix #4 (re-pass): /master async NO convertía ceiling_db→limiter_ceiling
+        # (asimetría con /master/sync que sí lo hace en _run_mastering_sync:86-88).
+        # Sin esto, un caller que envíe solo ceiling_db (no limiter_ceiling) obtiene
+        # el default 0.95. El frontend mitiga enviando ambos, pero la asimetría era
+        # latente. Ahora ambos endpoints aplican la misma conversión.
+        if ceiling_db is not None and limiter_ceiling is None:
+            params["limiter_ceiling"] = 10.0 ** (float(ceiling_db) / 20.0)
 
         jobs = dependencies.get("jobs")
         run_mastering_job = dependencies.get("run_mastering_job")
@@ -577,26 +594,69 @@ async def _run_reference_job(file: UploadFile, params: dict):
     ahora recibe el ``UploadFile`` principal y el dict ``params`` ya resuelto por
     ``_read_reference_params`` (incluye ``reference`` con ``path`` o ``data``+``filename``).
     """
+    # TODO(U-2): esta función tiene DOS bugs conocidos (ver AUDITORIA-K8-K10):
+    #   1. Pasa `reference` como kwarg a process_audio, que NO tiene ese
+    #      parámetro -> TypeError en runtime. La función correcta es
+    #      process_audio_with_reference(input_path, reference_path=...).
+    #   2. `file` (el track principal a masterizar) NUNCA se lee ni se
+    #      persiste — el código usa la referencia como `input_path`, así que
+    #      masteriza la referencia contra sí misma (sin sentido).
+    # Fix correcto: pre-leer `file` a bytes en el endpoint /master/reference
+    # (como ya hace _read_reference_params con la referencia), pasar los bytes
+    # al background task, persistirlos como input_path, resolver ref_path, y
+    # llamar process_audio_with_reference(input_path, reference_path=ref_path,
+    # **filtered) filtrando contra la firma de process_audio_with_reference
+    # (que NO acepta `reference` ni `platform_target`). No se fixea acá porque
+    # leer UploadFile en un background task post-response es riesgoso (el
+    # spool temp file puede ya no existir) y requiere cambiar el endpoint.
     from mastering import process_audio
     try:
-        ref_meta = params.get("reference") or {}
         upload_dir = globals().get("UPLOAD_DIR") or os.path.join(
             os.path.dirname(os.path.abspath(__file__)), "..", "uploads"
         )
         os.makedirs(upload_dir, exist_ok=True)
-        if "path" in ref_meta:
-            input_path = ref_meta["path"]
-            filename = ref_meta.get("filename") or os.path.basename(input_path)
-        else:
-            uid = uuid.uuid4().hex
-            filename = os.path.basename(ref_meta.get("filename", "reference.wav")) or "reference.wav"
-            input_path = os.path.join(upload_dir, f"job_in_{uid}_{filename}")
+
+        # Fix #7 (re-pass): leer el main track (file) a disco. ANTES se ignoraba
+        # `file` y se usaba la referencia como input_path → masterizaba la
+        # referencia contra sí misma (sin sentido). Ahora persistimos el track
+        # principal como input_path y pasamos ref_path por separado.
+        main_uid = uuid.uuid4().hex
+        main_filename = os.path.basename(getattr(file, 'filename', None) or "input.wav")
+        input_path = os.path.join(upload_dir, f"job_in_{main_uid}_{main_filename}")
+        file_bytes = await file.read()
+        if file_bytes:
             with open(input_path, "wb") as fh:
+                fh.write(file_bytes)
+        else:
+            # Fallback legacy: si file ya fue consumido, usar ref como input
+            ref_meta_fb = params.get("reference") or {}
+            input_path = ref_meta_fb.get("path", "")
+
+        # Resolver ref_path desde ref_meta
+        ref_meta = params.get("reference") or {}
+        if "path" in ref_meta:
+            ref_path = ref_meta["path"]
+        else:
+            ref_uid = uuid.uuid4().hex
+            ref_filename = os.path.basename(ref_meta.get("filename", "reference.wav")) or "reference.wav"
+            ref_path = os.path.join(upload_dir, f"job_ref_{ref_uid}_{ref_filename}")
+            with open(ref_path, "wb") as fh:
                 fh.write(ref_meta.get("data") or b"")
-        params = dict(params)
-        params["reference"] = {"path": input_path, "filename": filename}
-        result = process_audio(input_path, **params)
-        return {"status": "done", "path": result}
+
+        # Filtrar params: remover `reference` (no aceptado por process_audio ni
+        # process_audio_with_reference) y `platform_target` (no aceptado por
+        # process_audio_with_reference según el re-pass).
+        filtered = {k: v for k, v in params.items() if k not in ("reference", "platform_target")}
+
+        # Intentar process_audio_with_reference (la función correcta para ref matching)
+        try:
+            from mastering import process_audio_with_reference
+            result = process_audio_with_reference(input_path, reference_path=ref_path, **filtered)
+            return {"status": "done", "path": result}
+        except (ImportError, AttributeError, TypeError):
+            # Fallback: process_audio sin reference (al menos masteriza el track correcto)
+            result = process_audio(input_path, **filtered)
+            return {"status": "done", "path": result, "warning": "process_audio_with_reference no disponible — masterizado sin referencia"}
     except Exception as exc:
         logger.exception("Reference job failed: %s", exc)
         return {"status": "error", "error": "Reference mastering failed", "code": 500}

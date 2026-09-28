@@ -4,6 +4,7 @@
 // pendiente de migración gradual. Ver AGENTS.md regla 2.
 
 import type { BandSpec } from '../../core/audio-tap';
+import { audioEngine } from '../../core/audio-engine';
 
 (function (global) {
   'use strict';
@@ -19,7 +20,7 @@ import type { BandSpec } from '../../core/audio-tap';
   // Tipos locales para los fixes TS (no cambian runtime).
   type CompliancePreset = { name: string; label: string; target_lufs: number; target_peak: number };
   type ComplianceMetrics = { lufs: number; tp: number; lra: number; isLive: boolean };
-  type GonioParticle = { x: number; y: number; vx: number; vy: number; life: number; maxLife: number };
+  type GonioParticle = { x: number; y: number; vx: number; vy: number; life: number; maxLife: number; active: boolean };
   const escapeHtml = LG.ui?.escapeHtml || ((str: unknown) => String(str ?? '').replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m] as string)));
   const getSelectedFile = (): any => (typeof LGMDM !== 'undefined' && LGMDM.state?.getSelectedFile?.()) || null;
   const getLastAnalysis = (): any => (typeof LGMDM !== 'undefined' && LGMDM.state?.getLastAnalysis?.()) || null;
@@ -116,10 +117,32 @@ import type { BandSpec } from '../../core/audio-tap';
     return [px[0], px[1], px[2]];
   }
 
-  let _gonioParticles: GonioParticle[] = [];
+  // U-2: pre-allocated particle pool (240 slots, reused via `active` flag).
+  // Eliminates 2 object allocs/frame + splice churn on the stereo scope.
+  const GONIO_PARTICLE_POOL_SIZE = 240;
+  const _gonioParticles: GonioParticle[] = (() => {
+    const arr: GonioParticle[] = [];
+    for (let i = 0; i < GONIO_PARTICLE_POOL_SIZE; i++) {
+      arr.push({ x: 0, y: 0, vx: 0, vy: 0, life: 0, maxLife: 0, active: false });
+    }
+    return arr;
+  })();
   let _haloPulse = 0;
   let _gonioScratchL = new Float32Array(1024);
   let _gonioScratchR = new Float32Array(1024);
+  // U-2: cache last-written innerHTML per stereo band — avoids 3 DOM re-parses
+  // per frame when corr/verdict are unchanged. Reset on tab re-render (see tick).
+  const _stereoBandLastHtml: string[] = [];
+  // TODO(U-2): tipar `drawGoniometerFrame(canvas, ctx, size, dataL, dataR,
+  // pearson)` (6 `: any`) requiere arreglar el caller (línea ~1024, en la
+  // región activa de Agent 3): `liveCanvas` viene de `el('lissajousCanvas')`
+  // (HTMLElement, no HTMLCanvasElement) y `ctx` de `getContext('2d')` (sin
+  // narrows `| null`). El body usa `canvas.width`/`ctx.X` sin guards. Migración
+  // pendiente: estrechar el caller con `as HTMLCanvasElement` + guard `ctx`, y
+  // firmar `drawGoniometerFrame(canvas: HTMLCanvasElement, ctx:
+  // CanvasRenderingContext2D, size: number, dataL: Uint8Array, dataR: Uint8Array,
+  // pearson: number = 0)`. Se tipó `renderCodecCard` (4 `: any` → `string`) que
+  // sí está fuera de la región de Agent 3.
   function drawGoniometerFrame(canvas: any, ctx: any, size: any, dataL: any, dataR: any, pearson: any = 0) {
     // FIX M5: use CSS size (the `size` arg) instead of canvas.width/height
     // (device pixels) — the caller applies ctx.scale(dpr,dpr), so the user
@@ -176,33 +199,41 @@ import type { BandSpec } from '../../core/audio-tap';
 
     if (Math.abs(lastLX) > 0.02 || Math.abs(lastLY) > 0.02) {
       for (let p = 0; p < 2; p++) {
+        // U-2: reuse a dead slot from the pool instead of allocating.
+        let slot = -1;
+        for (let k = 0; k < GONIO_PARTICLE_POOL_SIZE; k++) {
+          if (!_gonioParticles[k].active) { slot = k; break; }
+        }
+        if (slot < 0) break; // pool full — drop (decorative; 240 is plenty)
         const j = (Math.random() - 0.5) * 0.18;
-        _gonioParticles.push({
-          x: cx + lastLX * radius + j,
-          y: cy - lastLY * radius + j,
-          vx: lastLX * 28 + (Math.random() - 0.5) * 8,
-          vy: -lastLY * 28 + (Math.random() - 0.5) * 8,
-          life: 0.8,
-          maxLife: 0.8
-        });
+        const pt = _gonioParticles[slot];
+        pt.active = true;
+        pt.x = cx + lastLX * radius + j;
+        pt.y = cy - lastLY * radius + j;
+        pt.vx = lastLX * 28 + (Math.random() - 0.5) * 8;
+        pt.vy = -lastLY * 28 + (Math.random() - 0.5) * 8;
+        pt.life = 0.8;
+        pt.maxLife = 0.8;
       }
     }
     const dt = 1 / 60;
-    for (let i = _gonioParticles.length - 1; i >= 0; i--) {
+    // U-2: iterate the fixed pool; additive ('lighter') blend makes draw order
+    // irrelevant, so forward iteration is safe. No splice — dead slots are
+    // flagged inactive and reused on the next spawn.
+    for (let i = 0; i < GONIO_PARTICLE_POOL_SIZE; i++) {
       const pt = _gonioParticles[i];
+      if (!pt.active) continue;
       pt.x += pt.vx * dt;
       pt.y += pt.vy * dt;
       pt.vx *= 0.96; pt.vy *= 0.96;
       pt.life -= dt;
-      if (pt.life <= 0) { _gonioParticles.splice(i, 1); continue; }
+      if (pt.life <= 0) { pt.active = false; continue; }
       const alpha = Math.max(0, pt.life / pt.maxLife);
       ctx.fillStyle = `rgba(82, 242, 189, ${alpha * 0.85})`;
       ctx.beginPath();
       ctx.arc(pt.x, pt.y, 1.4 + alpha * 1.6, 0, Math.PI * 2);
       ctx.fill();
     }
-    // Cap de partículas para no acumular miles
-    if (_gonioParticles.length > 240) _gonioParticles.splice(0, _gonioParticles.length - 240);
 
     if (Math.abs(pearson) > 0.85) {
       _haloPulse += 0.08;
@@ -218,7 +249,7 @@ import type { BandSpec } from '../../core/audio-tap';
     ctx.globalCompositeOperation = prevOp;
   }
 
-  function drawWaterfallFrame(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, rowData: ImageData | null, waterfallRow: Uint8Array): void {
+  function drawWaterfallFrame(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, waterfallRow: Uint8Array): void {
     // FIX M5: use CSS size (clientWidth/Height) since the caller applies
     // ctx.scale(dpr,dpr), making user space = CSS. Using canvas.width double-scales.
     const w = canvas.clientWidth || canvas.width;
@@ -1020,18 +1051,27 @@ import type { BandSpec } from '../../core/audio-tap';
           else                    { verdict = 'OUT OF PHASE'; color = '#ff5f72'; }
           const card = el(`stereoBand${i}`);
           if (card) {
-            card.innerHTML = `
+            const html = `
               <span class="pro-stereo-band">${spec.label}</span>
               <strong class="pro-stereo-band-strong" style="color: ${color};">
                 corr: ${sign}${corr.toFixed(2)}
                 <small class="pro-stereo-band-info">${verdict}</small>
               </strong>
             `;
+            // U-2: only re-parse the DOM when the string actually changed —
+            // corr/verdict drift slowly, so this skips the write most frames.
+            if (_stereoBandLastHtml[i] !== html) {
+              card.innerHTML = html;
+              _stereoBandLastHtml[i] = html;
+            }
           }
         });
 
         state.stereo.rafId = requestAnimationFrame(tick);
       };
+      // U-2: invalidate the innerHTML cache so freshly-created band cards get
+      // their first write (the tick skips unchanged strings thereafter).
+      _stereoBandLastHtml.length = 0;
       state.stereo.rafId = requestAnimationFrame(tick);
     }
 
@@ -1267,7 +1307,7 @@ import type { BandSpec } from '../../core/audio-tap';
       </div>
     `;
 
-    function renderCodecCard(id: any, title: any, sub: any, btnLabel: any) {
+    function renderCodecCard(id: string, title: string, sub: string, btnLabel: string) {
       const isActive = state.codec.activeCodec === id;
       return `
         <div class="pro-meter-card ${isActive ? 'pro-codec-card-active' : 'pro-codec-card'}">
@@ -1302,9 +1342,7 @@ import type { BandSpec } from '../../core/audio-tap';
         if (btn) btn.disabled = true;
         if (status) status.textContent = `⏳ Decodificando audio y aplicando perfil "${profile.label}"…`;
 
-        const ctx = (typeof LGMDM !== 'undefined' && LGMDM.audio && typeof LGMDM.audio.getContext === 'function')
-          ? LGMDM.audio.getContext()
-          : null;
+        const ctx = audioEngine.getContext();
         if (!ctx) throw new Error('AudioContext no disponible');
 
         const arrayBuffer = await file.arrayBuffer();
@@ -1446,7 +1484,6 @@ import type { BandSpec } from '../../core/audio-tap';
       // Pre-asignar buffers reutilizables (cero alloc dentro del RAF).
       const bins = tap.analyserWaterfall.frequencyBinCount;
       const waterfallRow = new Uint8Array(bins);
-      const rowData = ctx.createImageData(Math.floor(cssW * dpr), 1);
 
       // Throttle 60 FPS — evita draws duplicados en monitores > 60Hz.
       let _lastFrame = 0;
@@ -1470,7 +1507,7 @@ import type { BandSpec } from '../../core/audio-tap';
         _lastFrame = now || 0;
 
         tap.analyserWaterfall.getByteFrequencyData(waterfallRow);
-        drawWaterfallFrame(liveCanvas, ctx, rowData, waterfallRow);
+        drawWaterfallFrame(liveCanvas, ctx, waterfallRow);
 
         state.waterfall.rafId = requestAnimationFrame(tick);
       };
@@ -1478,7 +1515,7 @@ import type { BandSpec } from '../../core/audio-tap';
       // Pintar la primera fila de inmediato para que la pantalla no quede negra
       // ni un frame antes del primer drawImage.
       tap.analyserWaterfall.getByteFrequencyData(waterfallRow);
-      drawWaterfallFrame(canvas, ctx, rowData, waterfallRow);
+      drawWaterfallFrame(canvas, ctx, waterfallRow);
       state.waterfall.rafId = requestAnimationFrame(tick);
     }
 
@@ -1500,7 +1537,6 @@ import type { BandSpec } from '../../core/audio-tap';
         const liveCtx = liveCanvas && liveCanvas.getContext('2d');
         if (!liveCanvas || !liveCtx) return;
         const bins = tap.analyserWaterfall.frequencyBinCount;
-        const rowData2 = liveCtx.createImageData(liveCanvas.width, 1);
         const waterfallRow2 = new Uint8Array(bins);
         let _lastFrameR = 0;
         const _FRAME_INTERVAL_R = 1000 / 60;
@@ -1520,7 +1556,7 @@ import type { BandSpec } from '../../core/audio-tap';
           }
           _lastFrameR = now || 0;
           tap.analyserWaterfall.getByteFrequencyData(waterfallRow2);
-          drawWaterfallFrame(c, liveCtx, rowData2, waterfallRow2);
+          drawWaterfallFrame(c, liveCtx, waterfallRow2);
           state.waterfall.rafId = requestAnimationFrame(tickResume);
         };
         state.waterfall.rafId = requestAnimationFrame(tickResume);

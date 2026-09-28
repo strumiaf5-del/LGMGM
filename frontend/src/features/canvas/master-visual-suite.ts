@@ -733,10 +733,23 @@ interface MetricsShape {
   }
 
   let activeSpecView: "2d" | "3d" = "2d";
-  const waterfallHistory: Float32Array[] = [];
+  // CC-1: ring buffer of pre-allocated slices replaces the unshift/pop rolling
+  // history — eliminates per-frame Float32Array alloc + O(n) unshift + GC of
+  // discarded slices. Slots are fully overwritten on every write, so no
+  // stale data leaks between writes.
   const WATERFALL_SLICES = 30;
   const WATERFALL_BINS = 64;
+  const waterfallRing: Float32Array[] = new Array(WATERFALL_SLICES);
+  for (let i = 0; i < WATERFALL_SLICES; i++) waterfallRing[i] = new Float32Array(WATERFALL_BINS);
+  let waterfallWriteIdx = 0;
+  let waterfallCount = 0;
   let waterfallFrameCounter = 0;
+  // CC-1: reused Uint8Array for getByteFrequencyData (mirrors the length-guarded
+  // reuse in master-console.ts:251-252 and premium-suite.ts:1448). Typed as
+  // Uint8Array<ArrayBuffer> because getByteFrequencyData requires an
+  // ArrayBuffer-backed view (not SharedArrayBuffer) under TS 5.9's typed-array
+  // generics.
+  let _waterfallFreqData: Uint8Array<ArrayBuffer> | null = null;
 
   function initWaterfallSpectrogram(signal: AbortSignal) {
     const btn2d = $button("btnSpec2d");
@@ -795,14 +808,20 @@ interface MetricsShape {
 
     waterfallFrameCounter++;
     if (waterfallFrameCounter % 2 === 0) {
-      const slice = new Float32Array(WATERFALL_BINS);
+      // CC-1: reuse a pre-allocated ring slot instead of `new Float32Array`.
+      const slice = waterfallRing[waterfallWriteIdx];
       const tap = audioTap.ensure();
       const analyser = tap?.analyserWaterfall ?? null;
       let hasRealData = false;
 
       if (analyser && isPlaying) {
         try {
-          const freqData = new Uint8Array(analyser.frequencyBinCount);
+          // CC-1: length-guarded reuse (mirrors master-console.ts:251-252).
+          const binCount = analyser.frequencyBinCount;
+          if (!_waterfallFreqData || _waterfallFreqData.length !== binCount) {
+            _waterfallFreqData = new Uint8Array(binCount);
+          }
+          const freqData = _waterfallFreqData;
           analyser.getByteFrequencyData(freqData);
           if (freqData.length > 0) {
             const step = Math.max(1, Math.floor(freqData.length / WATERFALL_BINS));
@@ -827,10 +846,8 @@ interface MetricsShape {
         }
       }
 
-      waterfallHistory.unshift(slice);
-      if (waterfallHistory.length > WATERFALL_SLICES) {
-        waterfallHistory.pop();
-      }
+      waterfallWriteIdx = (waterfallWriteIdx + 1) % WATERFALL_SLICES;
+      if (waterfallCount < WATERFALL_SLICES) waterfallCount++;
     }
 
     ctx.fillStyle = "#04060d";
@@ -848,11 +865,13 @@ interface MetricsShape {
       ctx.stroke();
     }
 
-    // Render slices back-to-front for realistic depth occlusion
-    const numSlices = waterfallHistory.length;
-    for (let s = numSlices - 1; s >= 0; s--) {
-      const slice = waterfallHistory[s];
-      const zNorm = s / (WATERFALL_SLICES - 1 || 1);
+    // Render slices back-to-front for realistic depth occlusion.
+    // CC-1: iterate the ring buffer from oldest (k=waterfallCount-1) to newest
+    // (k=0); zNorm maps k to depth exactly as the old linear index did (oldest
+    // k=WATERFALL_SLICES-1 -> zNorm=1 far back, newest k=0 -> zNorm=0 front).
+    for (let k = waterfallCount - 1; k >= 0; k--) {
+      const slice = waterfallRing[(waterfallWriteIdx - 1 - k + WATERFALL_SLICES) % WATERFALL_SLICES];
+      const zNorm = k / (WATERFALL_SLICES - 1 || 1);
 
       const yBase = (18 + (1 - zNorm) * 135) * dpr;
       const widthScale = 0.62 + (1 - zNorm) * 0.38;
@@ -1119,6 +1138,21 @@ interface MetricsShape {
     }
   }
 
+  // U-3: reusable arrays for drawEqCurve — zero per-call allocs on the
+  // slider-drag hot path (input events). Element fields are mutated in place
+  // each call; the array shells are retained across calls.
+  const _eqCurvePoints: Array<{ x: number; y: number }> = [];
+  const _eqBells = [
+    { f: 0, g: 0, q: 0 },
+    { f: 0, g: 0, q: 0 },
+    { f: 0, g: 0, q: 0 },
+  ];
+  const _eqNodes = [
+    { name: "B1", f: 0, g: 0, color: "#38bdf8" },
+    { name: "B3", f: 0, g: 0, color: "#a855f7" },
+    { name: "B6", f: 0, g: 0, color: "#ec4899" },
+  ];
+
   function drawEqCurve() {
     const canvas = $canvas("lgmdmEqCurveCanvas");
     if (!canvas) return;
@@ -1200,7 +1234,12 @@ interface MetricsShape {
     if (dbVal6) dbVal6.textContent = `${b6Gain >= 0 ? "+" : ""}${b6Gain.toFixed(1)} dB`;
 
     const numPoints = 180;
-    const curvePoints = [];
+    _eqCurvePoints.length = 0;
+    // U-3: populate shared bell fields once (values come from sliders and are
+    // constant across the 181-point loop — previously re-created 181×/call).
+    _eqBells[0].f = b1Freq; _eqBells[0].g = b1Gain; _eqBells[0].q = b1Q;
+    _eqBells[1].f = b3Freq; _eqBells[1].g = b3Gain; _eqBells[1].q = b3Q;
+    _eqBells[2].f = b6Freq; _eqBells[2].g = b6Gain; _eqBells[2].q = b6Q;
 
     for (let i = 0; i <= numPoints; i++) {
       const norm = i / numPoints;
@@ -1217,12 +1256,7 @@ interface MetricsShape {
         totalDb += lowShelfGain * shelfRatio;
       }
 
-      const bells = [
-        { f: b1Freq, g: b1Gain, q: b1Q },
-        { f: b3Freq, g: b3Gain, q: b3Q },
-        { f: b6Freq, g: b6Gain, q: b6Q },
-      ];
-      bells.forEach(({ f, g, q }) => {
+      _eqBells.forEach(({ f, g, q }) => {
         if (g === 0) return;
         const bw = Math.max(0.1, 1 / (q * 1.5));
         const diff = Math.log(freq / f);
@@ -1236,13 +1270,13 @@ interface MetricsShape {
 
       const cx = freqToX(freq);
       const cy = dbToY(Math.max(-28, Math.min(20, totalDb)));
-      curvePoints.push({ x: cx, y: cy });
+      _eqCurvePoints.push({ x: cx, y: cy });
     }
 
     ctx.beginPath();
-    ctx.moveTo(curvePoints[0].x, zeroY);
-    curvePoints.forEach((p) => ctx.lineTo(p.x, p.y));
-    ctx.lineTo(curvePoints[curvePoints.length - 1].x, zeroY);
+    ctx.moveTo(_eqCurvePoints[0].x, zeroY);
+    _eqCurvePoints.forEach((p) => ctx.lineTo(p.x, p.y));
+    ctx.lineTo(_eqCurvePoints[_eqCurvePoints.length - 1].x, zeroY);
     ctx.closePath();
 
     const fillGrad = ctx.createLinearGradient(0, 0, 0, h);
@@ -1253,7 +1287,7 @@ interface MetricsShape {
     ctx.fill();
 
     ctx.beginPath();
-    curvePoints.forEach((p, idx) => {
+    _eqCurvePoints.forEach((p, idx) => {
       if (idx === 0) ctx.moveTo(p.x, p.y);
       else ctx.lineTo(p.x, p.y);
     });
@@ -1261,13 +1295,12 @@ interface MetricsShape {
     ctx.lineWidth = Math.max(1.5, 2.2 * dpr);
     ctx.stroke();
 
-    const nodes = [
-      { name: "B1", f: b1Freq, g: b1Gain, color: "#38bdf8" },
-      { name: "B3", f: b3Freq, g: b3Gain, color: "#a855f7" },
-      { name: "B6", f: b6Freq, g: b6Gain, color: "#ec4899" },
-    ];
+    // U-3: populate shared nodes fields then iterate the pre-allocated array.
+    _eqNodes[0].f = b1Freq; _eqNodes[0].g = b1Gain;
+    _eqNodes[1].f = b3Freq; _eqNodes[1].g = b3Gain;
+    _eqNodes[2].f = b6Freq; _eqNodes[2].g = b6Gain;
 
-    nodes.forEach((nd) => {
+    _eqNodes.forEach((nd) => {
       const nx = freqToX(nd.f);
       const ny = dbToY(nd.g);
 

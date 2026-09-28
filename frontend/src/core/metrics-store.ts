@@ -40,7 +40,9 @@ export interface MetricsEvent {
   sequence: number;
   source: string;
   timestamp: number;
-  error?: string;
+  // `| undefined` para satisfacer `exactOptionalPropertyTypes`: `buildEvent`
+  // recibe `error?` y puede asignar `undefined` literal.
+  error?: string | undefined;
 }
 
 export interface MetricsStore {

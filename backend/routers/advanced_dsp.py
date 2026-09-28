@@ -97,8 +97,18 @@ def _write_audio_from_dsp(out_path: str, data: np.ndarray, sr: int):
         out_data = data.T
     else:
         out_data = data
-    # Ensure clipping safety
-    out_data = np.clip(out_data, -1.0, 1.0)
+    # U-7: soft-clip en vez de np.clip hard. El hard-clip en cualquier
+    # overshoot pliega como aliasing fold-back en los 10 endpoints /dsp/*.
+    # Esto es identidad para |x| <= 0.98 y satura suave por encima (asíntota
+    # a 1.0), evitando fold-back aliasing. Verificado: |x|=0.98 -> 0.98;
+    # |x|=1.0 -> ~0.9804; |x|=2.0 -> ~0.9928 (asíntota suave).
+    _KNEE = 0.98
+    _abs = np.abs(out_data)
+    out_data = np.sign(out_data) * np.where(
+        _abs > _KNEE,
+        1.0 - (1.0 - _KNEE) * np.exp(-(_abs - _KNEE)),
+        _abs,
+    )
     sf.write(out_path, out_data, sr, subtype="PCM_24")
 
 

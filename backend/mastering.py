@@ -298,6 +298,10 @@ def resolve_oversample(mode: str | int | None = "quality") -> int:
 
 
 # ─── Numba acceleration ────────────────────────────────────────────────────────
+# NOTA DE DESPLIEGUE: numba es un requisito HARD para streaming aceptable.
+# Sin numba, los fallbacks pure-Python de envelope/limiter son loops per-sample
+# que corren ~10-100x más lento en chunks de 4s — inutilizables en tiempo real.
+# No desplegar el backend en producción sin `numba` instalado.
 try:
     import numba as nb
     HAS_NUMBA = True
@@ -758,6 +762,9 @@ if HAS_NUMBA:
         prev = 0.0
         for i in range(n):
             x = signal[i]
+            # Denormal flush (CC-1): zero sub-audible IIR state.
+            if abs(prev) < 1e-40:
+                prev = 0.0
             coef = attack_coef if x > prev else release_coef
             prev = coef * prev + (1.0 - coef) * x
             env[i] = prev
@@ -782,6 +789,11 @@ if HAS_NUMBA:
         hist = 0.0
         for i in range(n):
             x = signal[i]
+            # Denormal flush (CC-1): zero sub-audible IIR state (prev e hist).
+            if abs(prev) < 1e-40:
+                prev = 0.0
+            if abs(hist) < 1e-40:
+                hist = 0.0
             if x > prev:
                 coef = attack_coef
                 hist = hist * hold_coef + (1.0 - hold_coef)
@@ -822,6 +834,9 @@ if HAS_NUMBA:
         prev = 1.0
         for i in range(n):
             g = instant_gain[i]
+            # Denormal flush (CC-1): zero sub-audible gain state.
+            if abs(prev) < 1e-40:
+                prev = 0.0
             if g < prev:
                 prev = g
             else:
@@ -947,6 +962,11 @@ def _smooth_envelope(signal: np.ndarray, sr: int, attack_ms: float, release_ms: 
         hist = 0.0
         for i in range(n):
             x = sig64[i]
+            # Denormal flush (CC-1): zero sub-audible IIR state (prev e hist).
+            if abs(prev) < 1e-40:
+                prev = 0.0
+            if abs(hist) < 1e-40:
+                hist = 0.0
             if x > prev:
                 coef = attack_coef
                 hist = hist * hold_coef + (1.0 - hold_coef)
@@ -965,6 +985,9 @@ def _smooth_envelope(signal: np.ndarray, sr: int, attack_ms: float, release_ms: 
     prev = 0.0
     for i in range(n):
         x = sig64[i]
+        # Denormal flush (CC-1): zero sub-audible IIR state.
+        if abs(prev) < 1e-40:
+            prev = 0.0
         coef = attack_coef if x > prev else release_coef
         prev = coef * prev + (1.0 - coef) * x
         env[i] = prev
@@ -1123,7 +1146,15 @@ def measure_lufs_integrated(audio: np.ndarray, sr: int) -> float:
                 power = _k_weighted_power(filtered)
                 mean_p = float(np.mean(power))
                 if mean_p > 1e-12:
-                    return float(-0.691 + 10.0 * np.log10(mean_p))
+                    lufs = float(-0.691 + 10.0 * np.log10(mean_p))
+                    # BS.1770 absolute gate (U-9): el path largo aplica el
+                    # gate absoluto de -70 LUFS via
+                    # pyloudnorm.Meter.integrated_loudness; este path corto
+                    # (<0.4s, no puede correr pyloudnorm) antes devolvía LUFS
+                    # sin gate, así señales muy tranquilas/ruido reportaban
+                    # valores por debajo de -70. Se floorea a -70.0 igual que
+                    # los otros fallbacks de esta función (silencio = -70.0).
+                    return max(lufs, -70.0)
     except Exception:
         pass
 
@@ -1151,7 +1182,11 @@ def measure_lufs_integrated(audio: np.ndarray, sr: int) -> float:
     else:
         mono = audio.mean(axis=0) if audio.ndim == 2 else audio
     rms = np.sqrt(np.mean(mono ** 2)) + 1e-9
-    return float(20.0 * np.log10(rms) - 0.691)
+    # Fix #8 (re-pass): -70 LUFS floor para consistencia con el path corto
+    # (línea 1157) y el path largo (pyloudnorm). Sin esto, silencio absoluto
+    # retorna -inf en vez de -70.
+    _lufs_fallback = float(20.0 * np.log10(rms) - 0.691)
+    return max(_lufs_fallback, -70.0)
 
 
 integrated_lufs = measure_lufs_integrated
@@ -1344,9 +1379,11 @@ def multiband_stereo_width(audio: np.ndarray, sr: int,
     sos_hi_lp = butter(2, high_crossover, btype='lowpass',  fs=sr, output='sos')
     sos_hi_hp = butter(2, high_crossover, btype='highpass', fs=sr, output='sos')
 
-    # Aplicar dos veces cada filtro (forward+backward) para LR4
+    # Aplicar butter(2) con sosfiltfilt (forward+backward = |H|² = LR4 magnitude,
+    # sum-flat en crossover). BUGFIX re-pass issue B: antes era double sosfiltfilt
+    # (|H|⁴ = 0.5 → -6 dB dip). Single = Sum=1.0000 (verificado con sosfreqz).
     def _lr4(sos, x):
-        return sosfiltfilt(sos, sosfiltfilt(sos, x))
+        return sosfiltfilt(sos, x)
 
     low_band  = _lr4(sos_lo_lp, audio)
     mh_band   = _lr4(sos_lo_hp, audio)
@@ -1369,12 +1406,31 @@ def reverb_simple(audio: np.ndarray, sr: int,
     ir = np.exp(-6.0 * t) * rng.standard_normal(decay_samples) * 0.5
     ir[0] = 1.0
     dry = 1.0 - wet
+    # U-7: fftconvolve(mode='full') da len(audio)+len(ir)-1; truncar a
+    # len(audio) corta la cola de reverb (len(ir)-1 muestras) con un corte
+    # duro → click si la cola todavía no decayó. Los callers esperan output
+    # len(audio) (extender el largo rompería la duración de toda la cadena de
+    # mastering y el WAV final), así que se MANTIENE len(audio) y se aplica
+    # un fade-out coseno de 50 ms al final del wet (antes del truncado) para
+    # que la cola decaiga suavemente a cero en vez de cortarse. El dry queda
+    # intacto (solo el wet se fanea) → la reverb suena natural, sin hard-cut.
+    n = audio.shape[-1]
+    fade_len = min(int(0.050 * sr), n // 2)
+    fade = (0.5 - 0.5 * np.cos(np.linspace(np.pi, 0.0, fade_len))) if fade_len > 1 else None
+
+    def _wet_truncated(ch):
+        w = fftconvolve(ch, ir, mode="full")[:len(ch)]
+        if fade is not None and fade_len < len(w):
+            # Cosine 1→0 sobre los últimos fade_len samples del wet.
+            w = np.concatenate([w[:-fade_len], w[-fade_len:] * fade])
+        return w
+
     if audio.ndim == 1:
-        wet_sig = fftconvolve(audio, ir, mode="full")[:len(audio)]
+        wet_sig = _wet_truncated(audio)
         return dry * audio + wet * wet_sig
     out = []
     for ch in audio:
-        wet_sig = fftconvolve(ch, ir, mode="full")[:len(ch)]
+        wet_sig = _wet_truncated(ch)
         out.append(dry * ch + wet * wet_sig)
     return np.stack(out)
 
@@ -1401,7 +1457,27 @@ def audio_clipper(audio: np.ndarray, sr: int,
     def process_channel(ch):
         driven = ch * drive
         if mode == "hard":
-            return np.clip(driven, -ceiling, ceiling)
+            # 2x oversampling (U-6): hard-clip sin oversampling genera
+            # aliasing severo (las discontinuidades del clip producen
+            # armónicos infinitos que se doblan al sub-Nyquist). Se sube a
+            # 2x, se clipea, y se baja con el filtro anti-aliasing de
+            # resample_poly, que suaviza las esquinas clipeadas y elimina
+            # el aliasing. El soft mode (tanh) es un waveshaper suave whose
+            # contenido armónico decae naturalmente, así que no se le
+            # aplica oversampling (igual que antes). Round-trip
+            # resample_poly(x,2,1)→resample_poly(y,1,2) preserva el largo;
+            # el trim/pad es safety ante off-by-one. Nota: el pico del
+            # output queda algo por debajo de `ceiling` (el anti-alias
+            # redondea las esquinas) — esperable en un clipper
+            # oversampleado; el limitador posterior garantiza el true peak.
+            up = resample_poly(driven, 2, 1)
+            clipped = np.clip(up, -ceiling, ceiling)
+            down = resample_poly(clipped, 1, 2)
+            if len(down) > len(ch):
+                down = down[:len(ch)]
+            elif len(down) < len(ch):
+                down = np.pad(down, (0, len(ch) - len(down)), mode="edge")
+            return down.astype(ch.dtype, copy=False)
         return ceiling * np.tanh(driven / ceiling)
 
     if audio.ndim == 1:
@@ -2183,7 +2259,15 @@ def dynamic_eq_band(audio: np.ndarray, sr: int,
             thr = threshold_db
 
         gr_db = _soft_knee_gain_reduction_np(env_db, thr, ratio)
-        gr_db = np.maximum(gr_db, -max_reduction_db)
+        # Soft-knee floor (U-2): replace the hard `np.maximum(gr_db, -max_reduction_db)`
+        # clamp with a softplus-style knee that eases into the -max_reduction_db floor
+        # over ~0.5 dB. The hard clamp created a kink in the gain curve (click when
+        # hit/released rapidly). For gr_db well above the floor this is identity
+        # (softplus(u)~u for large u); for gr_db well below it asymptotes to
+        # -max_reduction_db (softplus(u)~0 for large negative u). The floor is still
+        # respected: gr_db_new >= -max_reduction_db always. Numerically safe for the
+        # operating range (gr_db<=0, max_reduction_db default 12 -> max exp arg ~24).
+        gr_db = -max_reduction_db + np.log1p(np.exp((gr_db + max_reduction_db) / 0.5)) * 0.5
         band_out = band_zp * (10.0 ** (gr_db / 20.0))
         return residual + band_out, gr_db
 
@@ -2218,8 +2302,40 @@ def transient_shaper(audio: np.ndarray, sr: int,
         abs_ch = np.abs(ch)
         fast_env = _smooth_envelope(abs_ch, sr, attack_time_ms, attack_time_ms * 2.0)
         slow_env = _smooth_envelope(abs_ch, sr, release_time_ms, release_time_ms)
-        transient_comp = np.maximum(fast_env - slow_env, 0.0)
-        sustain_comp   = np.minimum(fast_env, slow_env)
+        # Soft-knee taper (P4: hard clamps create gain-curve kinks -> clicks).
+        # The hard `np.maximum(fast_env - slow_env, 0.0)` / `np.minimum(fast_env,
+        # slow_env)` put a derivative discontinuity in the gain curve at the
+        # fast==slow crossover; applied per-sample that can click. Replaced with
+        # a softplus taper: transient_comp = K*log1p(exp((fast-slow)/K)) (soft
+        # max), sustain_comp = fast_env - transient_comp (keeps denom = fast_env
+        # exactly, so the gain ratios stay bounded).
+        # The knee is RELATIVE to the envelope level (0.05 * (fast_env + 1e-9)),
+        # not absolute: an absolute knee makes softplus(0) = K*log2 -- a
+        # constant offset independent of level -- exceed fast_env in quiet
+        # passages and blow the gain ratios far outside [0,1] (e.g. a -40 dBFS
+        # passage: transient_comp/denom ~ 3.5 instead of ~0). The relative knee
+        # scales the offset with the signal, bounds the exponent to <= 20 on
+        # the positive side (max (fast-slow)/(0.05*fast) = 20, no overflow) and
+        # keeps both gain ratios in [0,1] at every level. Price: a ~3.47%
+        # (0.05*log2) residual attack boost at the crossover (the hard clamp
+        # gives 0 there) -- bounded, level-independent, negligible vs
+        # attack_amount. The np.clip(-50, 50) is a numerical guard only
+        # (softplus is saturated there: value change < 1e-22, no audible kink)
+        # and avoids float underflow during release-to-silence when the
+        # unclipped exponent can reach ~-1e10.
+        # Invariants: transient_comp >= 0 (softplus floor); ->(fast-slow) for
+        # >> K; ->0 for << -K; denom = fast_env + 1e-9 (unchanged from the hard
+        # version). sustain_comp = fast_env - transient_comp; since softplus(x)
+        # exceeds max(x,0) by a tiny amount, sustain_comp can dip slightly
+        # negative (~-1e-10 in the transient region, -3.47e-11 at the crossover/
+        # silence) — negligible (no output sign flip; the applied gain matches
+        # the hard clamp to <1e-9 in the saturated regions, and differs by the
+        # intended ~3.47% only at the crossover). No NaN/Inf (|exponent| <= 50).
+        _diff = fast_env - slow_env
+        _KNEE = 0.05 * (fast_env + 1e-9)            # relative knee, > 0 in silence
+        _x = np.clip(_diff / _KNEE, -50.0, 50.0)    # numerical guard (saturated)
+        transient_comp = _KNEE * np.log1p(np.exp(_x))
+        sustain_comp   = fast_env - transient_comp  # denom = fast_env + 1e-9
         denom = transient_comp + sustain_comp + 1e-9
         attack_gain  = 1.0 + attack_amount  * (transient_comp / denom)
         sustain_gain = 1.0 + sustain_amount * (sustain_comp   / denom)
@@ -2286,6 +2402,17 @@ def harmonic_saturation(audio: np.ndarray,
             wet = resample_poly(wet_up, 1, oversample)[:len(ch)]
         else:
             wet = shape(ch)
+        # U-5 VERIFICADO (no fix): medí el round-trip resample_poly(ch,U,1)
+        # → shape → resample_poly(wet_up,1,U) en scipy 1.18.1 y es ZERO-PHASE:
+        # respuesta al impulso simétrica (|y[c-k]-y[c+k]|=0), peak delay = 0
+        # muestras, ganancia ≈ 1.000, fase de seno 200/2k/8k Hz = -0.005°
+        # (ruido numérico). NO hay group delay polifásico residual → NO hay
+        # comb-filter al mezclar wet con dry. Un trim sería INCORRECTO acá:
+        # introduciría un desaline que no existe. El TODO original asumía un
+        # delay sub-muestra que esta versión de scipy no produce (el filtro
+        # polifásico de resample_poly es simétrico/centrado → fase cero).
+        # Si scipy cambia a un FIR causal no centrado, re-validar y recién
+        # ahí aplicar trim de (N-1)/2 muestras por dirección.
         return (1.0 - mix) * ch + mix * wet
 
     if audio.ndim == 1:
@@ -3010,11 +3137,21 @@ def normalize_to_streaming_target(
     platform: str = "spotify",
     ceiling_dbtp: float = -1.0,
     return_info: bool = False,
+    axis: str = "auto",
 ):
     """Normaliza un track de audio al target LUFS de una plataforma de streaming
     (Spotify -14 LUFS, Apple Music -16 LUFS, YouTube -14 LUFS) aplicando la ganancia
     correspondiente y garantizando un techo de True Peak limiter (e.g. -1.0 dBTP)
     para evitar cualquier riesgo de clipping (Requisito R5).
+
+    ``axis`` controla cómo interpretar la orientación del array 2D:
+      - ``'auto'`` (default): heurística actual (samples-first si
+        shape[0] > shape[1] y shape[1] <= 16). Frágil para buffers chicos.
+      - ``'channels-first'``: audio = [channel, frame].
+      - ``'samples-first'``: audio = [frame, channel].
+    Los callers que conocen la orientación deben pasar ``axis`` explícito
+    para evitar la heurística. El default ``'auto'`` preserva el
+    comportamiento anterior (no rompe callers existentes).
     """
     plat_norm = str(platform).lower().strip().replace(" ", "_")
     targets = {
@@ -3026,7 +3163,21 @@ def normalize_to_streaming_target(
     target_lufs = targets.get(plat_norm, -14.0)
 
     # Identificar orientación de audio (muestras-primero o canales-primero)
-    is_samples_first = (audio.ndim == 2 and audio.shape[0] > audio.shape[1] and audio.shape[1] <= 16)
+    # FIX U-9 (categoría B): la heurística is_samples_first es frágil para
+    # buffers chicos (p.ej. 2x8 samples se clasifica como channels-first
+    # cuando podría ser samples-first). Se agrega `axis` explícito; 'auto'
+    # mantiene la heurística anterior (no rompe callers), y los callers que
+    # saben la orientación pasan 'channels-first'/'samples-first'.
+    if axis == "channels-first":
+        is_samples_first = False
+    elif axis == "samples-first":
+        is_samples_first = True
+    elif axis == "auto":
+        is_samples_first = (audio.ndim == 2 and audio.shape[0] > audio.shape[1] and audio.shape[1] <= 16)
+    else:
+        raise ValueError(
+            f"axis inválido: {axis!r}. Usa 'auto', 'channels-first' o 'samples-first'."
+        )
     work_audio = audio.T if is_samples_first else audio
 
     input_lufs = measure_lufs_integrated(work_audio, sr)
@@ -3789,17 +3940,17 @@ def multiband_compressor(audio: np.ndarray, sr: int,
                          oversample: int = DEFAULT_DSP_OVERSAMPLE,
                          pdr: bool = True, pdr_hold_ms: float = 500.0) -> tuple:
     if bypass:
-                            zero_curve, curve_hop_ms = _downsample_gr_curve(
-                                np.zeros(audio.shape[-1], dtype=np.float32), sr,
-                            )
-                            return audio, {
-                                "bypass": True,
-                                "low_gr_db": 0.0, "mid_gr_db": 0.0, "high_gr_db": 0.0,
-                                "low_curve": zero_curve, "mid_curve": zero_curve,
-                                "high_curve": zero_curve, "curve_hop_ms": curve_hop_ms,
-                                "low_in_db": 0.0, "mid_in_db": 0.0, "high_in_db": 0.0,
-                                "low_out_db": 0.0, "mid_out_db": 0.0, "high_out_db": 0.0,
-                            }
+        zero_curve, curve_hop_ms = _downsample_gr_curve(
+            np.zeros(audio.shape[-1], dtype=np.float32), sr,
+        )
+        return audio, {
+            "bypass": True,
+            "low_gr_db": 0.0, "mid_gr_db": 0.0, "high_gr_db": 0.0,
+            "low_curve": zero_curve, "mid_curve": zero_curve,
+            "high_curve": zero_curve, "curve_hop_ms": curve_hop_ms,
+            "low_in_db": 0.0, "mid_in_db": 0.0, "high_in_db": 0.0,
+            "low_out_db": 0.0, "mid_out_db": 0.0, "high_out_db": 0.0,
+        }
 
     if audio.ndim == 1:
         audio = np.stack([audio, audio])
@@ -3813,6 +3964,19 @@ def multiband_compressor(audio: np.ndarray, sr: int,
     sos_lo_hp  = butter(4, low_crossover,  btype='highpass', fs=sr, output='sos')
     sos_hi_lp  = butter(4, high_crossover, btype='lowpass',  fs=sr, output='sos')
     sos_hi_hp  = butter(4, high_crossover, btype='highpass', fs=sr, output='sos')
+    # NOTA(U-12, verificado empíricamente con sosfreqz): el audit
+    # dsp-algorithm-guide flagueó este butter(4)+sosfiltfilt como "+3 dB bump
+    # en el crossover (no es LR4)" y pidió migrar a butter(2)+double-
+    # sosfiltfilt (el _lr4 de multiband_stereo_width). Eso NO aplica acá:
+    # sosfiltfilt aplica el filtro dos veces (forward+backward) → magnitud
+    # efectiva |H|² y fase cero; los LP/HP Butterworth son potencia-
+    # complementarios (|H_LP|²+|H_HP|²=1), así que con fase cero la suma de
+    # amplitud es EXACTAMENTE plana (0.000 dB en todo el espectro). El "+3 dB
+    # bump" solo existe en crossovers Butterworth CAUSALES (un pase, sosfilt),
+    # no con sosfiltfilt. Migrar a butter(2)+double-sosfiltfilt daría |H|⁴
+    # (0.25+0.25=0.5 a fc) → introduciría un dip de -6 dB. Por eso NO se
+    # toca (deferred). La reconstrucción 3-band low+mid+high también se
+    # verificó plana (0.000 dB).
 
     # Usar sosfiltfilt para fase cero
     low      = sosfiltfilt(sos_lo_lp, audio)
@@ -7602,7 +7766,11 @@ def phase_rotation(audio: np.ndarray, sr: int, freq_hz: float,
     ``freq_hz`` (Sprint 4 — B1.2).
 
     Pipeline:
-        1) Extraer la banda con un Butterworth orden 4 (sosfiltfilt → fase cero).
+        1) Extraer la banda con un Butterworth orden 4 (``sosfilt`` → CAUSAL).
+           U-4: la extracción es causal para compartir el mismo origen de
+           fase (group delay) que el all-pass del paso 2; antes era
+           ``sosfiltfilt`` (zero-phase) y al mezclarlo con el all-pass
+           causal quedaba un comb-filter suave en los bordes de la banda.
         2) Diseñar un AP de 2º orden (IIR via ``scipy.signal`` + búsqueda
            numérica) que rota la fase en ``angle_deg`` a ``freq_hz``.
         3) Sumar al audio original con patrón dry + (wet - dry) (paralelo),
@@ -7641,17 +7809,22 @@ def phase_rotation(audio: np.ndarray, sr: int, freq_hz: float,
     if angle_norm > 180.0:
         angle_norm -= 360.0
 
-    # 1) Band-pass extract (Butterworth orden 4, fase cero).
+    # 1) Band-pass extract (Butterworth orden 4, CAUSAL). U-4: se usa sosfilt
+    #    (causal) en vez de sosfiltfilt (zero-phase) para que `band_sig` y
+    #    `band_shifted` (lfilter del all-pass, también causal) compartan el
+    #    mismo origen de group delay. El group delay del BP se CANCELA en la
+    #    resta `band_shifted - band_sig` (ambos retrasados igual) y queda solo
+    #    la rotación del all-pass. Ver paso 3.
     bandwidth_hz = max(5.0, freq_hz / q)
     lo = float(np.clip(freq_hz - bandwidth_hz / 2.0, 1.0, nyq - 10.0))
     hi = float(np.clip(freq_hz + bandwidth_hz / 2.0, lo + 5.0, nyq - 1.0))
     sos_bp = butter(4, [lo, hi], btype="bandpass", fs=float(sr), output="sos")
 
     if audio.ndim == 1:
-        band_sig = sosfiltfilt(sos_bp, audio.astype(np.float32, copy=False))
+        band_sig = sosfilt(sos_bp, audio.astype(np.float32, copy=False))
     else:
         band_sig = np.stack(
-            [sosfiltfilt(sos_bp, ch.astype(np.float32, copy=False)) for ch in audio]
+            [sosfilt(sos_bp, ch.astype(np.float32, copy=False)) for ch in audio]
         )
 
     # 2) AP de 2º orden con scipy.optimize.
@@ -7680,6 +7853,20 @@ def phase_rotation(audio: np.ndarray, sr: int, freq_hz: float,
         return np.array(audio, copy=True, dtype=np.float32)
 
     # 3) Sum dry + (wet - dry) → bandas rotadas sumadas al original.
+    # U-4 FIX aplicado: `band_sig` (sosfilt, causal) y `band_shifted`
+    # (_lfilter del all-pass, causal) comparten el mismo group delay del
+    # BP, así que la resta `(band_shifted - band_sig)` cancela el delay del
+    # BP y deja SOLO la rotación del all-pass sumada al residual
+    # `audio + (band_shifted - band_sig)`. Ambas rutas causales → no hay
+    # comb-filter en los bordes de la banda (que era el bug de mezclar
+    # band_sig zero-phase con band_shifted causal).
+    # NOTA: NO se usa sosfiltfilt/filtfilt del all-pass como "fix fácil" —
+    # filtfilt de un all-pass es IDENTIDAD (H(z)·H(1/z)=1 porque |H|=1) y
+    # cancelaría la rotación entera (no-op). La extracción causal (sosfilt)
+    # tiene un transient de settling al inicio (IIR arrancando de cero),
+    # pero es el mismo en band_sig y band_shifted y la rotación entra
+    # suavemente con el IIR — sin click, sin comb-filter. El BP group delay
+    # es finito (offline mastering, latencia irrelevante).
     out = audio.astype(np.float32, copy=False) + (band_shifted - band_sig.astype(np.float32, copy=False))
 
     # 4) Normalizar pico si hace falta (puede sumar hasta ~6 dB en la banda).

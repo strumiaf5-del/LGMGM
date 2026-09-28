@@ -1,3 +1,6 @@
+import type { JobId } from '../../core/state';
+import { audioEngine } from '../../core/audio-engine';
+
 // features/mastering/reference-mastering.ts — Master con referencia, EQ dinámica, preview en vivo, análisis.
 // (PRODUCTION reference, NO del aporte experimental).
 //
@@ -11,7 +14,25 @@
 // Usamos `any` para lg() porque este módulo cruza muchos bridges (LGMDM.*) que
 // están declarados globalmente en otros archivos. La verificación real es en
 // runtime — si el bridge no existe, retorna undefined y optional chaining lo maneja.
+// TODO(U-2): `lg(): any` es la raíz `any` de este archivo. Migrarla a un slice
+// tipado cascada a 60+ usos `lg().dom/.state/.ui/.api/.audio/.errors/.ai/.params`
+// (varios sin `?.`), requiriendo decidir required-vs-optional por bridge.
+// Migración dedicada pendiente. Los 6 `(window as any).LGMDM` directos (líneas
+// 155, 249, 341, 375, 525, 1322) se migran abajo con `lgmdmRef()`.
 const lg = (): any => ((window as any).LGMDM = (window as any).LGMDM || {});
+
+// Slice local para los 6 accesos directos a `window.LGMDM.reference` (los que
+// NO van por `lg()`). Reusa `ReferenceApiObj` (línea 21). Cast por `unknown`
+// porque la declaración global de `Window.LGMDM` (core/state.ts) es mínima y no
+// incluye `reference`. En los WRITE sites se afirma no-undefined con
+// `as LgmdmReferenceSlice` (LGMDM lo inicializa core/state.ts al cargar): no es
+// `as any` ni `!`, y preserva el contrato runtime original (mismo TypeError si
+// LGMDM no estuviera — situación que no ocurre por orden de carga).
+interface LgmdmReferenceSlice {
+  reference?: ReferenceApiObj;
+  [key: string]: unknown;
+}
+const lgmdmRef = () => (window as unknown as Window & { LGMDM?: LgmdmReferenceSlice }).LGMDM;
 
 interface ReferenceStateObj {
   file: File | null;
@@ -36,7 +57,7 @@ interface StateShape {
     reference?: { jobId?: string | null; downloadUrl?: string | null };
   };
   referencePollInterval?: number | null;
-  currentJobId?: string | null;
+  currentJobId?: JobId | null;
   downloadUrl?: string | null;
   downloadFilename?: string;
   activeJobType?: 'mastering' | 'reference';
@@ -65,6 +86,15 @@ function reqInput(id: string, owner: string): HTMLInputElement {
   const dom = lg().dom;
   if (!dom) throw new Error(`[LGMDM DOM CONTRACT] ${owner}: dom bridge no disponible`);
   return dom.requireById(id, owner) as HTMLInputElement;
+}
+
+// U-3: como `reqInput` pero para `HTMLElement` genérico. `requireById` (dom.ts:88)
+// retorna `T` no-null y arroja si falta — reemplaza `container!.X` / `countVal!.X`
+// en closures (`render()`, callbacks) que no ven el narrow del guard del IIFE.
+function reqEl(id: string, owner: string): HTMLElement {
+  const dom = lg().dom;
+  if (!dom) throw new Error(`[LGMDM DOM CONTRACT] ${owner}: dom bridge no disponible`);
+  return dom.requireById(id, owner) as HTMLElement;
 }
 
 function byId(id: string): HTMLElement | null {
@@ -152,7 +182,7 @@ function collectReferenceParamsObj(): Record<string, unknown> {
     dither_mode: reqInput('s-dither-mode', '08-reference-mastering').value,
     dynamics_margin_db: reqInput('s-ref-dynmargin', '08-reference-mastering').value,
     stereo_blend: (parseFloat(reqInput('s-ref-stereoblend', '08-reference-mastering').value) / 100).toFixed(2),
-    band_gains_array: ((window as any).LGMDM?.reference?.bandEQ)?.getGainsArray() ?? [],
+    band_gains_array: lgmdmRef()?.reference?.bandEQ?.getGainsArray() ?? [],
     ms_eq_matching: reqInput('s-ref-ms-eq', '08-reference-mastering')?.checked ?? true, adaptive_loudness_weighting: reqInput('s-ref-adaptive-loudness', '08-reference-mastering')?.checked ?? true,
     loudness_sensitivity_amount: ((parseFloat(reqInput('s-ref-loudness-sensitivity', '08-reference-mastering')?.value || '65') / 100)).toFixed(2),
     premium_match_profile: reqInput('s-ref-premium-profile', '08-reference-mastering')?.value || 'balanced',
@@ -228,7 +258,7 @@ async function submitReferenceMasterJob(): Promise<void> {
       throw new Error(`HTTP ${res.status}: ${text}`);
     }
     const data = await res.json() as { job_id: string };
-    st.currentJobId = data.job_id;
+    st.currentJobId = data.job_id as JobId;
     ui.showStatus?.(null, `Job ${data.job_id.slice(0, 8)}… en cola (matching por referencia)`, 'queued');
     startReferencePolling(data.job_id);
   } catch (e) {
@@ -241,12 +271,12 @@ async function submitReferenceMasterJob(): Promise<void> {
 // ── refBandEQ ──────────────────────────────────────────────────────
 
 (function setupBandEQ(): void {
-  const container = byId('ref-band-controls');
+  const container = reqEl('ref-band-controls', '08-reference-mastering');
   const countSlider = byId('s-band-count') as HTMLInputElement | null;
-  const countVal = byId('v-band-count');
+  const countVal = reqEl('v-band-count', '08-reference-mastering');
   const resetBtn = byId('btn-band-reset');
-  if (!container || !countSlider || !countVal || !resetBtn) {
-    if ((window as any).LGMDM) ((window as any).LGMDM.reference as ReferenceApiObj | undefined) ?? ((window as any).LGMDM.reference = {});
+  if (!countSlider || !resetBtn) {
+    const _lg = lgmdmRef(); if (_lg) _lg.reference = _lg.reference || {};
     return;
   }
   const MIN_HZ = 20;
@@ -281,7 +311,7 @@ async function submitReferenceMasterJob(): Promise<void> {
 
   function render(n: number, interpolatedGains: number[] | null): void {
     const freqs = logFreqs(n);
-    container!.innerHTML = '';
+    container.innerHTML = '';
     _bands = [];
 
     freqs.forEach((freq, i) => {
@@ -304,7 +334,7 @@ async function submitReferenceMasterJob(): Promise<void> {
         <input type="range" id="${slId}" min="-12" max="12" step="0.5" value="${gain}"
           style="${n > 14 ? 'height:3px;' : ''}" />
       `;
-      container!.appendChild(div);
+      container.appendChild(div);
 
       const sl = div.querySelector('input') as HTMLInputElement;
       const val = div.querySelector('span.val') as HTMLElement;
@@ -312,7 +342,7 @@ async function submitReferenceMasterJob(): Promise<void> {
         const v = parseFloat(sl.value);
         _bands[i].gain_db = v;
         val.textContent = (v >= 0 ? '+' : '') + v.toFixed(1) + ' dB';
-        container!.dispatchEvent(new CustomEvent('bandchange', { bubbles: true }));
+        container.dispatchEvent(new CustomEvent('bandchange', { bubbles: true }));
       });
     });
   }
@@ -321,7 +351,7 @@ async function submitReferenceMasterJob(): Promise<void> {
     const newFreqs = logFreqs(n);
     const gains = skipInterp ? null : interpolate(_bands, newFreqs);
     render(n, gains);
-    countVal!.textContent = String(n);
+    countVal.textContent = String(n);
   }
 
   setBandCount(7, true);
@@ -329,16 +359,16 @@ async function submitReferenceMasterJob(): Promise<void> {
   countSlider.addEventListener('input', () => {
     const n = parseInt(countSlider.value, 10);
     setBandCount(n, false);
-    container!.dispatchEvent(new CustomEvent('bandchange', { bubbles: true }));
+    container.dispatchEvent(new CustomEvent('bandchange', { bubbles: true }));
   });
 
   resetBtn.addEventListener('click', () => {
     const n = parseInt(countSlider.value, 10);
     setBandCount(n, true);
-    container!.dispatchEvent(new CustomEvent('bandchange', { bubbles: true }));
+    container.dispatchEvent(new CustomEvent('bandchange', { bubbles: true }));
   });
 
-  const refApi = ((window as any).LGMDM.reference as ReferenceApiObj);
+  const refApi = lgmdmRef()?.reference;
   if (refApi) {
     refApi.bandEQ = {
       getGainsArray() {
@@ -372,7 +402,8 @@ async function submitReferenceMasterJob(): Promise<void> {
     const btn = byId('btnRefPreview') as HTMLButtonElement | null;
     if (btn) btn.disabled = !ok;
   }
-  const refApi = ((window as any).LGMDM.reference = ((window as any).LGMDM.reference || {}) as ReferenceApiObj);
+  const _lg = lgmdmRef() as LgmdmReferenceSlice;
+  const refApi = (_lg.reference = _lg.reference || {});
   const baseUpdate = refApi.updateButtonState;
   refApi.updateButtonState = function updateRefButtonState(): void {
     baseUpdate?.();
@@ -418,7 +449,59 @@ async function submitReferenceMasterJob(): Promise<void> {
   }
 
   function initAudioCtx(): AudioContext | null {
-    return lg().audio?.getContext?.() ?? null;
+    // V1: usar audioEngine.getContext() — antes leía lg().audio?.getContext?.()
+    // que nunca se asigna → retornaba null → scheduleChunk era no-op silencioso.
+    return audioEngine.getContext();
+  }
+
+  // RP1: pool de AudioBuffers para scheduleChunk — los source nodes son
+  // one-shot (no se pueden pooled), pero los AudioBuffer sí: reusar 4 evita
+  // createBuffer + getChannelData alloc por chunk. Realloc si cambia
+  // sampleRate/channels/samples; el último chunk parcial bypassa el pool.
+  const AUDIO_BUFFER_POOL_SIZE = 4;
+  interface PoolEntry { buf: AudioBuffer; inUse: boolean }
+  let _bufferPool: PoolEntry[] = [];
+  let _bufferPoolIdx = 0;
+  let _bufferPoolSr = 0;
+  let _bufferPoolCh = 0;
+  let _bufferPoolSamples = 0;
+
+  function acquireBuffer(sr: number, channels: number, samples: number): AudioBuffer | null {
+    const actx = initAudioCtx();
+    if (!actx) return null;
+    if (sr !== _bufferPoolSr || channels !== _bufferPoolCh || samples !== _bufferPoolSamples || _bufferPool.length === 0) {
+      _bufferPool = [];
+      for (let i = 0; i < AUDIO_BUFFER_POOL_SIZE; i++) {
+        _bufferPool.push({ buf: actx.createBuffer(channels, samples, sr), inUse: false });
+      }
+      _bufferPoolSr = sr;
+      _bufferPoolCh = channels;
+      _bufferPoolSamples = samples;
+      _bufferPoolIdx = 0;
+    }
+    // Chunk parcial (samples != del tamaño negociado) — no entra al pool.
+    if (samples !== _bufferPoolSamples) {
+      return actx.createBuffer(channels, samples, sr);
+    }
+    for (let i = 0; i < AUDIO_BUFFER_POOL_SIZE; i++) {
+      const idx = (_bufferPoolIdx + i) % AUDIO_BUFFER_POOL_SIZE;
+      if (!_bufferPool[idx].inUse) {
+        _bufferPool[idx].inUse = true;
+        _bufferPoolIdx = (idx + 1) % AUDIO_BUFFER_POOL_SIZE;
+        return _bufferPool[idx].buf;
+      }
+    }
+    // Todos en uso — fallback a alloc one-off (no contamina el pool).
+    return actx.createBuffer(channels, samples, sr);
+  }
+
+  function releaseBuffer(buf: AudioBuffer): void {
+    for (let i = 0; i < _bufferPool.length; i++) {
+      if (_bufferPool[i].buf === buf) {
+        _bufferPool[i].inUse = false;
+        return;
+      }
+    }
   }
 
   let previewActive = false;
@@ -431,7 +514,8 @@ async function submitReferenceMasterJob(): Promise<void> {
     if (!actx) return;
     const i16 = new Int16Array(pcmBytes);
     const samples = i16.length / channels;
-    const buf = actx.createBuffer(channels, samples, sr);
+    const buf = acquireBuffer(sr, channels, samples);
+    if (!buf) return;
     for (let ch = 0; ch < channels; ch++) {
       const chData = buf.getChannelData(ch);
       for (let i = 0; i < samples; i++) chData[i] = i16[i * channels + ch] / 32767;
@@ -447,7 +531,9 @@ async function submitReferenceMasterJob(): Promise<void> {
     const now = actx.currentTime;
     if (refAudioState.playTime < now + MIN_AHEAD_SEC) refAudioState.playTime = now + INITIAL_BUFFER_SEC;
     src.start(refAudioState.playTime);
-    src.onended = () => src.disconnect();
+    // RP1: liberar el buffer del pool cuando el source termina — evita
+    // entregar un buffer todavía en reproducción a un chunk nuevo.
+    src.onended = () => { src.disconnect(); releaseBuffer(buf); };
     refAudioState.playTime += buf.duration;
   }
 
@@ -489,6 +575,10 @@ async function submitReferenceMasterJob(): Promise<void> {
     if (panel) panel.style.display = 'block';
     const st = lg().state;
     if (!st.selectedFile || !refState.file) return;
+    // W3: resume explícito del AudioContext dentro del gesture (click que
+    // disparó launchRefPreview). Sin esto, scheduleChunk puede agendar un
+    // source sobre un ctx suspendido → silencio sin error.
+    await audioEngine.resume();
     if (!refSessionId) refSessionId = genUUID();
     if (!refRefSessionId) refRefSessionId = genUUID();
 
@@ -516,14 +606,20 @@ async function submitReferenceMasterJob(): Promise<void> {
       refWs.binaryType = 'arraybuffer';
     } catch (e) {
       console.warn('[reference] WS auth failed:', e);
+      // WS6: antes el catch logueaba y retornaba sin actualizar el status →
+      // "Conectando…" quedaba para siempre. Ahora surfacea el error.
+      if (status) status.textContent = 'Error de auth: ' + (e as Error).message;
       return;
     }
 
     refWs.onopen = () => {
       reconnectAttempts = 0;
       const params = collectReferenceParamsObj();
-      const bandGains = (window as any).LGMDM?.reference?.bandEQ?.getGainsArray() ?? [];
-      refWs!.send(JSON.stringify({
+      const bandGains = lgmdmRef()?.reference?.bandEQ?.getGainsArray() ?? [];
+      const refLibId = lg().state.reference?.libraryId;
+      const ws = refWs;
+      if (!ws) return;
+      ws.send(JSON.stringify({
         session_id: refSessionId,
         ref_session_id: refRefSessionId,
         chunk_seconds: 1.0,
@@ -536,7 +632,7 @@ async function submitReferenceMasterJob(): Promise<void> {
         ms_eq_matching: params.ms_eq_matching !== false,
         iterative_eq_passes: parseInt(params.iterative_eq_passes as string || '3', 10),
         band_gains_array: bandGains,
-        ...(lg().state.reference?.libraryId ? { ref_library_id: lg().state.reference!.libraryId } : {}),
+        ...(refLibId ? { ref_library_id: refLibId } : {}),
       }));
     };
 
@@ -595,18 +691,33 @@ async function submitReferenceMasterJob(): Promise<void> {
       }
     };
 
-    refWs.onerror = () => {
+    refWs.onerror = (e) => {
+      // WS4: antes descartaba el event sin loguear.
+      console.warn('[ref-stream] WS error', e);
       if (status) status.textContent = 'Error de conexión WebSocket.';
     };
-    refWs.onclose = () => {
+    // WS8 TODO: heartbeat (setInterval ping cada 15s, close si no pong en 30s)
+    // — skip: backend /ws/ref-stream no tiene handler de ping/pong (verificado:
+    // grep "ping|pong" en routers/streaming.py → 0 matches). Sin eco backend,
+    // un heartbeat client-side-only cerraría el socket cada 30s sin razón.
+    refWs.onclose = (ev: CloseEvent) => {
       refWs = null;
       if (status && status.textContent === '▶ Reproduciendo preview…') status.textContent = '';
+      // WS1: inspeccionar el code — 4001 = auth fail, no reconectar.
+      if (ev.code === 4001) {
+        if (status) status.textContent = 'Sesión expirada';
+        previewActive = false;
+        reconnectAttempts = 0;
+        return;
+      }
       if (!previewActive) return;
       if (reconnectAttempts >= MAX_RECONNECT) {
         if (status) status.textContent = 'Conexión perdida (máx reintentos).';
         return;
       }
-      const delay = Math.min(RECONNECT_BASE_MS * Math.pow(2, reconnectAttempts), RECONNECT_MAX_MS);
+      // WS3: jitter — delay * (0.5 + Math.random()) evita thundering herd
+      // si varios clients reconectan a la vez tras un restart del backend.
+      const delay = Math.min(RECONNECT_BASE_MS * Math.pow(2, reconnectAttempts), RECONNECT_MAX_MS) * (0.5 + Math.random());
       reconnectAttempts++;
       if (status) status.textContent = `Reconectando en ${Math.round(delay / 1000)}s…`;
       reconnectTimer = window.setTimeout(() => {
@@ -717,8 +828,10 @@ function startReferencePolling(jobId: string): void {
         (reqInput('btnMasterRef', '08-reference-mastering') as HTMLButtonElement).disabled = false;
         const refUrl = `${api.apiBase()}/download/${jobId}`;
         if (!st.jobs) (st as { jobs: NonNullable<StateShape['jobs']> }).jobs = { mastering: {}, reference: {} };
-        if (!st.jobs?.reference) st.jobs!.reference = {};
-        st.jobs!.reference!.downloadUrl = refUrl;
+        const jobs = st.jobs;
+        if (!jobs) return;
+        if (!jobs.reference) jobs.reference = {};
+        jobs.reference.downloadUrl = refUrl;
         st.downloadUrl = refUrl;
         const btn = reqInput('btnDownload', '08-reference-mastering') as HTMLButtonElement;
         btn.style.display = 'block';
@@ -752,11 +865,12 @@ function startReferencePolling(jobId: string): void {
           btn.parentElement?.insertBefore(abBtn, btn.nextSibling);
         }
         abBtn.style.display = 'block';
+        const btnEl = abBtn;
         if (!abBtn.dataset.refAbWired) {
           abBtn.dataset.refAbWired = 'true';
           abBtn.addEventListener('click', async () => {
-            abBtn!.disabled = true;
-            abBtn!.textContent = 'Cargando master…';
+            btnEl.disabled = true;
+            btnEl.textContent = 'Cargando master…';
             try {
               const resp = await api.client.get(st.downloadUrl || '');
               if (!resp.ok) throw new Error('Error descargando master');
@@ -765,13 +879,13 @@ function startReferencePolling(jobId: string): void {
                 await window.setupABPlayer(masterBlob);
                 const wrap = reqInput('previewAudioWrap', '08-reference-mastering');
                 if (wrap) wrap.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                abBtn!.textContent = '⇄ A/B activo (ver preview arriba)';
+                btnEl.textContent = '⇄ A/B activo (ver preview arriba)';
               } else {
                 throw new Error('No se pudo preparar el A/B autenticado.');
               }
             } catch (e) {
-              abBtn!.textContent = '⚠ Reintentar A/B';
-              abBtn!.disabled = false;
+              btnEl.textContent = '⚠ Reintentar A/B';
+              btnEl.disabled = false;
               console.debug('A/B error:', e);
               lg().ui.showToast?.((e as Error).message || 'Error al cargar master', 'error');
             }
@@ -1172,7 +1286,9 @@ async function captureAB(slot: 'A' | 'B'): Promise<void> {
     const sourceRes = await api.client.post(`${api.apiBase()}/preview/source`, { body: sourceFd });
     const sourceData = await sourceRes.json() as { source_id?: string };
     if (!sourceData.source_id) throw new Error('El servidor no devolvió preview_source_id');
-    const collected = typeof lg().params?.collect === 'function' ? lg().params!.collect!() : null;
+    const _params = lg().params;
+    const _collect = _params?.collect;
+    const collected = typeof _collect === 'function' ? _collect() : null;
     if (!collected) throw new Error('No se pudieron recolectar los params');
     const previewRes = await api.client.post(`${api.apiBase()}/preview`, {
       headers: { 'Content-Type': 'application/json' },
@@ -1318,8 +1434,9 @@ function openMultiRefModal(): void {
 
 // ── API pública + cleanup ───────────────────────────────────────────
 
-// Exponer renderAdvicePanel en (window as any).LGMDM.reference (consumido por mastering-actions)
-const refApiFinal = ((window as any).LGMDM.reference = ((window as any).LGMDM.reference || {}) as ReferenceApiObj);
+// Exponer renderAdvicePanel en window.LGMDM.reference (consumido por mastering-actions)
+const _lg = lgmdmRef() as LgmdmReferenceSlice;
+const refApiFinal = (_lg.reference = _lg.reference || {});
 refApiFinal.renderAdvicePanel = (data: Record<string, unknown>, title: string, subtitle?: string) => {
   const panel = document.createElement('div');
   panel.className = 'advice-panel';

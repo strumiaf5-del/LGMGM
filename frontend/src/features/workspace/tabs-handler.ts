@@ -49,8 +49,11 @@ function selectTabInternal(tabName: string): void {
   // No teardown of the preview when going to the Mixer: activateMixerMode
   // manages its own previewEngine. Calling teardown here would destroy the
   // mixer's engine before it can use it (race Mixer ↔ preview).
-  if (normalized !== 'pane-mixer' && typeof lgmdm().previewController?.teardown === 'function') {
-    try { lgmdm().previewController!.teardown!(); } catch { /* ignore */ }
+  if (normalized !== 'pane-mixer') {
+    const teardown = lgmdm().previewController?.teardown;
+    if (typeof teardown === 'function') {
+      try { teardown(); } catch { /* ignore */ }
+    }
   }
   const tabs = document.querySelectorAll<HTMLElement>('#sidebarTabs .sidebar-tab');
   TAB_STATE.activeTab = normalized;
@@ -81,21 +84,24 @@ function selectTabInternal(tabName: string): void {
       }
     });
 
-  const activeDetails = document.getElementById(DETAILS_MAP[normalized]);
+  const detailsId = DETAILS_MAP[normalized];
+  const activeDetails = detailsId ? document.getElementById(detailsId) : null;
   if (activeDetails && activeDetails.tagName === 'DETAILS') {
     activeDetails.setAttribute('open', '');
   }
 
   if (normalized === 'pane-mixer') {
-    if (typeof lgmdm().mixerUI?.activate === 'function') {
-      try { lgmdm().mixerUI!.activate!(); } catch { /* ignore */ }
+    const activate = lgmdm().mixerUI?.activate;
+    if (typeof activate === 'function') {
+      try { activate(); } catch { /* ignore */ }
     } else {
       document.body.classList.add('mode-mixer');
       document.querySelector('.content')?.classList.add('content--mixer');
     }
   } else {
-    if (typeof lgmdm().mixerUI?.deactivate === 'function') {
-      try { lgmdm().mixerUI!.deactivate!(); } catch { /* ignore */ }
+    const deactivate = lgmdm().mixerUI?.deactivate;
+    if (typeof deactivate === 'function') {
+      try { deactivate(); } catch { /* ignore */ }
     } else {
       document.body.classList.remove('mode-mixer');
       document.querySelector('.content')?.classList.remove('content--mixer');
@@ -144,11 +150,13 @@ function initTabs(): void {
       if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
         e.preventDefault();
         const next = tabs[(i + 1) % tabs.length];
+        if (!next) return;
         next.focus();
         if (next.dataset.pane) selectTab(next.dataset.pane);
       } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
         e.preventDefault();
         const prev = tabs[(i - 1 + tabs.length) % tabs.length];
+        if (!prev) return;
         prev.focus();
         if (prev.dataset.pane) selectTab(prev.dataset.pane);
       }

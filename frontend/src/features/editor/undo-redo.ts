@@ -477,10 +477,8 @@ function createHistoryPanel(): HTMLDivElement {
 /** Show or hide the history panel. Uses the shared modal-helper so the
  *  panel inherits focus-trap, Escape-to-close, and aria-modal semantics. */
 export function toggleHistoryPanel(): void {
-  let panel = document.getElementById('history-panel');
-  if (!panel) {
-    panel = createHistoryPanel();
-  }
+  const existing = document.getElementById('history-panel');
+  const panel: HTMLElement = existing ?? createHistoryPanel();
   const isOpen = panel.style.display !== 'none' && isModalOpen(panel);
   if (isOpen) {
     closeModal(panel);
@@ -498,7 +496,7 @@ export function toggleHistoryPanel(): void {
       trapFocus: true,
       closeOnEscape: true,
       onClose: () => {
-        panel!.style.display = 'none';
+        panel.style.display = 'none';
       },
     });
   }

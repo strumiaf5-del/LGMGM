@@ -110,6 +110,12 @@ def iter_mastering_chunks(audio: np.ndarray, sr: int,
     _last_mono_compat = 0.0
     _last_corr = 0.0
     _fft_window = np.hanning(_FFT_SIZE).astype(np.float32)
+    # Bandas log FFT — dependen solo de sr y _FFT_SIZE (constantes para todo el
+    # stream). Se precomputan una vez fuera del loop, no por cada chunk.
+    freqs = np.fft.rfftfreq(_FFT_SIZE, 1.0 / sr)
+    N_BANDS = 32
+    edges = np.logspace(np.log10(20.0), np.log10(20000.0), N_BANDS + 1)
+    freq_edges = [round(e, 1) for e in edges.tolist()]
 
     for i in range(n_chunks):
         start = i * chunk_samples
@@ -212,15 +218,12 @@ def iter_mastering_chunks(audio: np.ndarray, sr: int,
             else:
                 frame = np.pad(mono_fft, (_FFT_SIZE - len(mono_fft), 0))
             spectrum = np.abs(np.fft.rfft(frame * _fft_window))
-            freqs = np.fft.rfftfreq(_FFT_SIZE, 1.0 / sr)
-            N_BANDS = 32
-            edges = np.logspace(np.log10(20.0), np.log10(20000.0), N_BANDS + 1)
             bands_db = []
             for b in range(N_BANDS):
                 mask = (freqs >= edges[b]) & (freqs < edges[b + 1])
                 val = float(np.mean(spectrum[mask])) if mask.any() else 0.0
                 bands_db.append(round(float(20.0 * np.log10(val + 1e-9)), 1))
-            spectrum_data = {"bands_db": bands_db, "freq_edges": [round(e, 1) for e in edges.tolist()]}
+            spectrum_data = {"bands_db": bands_db, "freq_edges": freq_edges}
         except Exception:
             spectrum_data = {}
 
@@ -282,7 +285,22 @@ def master_stream_to_pcm(audio: np.ndarray, sr: int,
 
     def _to_pcm(processed: np.ndarray) -> bytes:
         block = processed.T if processed.ndim == 2 else processed
-        clipped = np.clip(block, -1.0, 1.0)
+        # Soft-knee safety net (CC-2): avoids hard-clip fold-back aliasing on
+        # limiter overshoots at chunk boundaries, where the limiter's prev=1.0
+        # state resets per chunk (mastering.py:1534,1568 for the numpy limiter
+        # path, :834 for the numba-jitted path) and the first samples of each
+        # chunk pass unlimitted. Identity for |x| <= 0.98, gentle saturation
+        # above (asymptote to 1.0, no fold-back).
+        # TODO: proper long-term fix is to carry the limiter's `prev` state across
+        # chunks (refactor `limiter` to accept/return state). This soft-knee
+        # eliminates the fold-back aliasing in the meantime.
+        _KNEE = 0.98
+        _abs_block = np.abs(block)
+        clipped = np.sign(block) * np.where(
+            _abs_block > _KNEE,
+            1.0 - (1.0 - _KNEE) * np.exp(-(_abs_block - _KNEE)),
+            _abs_block,
+        )
         if pcm_format == "int16":
             return (clipped * 32767.0).astype(np.int16).tobytes()
         if pcm_format in ("pcm24", "int24"):

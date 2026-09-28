@@ -324,6 +324,10 @@ function wireKeyboardReorder(grid: HTMLElement): void {
 
 // ── Persistencia ──────────────────────────────────────────────
 function persistFromDom(): void {
+  // WT2: no-op en la página de login (el rack no se monta ahí, y el byId
+  // de abajo loguea "[dom] #proInsertRack not found" aunque el early-return
+  // cancele). Early-return antes de cualquier byId para acallar el debug.
+  if (document.location.pathname.endsWith('login.html')) return;
   const grid = byId<HTMLElement>('pirGrid');
   if (!grid) return;
   // FIX: si el rack todavía no se creó (mount() no corrió), no tiene sentido

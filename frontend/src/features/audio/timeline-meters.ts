@@ -283,8 +283,9 @@ window.addEventListener('lgmdm:preview-telemetry', ((e: Event) => {
   const chain = ((flat as FlatTelemetry).chain_meters || (flat as FlatTelemetry).meters || flat) as ChainMetersSnapshot;
   curves = extractCurves(chain);
 
-  const tl = ((flat as FlatTelemetry).chain_meters && (flat as FlatTelemetry).chain_meters!.meters_timeline) ||
-              ((flat as FlatTelemetry).meters && (flat as FlatTelemetry).meters!.meters_timeline);
+  const cm = (flat as FlatTelemetry).chain_meters;
+  const mm = (flat as FlatTelemetry).meters;
+  const tl = (cm && cm.meters_timeline) || (mm && mm.meters_timeline);
   if (tl && tl.timeline && tl.timeline.length) {
     timeline = tl.timeline;
     hopMs = tl.hop_ms || 33;

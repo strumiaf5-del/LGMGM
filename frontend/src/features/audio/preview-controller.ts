@@ -255,9 +255,10 @@ async function pollMetrics(): Promise<void> {
     );
     if (!res.ok) return;
     const data = await res.json() as Record<string, unknown>;
-    if (data && typeof lg().metrics?.publish === 'function') {
+    const publish = lg().metrics?.publish;
+    if (data && typeof publish === 'function') {
       const flat = flattenTelemetry(data);
-      try { lg().metrics!.publish!(flat, { source: 'preview-live-poll' }); } catch (_) { /* ignore */ }
+      try { publish(flat, { source: 'preview-live-poll' }); } catch (_) { /* ignore */ }
     }
   } catch (_) {
     /* telemetría opcional — no bloquear el ciclo */
@@ -392,7 +393,8 @@ async function start(): Promise<boolean> {
 
   activePromise = (async (): Promise<boolean> => {
     try {
-      const collected = typeof lg().params?.collect === 'function' ? lg().params!.collect!() : null;
+      const collect = lg().params?.collect;
+      const collected = (typeof collect === 'function') ? collect() : null;
       if (!collected || typeof collected !== 'object') {
         throw new Error('No se pudo construir el snapshot de parámetros del Preview');
       }
@@ -455,9 +457,10 @@ async function start(): Promise<boolean> {
 
       renderAudio(blob);
       previewTelemetry = telemetry;
-      if (typeof lg().metrics?.publish === 'function' && telemetry) {
+      const publish = lg().metrics?.publish;
+      if (typeof publish === 'function' && telemetry) {
         const flat = flattenTelemetry(telemetry);
-        try { lg().metrics!.publish!(flat, { source: 'preview-telemetry' }); }
+        try { publish(flat, { source: 'preview-telemetry' }); }
         catch (e) { console.warn('[preview] telemetry publish failed:', (e as Error).message); }
       }
       // FIX 1: arrancar polling live de metrics cada 10s (respaldo lento) —

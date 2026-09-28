@@ -45,7 +45,7 @@ interface ThemeColors {
 
 // (window.setupCanvasResize ya está declarado en core/utils.ts)
 
-const lg = () => (window.LGMDM = window.LGMDM || {}) as Record<string, unknown> & {
+const lg = () => (window.LGMDM = window.LGMDM || {}) as unknown as Record<string, unknown> & {
   themeColors?: () => ThemeColors;
   dom?: { requireById: (id: string, owner?: string) => HTMLElement };
   ui?: { getContent?: () => HTMLElement };

@@ -404,6 +404,11 @@ async function runServerPreview(): Promise<void> {
           sr: 44100,
         }));
       };
+      // WS2/WS7: track bytes (cap 20 MB) + flag done para distinguir close
+      // completo de close parcial.
+      let pcmBytes = 0;
+      const PCM_CAP_BYTES = 20 * 1024 * 1024; // 20 MB
+      let gotDone = false;
       ws.onmessage = (ev) => {
         if (typeof ev.data === 'string') {
           let msg: { event?: string; sample_rate?: number; channels?: number; message?: string };
@@ -413,17 +418,46 @@ async function runServerPreview(): Promise<void> {
             if (typeof msg.channels === 'number') channels = msg.channels;
           }
           if (msg.event === 'error') reject(new Error(msg.message || 'Error de preview'));
-          if (msg.event === 'done' && !resolved) { resolved = true; resolve(); }
+          if (msg.event === 'done' && !resolved) { gotDone = true; resolved = true; resolve(); }
         } else {
-          pcmChunks.push(ev.data as ArrayBuffer);
+          const chunk = ev.data as ArrayBuffer;
+          pcmBytes += chunk.byteLength;
+          if (pcmBytes > PCM_CAP_BYTES) {
+            // WS2: backpressure — rechazar si el preview supera el cap de 20 MB.
+            if (!resolved) {
+              resolved = true;
+              reject(new Error('Preview demasiado grande'));
+            }
+            try { ws.close(); } catch { /* ignore */ }
+            return;
+          }
+          pcmChunks.push(chunk);
         }
       };
-      ws.onerror = () => reject(new Error('No se pudo abrir /ws/mix-stream'));
-      ws.onclose = () => {
+      // WS4: loguear el error event (antes se descartaba sin log).
+      ws.onerror = (e) => { console.warn('[mix-stream] WS error', e); reject(new Error('No se pudo abrir /ws/mix-stream')); };
+      // WS5: No reconnect — 12s preview, user can re-click.
+      // WS8 TODO: heartbeat (ping cada 15s, close si no pong en 30s) — skip:
+      // backend /ws/mix-stream no tiene handler de ping/pong (verificado: grep
+      // "ping|pong" en routers/streaming.py → 0 matches).
+      ws.onclose = (ev: CloseEvent) => {
         if (!resolved) {
           resolved = true;
-          if (pcmChunks.length) resolve();
-          else reject(new Error('Streaming cerrado sin audio'));
+          // WS1: 4001 = auth fail → "Sesión expirada", sin path de partial.
+          if (ev.code === 4001) {
+            reject(new Error('Sesión expirada'));
+            return;
+          }
+          if (gotDone) {
+            resolve();
+          } else if (pcmChunks.length) {
+            // WS7: close sin done — resolver (el WAV parcial igual reproduce)
+            // pero advertir al usuario que el streaming fue incompleto.
+            setServerPreviewStatus(`⚠ Streaming incompleto — ${pcmChunks.length} chunk(s) parciales`);
+            resolve();
+          } else {
+            reject(new Error('Streaming cerrado sin audio'));
+          }
         }
       };
     });
@@ -436,7 +470,12 @@ async function runServerPreview(): Promise<void> {
         const url = URL.createObjectURL(blob);
         audioEl.dataset.blobUrl = url;
         audioEl.src = url;
-        void audioEl.play().catch(() => { /* ignore autoplay block */ });
+        // W1 fix (web-audio-api re-pass): el WS round-trip puede outlast el
+        // gesture-activation window del browser, bloqueando el auto-play.
+        // Agregamos controls para que el usuario pueda hacer play manualmente
+        // si el auto-play es bloqueado (no rely solo en gesture carry-through).
+        audioEl.controls = true;
+        void audioEl.play().catch(() => { /* ignore autoplay block — user can click controls */ });
       }
     }
     setServerPreviewStatus(`Preview listo ✓ — ${names.length} stem${names.length !== 1 ? 's' : ''}`);
@@ -534,14 +573,32 @@ export const mixerEngine = Object.freeze({
 interface LgmdmMixer {
   mixerEngine?: typeof mixerEngine;
   mixer?: { state: MixerState; previewEngine: PreviewEngine; functions: { playPreview: typeof playPreview; stopPreview: typeof stopPreview; togglePreview: typeof togglePreview } };
+  // `api` es required en este slice porque `refreshStemLibrary`/
+  // `addStemFromLibrary`/`deleteStemFromLibrary` acceden `lgmdm().api.apiFetch(...)`
+  // sin `?.`. A runtime el bridge `LGMDM.api` lo inicializa `core/api.ts` antes
+  // de que estas funciones corran (mismo contrato que el `any` previo).
+  // `apiFetch` se tipa como `Promise<Response>` (no genérico `<T>`) porque los
+  // 3 call sites (`refreshStemLibrary`, `addStemFromLibrary`,
+  // `deleteStemFromLibrary`) usan `res` como `Response` (`.ok`, `.text()`,
+  // `.json()`, `.blob()`). Con `<T>` el tipo se infería `unknown` (TS18046).
+  api: { apiFetch: (endpoint: string, options?: RequestInit) => Promise<Response> };
+  errors?: { handleClientError?: (e: unknown, msg: string, ctx: Record<string, unknown>) => void };
+  // Index signature: cubre accesos sueltos como `lgmdm().mixerState as {...}`
+  // (fallback en `addStemFromLibrary`) sin tener que declarar cada propiedad.
+  [key: string]: unknown;
 }
 
-function lgmdm(): any {
-  return (window as any).LGMDM || {};
+function lgmdm(): LgmdmMixer {
+  return ((window as unknown as Window & { LGMDM?: LgmdmMixer }).LGMDM || {}) as LgmdmMixer;
 }
 
 const g = lgmdm();
-(window as Window & { LGMDM?: LgmdmMixer }).LGMDM = g;
+// Sin `Window &` a propósito: si escribimos `Window & { LGMDM?: LgmdmMixer }`,
+// la declaración global de `Window.LGMDM` (core/state.ts) se intersecta y el
+// target se vuelve `GlobalLgmdm & LgmdmMixer`, exigiendo que `g` satisfaga
+// también el slice global (con `exactOptionalPropertyTypes`). Usar un tipo
+// plano `{ LGMDM?: LgmdmMixer }` evita el merge. El cast pasa por `unknown`.
+(window as unknown as { LGMDM?: LgmdmMixer }).LGMDM = g;
 g.mixerEngine = mixerEngine;
 g.mixer = Object.freeze({
   state: mixerState,

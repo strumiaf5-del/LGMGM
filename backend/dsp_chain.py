@@ -25,6 +25,7 @@ from __future__ import annotations
 from typing import Any, Callable, Dict, List
 
 import numpy as np
+from scipy.signal import lfilter as _lfilter
 
 SUPPORTED_FEATURES = ("spectral_tilt", "phase_rotation", "saturation")
 
@@ -34,10 +35,13 @@ def _apply_spectral_tilt(audio: np.ndarray, sr: int,
     """First-order linear-tilt EQ around ``pivot_hz``.
 
     Implemented inline because ``mastering.spectral_tilt`` is not present in
-    this branch. The model is the standard "shelving slope of 6 dB/oct per
-    |tilt_db|/octave-decade" approximation: a one-pole high-shelf for
-    negative tilts (darker) and a one-pole low-shelf for positive tilts
-    (brighter). Mono and ``[channels, samples]`` stereo both supported.
+    this branch. The model is a 1st-order RC lowpass (``tilt < 0``, darker)
+    or highpass (``tilt >= 0``, brighter). -3 dB point is at ``cutoff``
+    (derived from ``pivot_hz`` scaled by ``2**(tilt/6)`` for lowpass /
+    ``2**(-tilt/6)`` for highpass). Asymptote is -20 dB/decade (-6 dB/oct):
+    this is NOT a true shelving filter -- the response keeps rolling off
+    instead of flattening to a shelf. Mono and ``[channels, samples]``
+    stereo both supported.
     """
     if audio is None or audio.size == 0 or abs(float(tilt_db)) < 1e-6:
         return audio.astype(np.float32, copy=True) if audio is not None else audio
@@ -57,41 +61,29 @@ def _apply_spectral_tilt(audio: np.ndarray, sr: int,
 
     rc = 1.0 / (2.0 * np.pi * cutoff)
     dt = 1.0 / float(sr)
-    alpha = dt / (rc + dt)
     work = np.asarray(audio, dtype=np.float32)
-    if work.ndim == 1:
-        out = np.empty_like(work)
-        y = 0.0
-        if tilt < 0:
-            for i, x in enumerate(work):
-                y = y + alpha * (float(x) - y)
-                out[i] = y
-        else:
-            x_prev = 0.0
-            for i, x in enumerate(work):
-                xv = float(x)
-                out[i] = alpha * (y + xv - x_prev)
-                y = out[i]
-                x_prev = xv
-        return out
-
-    out = np.empty_like(work)
+    # Reemplazo del loop per-sample Python original por scipy.signal.lfilter
+    # (IIR de un polo). Misma transferencia H(z) y mismo estado inicial (cero)
+    # que el loop original (y=0.0, x_prev=0.0). axis=-1 = eje de muestras,
+    # válido tanto para audio 1D como [channels, samples].
+    #
+    # BUGFIX (issue C del re-pass): el highpass usaba alpha=dt/(rc+dt) (coeficiente
+    # LOWPASS, cerca de 0) → atenuaba TODO (-46 dB a 500 Hz). Ahora usa
+    # alpha_hp=rc/(rc+dt) (cerca de 1), que es el coeficiente highpass correcto
+    # (matches _simple_highpass en advanced_dsp.py). El lowpass sigue con
+    # alpha=dt/(rc+dt) (sin cambio). Verificado con freqz: -3 dB en cutoff,
+    # unity a altas frecuencias.
     if tilt < 0:
-        for ch in range(work.shape[0]):
-            y = 0.0
-            for i in range(work.shape[1]):
-                xv = float(work[ch, i])
-                y = y + alpha * (xv - y)
-                out[ch, i] = y
+        # Lowpass: y[n] = (1-alpha)*y[n-1] + alpha*x[n], alpha = dt/(rc+dt)
+        alpha = dt / (rc + dt)
+        b = np.array([alpha], dtype=np.float32)
+        a = np.array([1.0, -(1.0 - alpha)], dtype=np.float32)
     else:
-        for ch in range(work.shape[0]):
-            y = 0.0
-            x_prev = 0.0
-            for i in range(work.shape[1]):
-                xv = float(work[ch, i])
-                out[ch, i] = alpha * (y + xv - x_prev)
-                y = out[ch, i]
-                x_prev = xv
+        # Highpass: y[n] = alpha_hp*(y[n-1] + x[n] - x[n-1]), alpha_hp = rc/(rc+dt)
+        alpha_hp = rc / (rc + dt)
+        b = np.array([alpha_hp, -alpha_hp], dtype=np.float32)
+        a = np.array([1.0, -alpha_hp], dtype=np.float32)
+    out = _lfilter(b, a, work).astype(np.float32, copy=False)
     return out
 
 

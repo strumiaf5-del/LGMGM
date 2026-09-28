@@ -238,10 +238,17 @@ def dynamic_resonance_suppressor(
             processed_spectrum = spectrum * gain_curve
             processed_frame = np.fft.irfft(processed_spectrum, n=win_len)
 
-            # Overlap-add
+            # Overlap-add (analysis + synthesis windowing for correct COLA).
+            # Antes faltaba la ventana de síntesis: se aplicaba solo la
+            # ventana de análisis (al armarse el frame) pero se normalizaba
+            # por _ola_normalization = sum(window²)/hop, que es el divisor
+            # correcto para análisis+SÍNTESIS. Sin la ventana de síntesis el
+            # output salía ~+2.5 dB y la reconstrucción OLA no era
+            # COLA-correcta. Ahora aplica ambas ventanas, igual que
+            # equal_loudness_compensation y cross_spectral_unmasking. (U-1)
             end = min(start + win_len, n_samples)
             length = end - start
-            output[start:end] += processed_frame[:length]
+            output[start:end] += processed_frame[:length] * window[:length]
 
         # Normalize overlap-add
         norm_factor = _ola_normalization(window, hop)
@@ -556,6 +563,16 @@ def phantom_sub_bass(
     if audio.size == 0 or mix <= 0.0:
         return audio.copy()
 
+    # DC-block the input (U-1): DC offsets inflate `sub_env = np.abs(sub_signal)`
+    # so harmonics are scaled by a DC-inflated envelope. The output highpass
+    # (later) cleans the output but the envelope was already wrong. _simple_highpass
+    # is a single-pole IIR that iterates along axis 0, so apply per-channel for 2D.
+    if audio.ndim == 1:
+        audio = _simple_highpass(audio, sr, 20.0)
+    else:
+        audio = np.stack([_simple_highpass(audio[ch], sr, 20.0)
+                          for ch in range(audio.shape[0])])
+
     mono = audio.ndim == 1
     if mono:
         audio = audio[np.newaxis, :]
@@ -580,9 +597,33 @@ def phantom_sub_bass(
         else:
             lp_mask[i] = 0.0
 
+    # Synthesis-only OLA divisor for the harmonics path (U-2): los armónicos
+    # se sintetizan en tiempo dominio (cosenos) y se ventean solo con la
+    # ventana de SÍNTESIS -- no hay ventana de análisis acá. Para
+    # síntesis-only el divisor correcto es sum(window)/hop (=2.0 para Hann
+    # con 75% overlap), NO sum(window²)/hop (=1.5) que es para
+    # análisis+síntesis. Antes los armónicos salían ~+2.5 dB fuertes.
+    synth_only_norm = float(np.sum(window.astype(np.float64)) / hop) if hop > 0 else 1.0
+
     for ch in range(n_ch):
         harmonics_signal = np.zeros(n_samples)
         signal = audio[ch]
+
+        # U-8: acumulador de fase CONTINUO entre frames. Antes, phase0 se
+        # reestimaba por frame (fase del bin fundamental de CADA frame) y los
+        # cosenos arrancaban en un phase0 nuevo → saltos de fase en los
+        # bordes de frame (discontinuidad / clicks si f0 cambia de bin). Ahora
+        # se lleva `running_phase` de frame a frame: al entrar al frame k+1
+        # se avanza por 2*pi*prev_f0*hop/sr (con la f0 del frame k), así el
+        # coseno en el borde frame_k→frame_{k+1} es continuo aunque f0 cambie
+        # de bin (la f0 del frame k gobierna el avance hacia el frame k+1).
+        # f0=0 (sin sub) no avanza la fase ni sintetiza (guard `f0_hz > 1.0`),
+        # así la fase queda congelada en silencios y retoma continua.
+        # No se lockea al phase0 del bin del input: la fase absoluta de un
+        # armónico sintetizado es imperceptible (solo importa la continuidad),
+        # y lockear por frame era justamente lo que causaba los saltos.
+        running_phase = 0.0
+        prev_f0 = 0.0
 
         for start in range(0, n_samples, hop):
             end = min(start + n_fft, n_samples)
@@ -597,40 +638,48 @@ def phantom_sub_bass(
             sub_spectrum = spectrum * lp_mask
             sub_signal = np.fft.irfft(sub_spectrum, n=n_fft)
 
+            # Avanzar la fase por la f0 del frame ANTERIOR sobre el hop
+            # (continuidad en el borde, evaluada donde la f0 del frame k todavía
+            # aplica). Se saltea el primer frame (start == 0) y los frames donde
+            # el frame anterior no tenía sub (prev_f0 <= 1.0).
+            if start > 0 and prev_f0 > 1.0:
+                running_phase = (running_phase + 2.0 * np.pi * prev_f0 * (hop / float(sr))) % (2.0 * np.pi)
+
             # Detect fundamental f0 in sub-bass range via spectral peak.
             # Antes: |x| (rectificación) generaba DC + 2f + 4f + 6f (inharmónico).
-            # Ahora: sintetizamos cada armónico h en fase lockada a f0 detectada.
+            # Ahora: sintetizamos cada armónico h con fase CONTINUA (U-8).
             sub_mag = np.abs(sub_spectrum)
             sub_bin_max = int(np.argmax(sub_mag[1:])) + 1  # ignore DC
             f0_hz = float(sub_bin_max * sr / n_fft) if sub_bin_max > 0 else 0.0
-            # Phase of the fundamental bin for phase-locked synthesis
-            phase0 = float(np.angle(sub_spectrum[sub_bin_max])) if sub_bin_max > 0 else 0.0
 
-            t_frame = start / float(sr) + np.arange(n_fft) / float(sr)
             # Envelope from sub_signal magnitude (smooth between frames)
             sub_env = np.abs(sub_signal)
 
-            # Generate harmonics via phase-locked synthesis (audible phantom fundamental)
+            # Generate harmonics with continuous phase (U-8). El coseno usa
+            # tiempo LOCAL al frame (`local_t`); `running_phase` ya acumula la
+            # fase absoluta hasta `start`, así phase(start + n) =
+            # running_phase + 2*pi*f0*n/sr es continuo en el borde entre frames.
+            local_t = np.arange(n_fft) / float(sr)
             harmonic_frame = np.zeros(n_fft)
             if f0_hz > 1.0 and harmonics:
                 for h in harmonics:
                     if h < 1:
                         continue
                     amp = 0.5 if h == 2 else (0.3 if h == 3 else 0.2 / float(h))
-                    # Phase-locked cos at h*f0, scaled by sub envelope (so harmonics
-                    # are loud only where the sub is loud — avoids pumping).
+                    # cos at h*f0, scaled by sub envelope (so harmonics are loud
+                    # only where the sub is loud — avoids pumping).
                     harmonic_frame += amp * sub_env * np.cos(
-                        2.0 * np.pi * h * f0_hz * t_frame + h * phase0
+                        h * (2.0 * np.pi * f0_hz * local_t + running_phase)
                     )
 
             # Overlap-add harmonics
             h_end = min(start + n_fft, n_samples)
             h_len = h_end - start
             harmonics_signal[start:h_end] += harmonic_frame[:h_len] * window[:h_len]
+            prev_f0 = f0_hz
 
-        # Normalize overlap
-        norm_factor = _ola_normalization(window, hop)
-        harmonics_signal /= max(norm_factor, 1e-9)
+        # Normalize overlap (synthesis-only divisor, ver synth_only_norm arriba)
+        harmonics_signal /= max(synth_only_norm, 1e-9)
 
         # High-pass the harmonics output to remove DC and ultra-sub content
         if output_highpass_hz > 0:
@@ -660,6 +709,13 @@ def _simple_highpass(signal: np.ndarray, sr: int, cutoff_hz: float) -> np.ndarra
     alpha = rc / (rc + dt)
     output = np.zeros_like(signal)
     output[0] = signal[0]
+    prev = output[0]
     for i in range(1, len(signal)):
-        output[i] = alpha * (output[i - 1] + signal[i] - signal[i - 1])
+        # Denormal flush: zero sub-audible IIR state (CC-1). Previene que el
+        # IIR de un polo arrastre estado sub-normal (float32 denormal
+        # slowdown / drift) en colas largas y silencios.
+        if abs(prev) < 1e-40:
+            prev = 0.0
+        prev = alpha * (prev + signal[i] - signal[i - 1])
+        output[i] = prev
     return output

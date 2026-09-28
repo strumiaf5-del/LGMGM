@@ -4,7 +4,7 @@ import os
 import uuid
 
 import numpy as np
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Response, UploadFile
 from fastapi.concurrency import run_in_threadpool
 
 try:
@@ -70,7 +70,21 @@ def create_analysis_router(*, upload_dir: str, read_and_validate, logger, curren
                 os.remove(tmp)
 
     @router.post("/analyze")
-    async def analyze_legacy(file: UploadFile = File(...), current_user: dict = Depends(current_user_dependency)):
+    async def analyze_legacy(file: UploadFile = File(...), current_user: dict = Depends(current_user_dependency), response: Response = None):
+        # FIX U-8 (categoría B): /analyze es el endpoint legacy sin espectro,
+        # duplica /analysis. No se remueve para no romper clientes existentes.
+        # Se marcan headers de deprecación (RFC 8594 Sunset + Deprecation del
+        # draft-ietf-httpapi-deprecation-header, + Link rel=successor-version)
+        # para indicar a los clientes que migren a /analysis. Se conserva el
+        # comportamiento actual (analyze_file sin espectro) y `response` se
+        # declara con default None para no romper si FastAPI no lo inyecta.
+        from datetime import datetime, timedelta
+
+        sunset = (datetime.utcnow() + timedelta(days=365)).strftime("%a, %d %b %Y 00:00:00 GMT")
+        if response is not None:
+            response.headers["Deprecation"] = "true"
+            response.headers["Sunset"] = sunset
+            response.headers["Link"] = '</analysis>; rel="successor-version"'
         validate_audio_file(file.filename)
         data = await read_and_validate(file)
         tmp = os.path.join(upload_dir, f"analyze_{uuid.uuid4().hex}")
@@ -144,7 +158,8 @@ def create_analysis_router(*, upload_dir: str, read_and_validate, logger, curren
                 audio, sr = sf.read(tmp, always_2d=True)
                 audio_ch = audio.T
                 norm_audio, info = normalize_to_streaming_target(
-                    audio_ch, sr, platform=platform, ceiling_dbtp=ceiling_dbtp, return_info=True
+                    audio_ch, sr, platform=platform, ceiling_dbtp=ceiling_dbtp, return_info=True,
+                    axis="channels-first",
                 )
                 if not info or norm_audio is None:
                     return {"status": "error", "detail": "normalize_to_streaming_target returned no info"}

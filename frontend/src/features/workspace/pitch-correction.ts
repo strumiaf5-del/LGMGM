@@ -127,7 +127,9 @@ function createOverlayHtml(): string {
 }
 
 interface OverlayWithController extends HTMLElement {
-  _pcAbortController?: AbortController;
+  // `| undefined` para satisfacer `exactOptionalPropertyTypes`: `hidePitchCorrectionPanel`
+  // asigna `undefined` literal tras `abort()`.
+  _pcAbortController?: AbortController | undefined;
 }
 
 function ensureModalMounted(): OverlayWithController {

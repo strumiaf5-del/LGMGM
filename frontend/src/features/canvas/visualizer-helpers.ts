@@ -2,6 +2,16 @@
 
 import { audioEngine } from '../../core/audio-engine';
 
+// TODO(U-2): quedan ~21 `as any` y ~15 `: any` en este archivo. La raíz es
+// `lgmdm(): any` (línea 6) + `const LGMDM: any = lgmdm()` (línea 10), que
+// alimentan ~60 accesos `LGMDM.ui.*`/`LGMDM.dom.*` sin `?.` (misma cascada que
+// params-builder/reference-mastering). Las render functions que hacen
+// aritmética/anidación sobre `a.X` (`renderProfessionalMeter`,
+// `perceptualPanelHtml`, `renderFFT`, `drawFFTOnCanvas`) también requieren
+// migración dedicada (unknown no soporta `>` ni `.map`). Ya migradas a
+// `Record<string, unknown>`: metricsHtml, renderAnalysisSingle,
+// renderAnalysisComparison, renderPerceptualStandalone (alinean con las
+// declaraciones globales en mastering-actions.ts:82-84).
 function lgmdm(): any {
   return window.LGMDM || (window.LGMDM = {} as any);
 }
@@ -133,7 +143,7 @@ function renderSpectrum(/* datasets, labels */) {
   /* no-op */
 }
 
-function metricsHtml(a: any, b: any): string {
+function metricsHtml(a: Record<string, unknown>, b: Record<string, unknown> | null): string {
   const rows: any[] = [
     [
       "LUFS",
@@ -231,7 +241,7 @@ function perceptualPanelHtml(a: any, titleSuffix?: string): string {
     </div>`;
 }
 
-function renderPerceptualStandalone(a: any): void {
+function renderPerceptualStandalone(a: Record<string, unknown>): void {
   if (!a || !a.perceptual) return;
   const grid = document.createElement("div");
   grid.className = "analysis-grid";
@@ -239,7 +249,7 @@ function renderPerceptualStandalone(a: any): void {
   LGMDM.ui.getContent().appendChild(grid);
 }
 
-function renderAnalysisSingle(a: any): void {
+function renderAnalysisSingle(a: Record<string, unknown>): void {
   const grid = document.createElement("div");
   grid.className = "analysis-grid";
   grid.innerHTML = `<div class="analysis-panel"><h3>Métricas del audio</h3>${metricsHtml(a, null)}</div>${perceptualPanelHtml(a)}`;
@@ -248,7 +258,7 @@ function renderAnalysisSingle(a: any): void {
   renderProfessionalMeter(a);
 }
 
-function renderAnalysisComparison(before: any, after: any): void {
+function renderAnalysisComparison(before: Record<string, unknown>, after: Record<string, unknown>): void {
   const grid = document.createElement("div");
   grid.className = "analysis-grid";
   grid.innerHTML = `<div class="analysis-panel"><h3>Antes</h3>${metricsHtml(before, null)}</div><div class="analysis-panel"><h3>Después</h3>${metricsHtml(after, before)}</div>${perceptualPanelHtml(after, "— Después")}`;
@@ -337,7 +347,10 @@ function renderABWaveforms(originalBuffer: AudioBuffer | null, masterBuffer: Aud
 
 // ── A/B player existente con integración de waveforms ────────
 function _abGetCtx(): AudioContext {
-  const ctx = (window.LGMDM as any).audio.getContext() as AudioContext;
+  // V1: usar audioEngine.getContext() — antes leía (window.LGMDM).audio que
+  // nunca se asigna → TypeError en el primer click A/B. Esto también consume
+  // el import `audioEngine` de la línea 3 (antes dead import).
+  const ctx = audioEngine.getContext();
   if (!_abGain || _abGain.context !== ctx) {
     _abGain = ctx.createGain();
     _abGain.connect(ctx.destination);
@@ -368,7 +381,9 @@ function _abPlay(buf: AudioBuffer, offset: number): void {
   if (!buf) return;
   (window.LGMDM as any)?.playback?.stopAll?.();
   const ctx = _abGetCtx();
-  if (ctx.state === "suspended") ctx.resume();
+  // W2: ctx.resume() devuelve Promise flotante — atrapar reject para que no
+  // quede "unhandled rejection" si el ctx se cierra entre el check y el resume.
+  if (ctx.state === "suspended") void ctx.resume().catch(() => {});
   _abStop();
   _abOffset = Math.max(0, Math.min(offset, buf.duration - 0.01));
   _abNode = ctx.createBufferSource();

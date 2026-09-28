@@ -25,8 +25,11 @@ export type WidgetClass = new () => WidgetInstance;
 /** Spec accepted by `createInsert` and `ProInsertBase`'s constructor. */
 export interface InsertSpec {
   id: string;
-  title?: string;
-  endpoint?: string;
+  // `| undefined` para satisfacer `exactOptionalPropertyTypes`: `createInsert`
+  // reenvía `spec.title`/`spec.endpoint` (que leen como `string | undefined`)
+  // al constructor, que también toma `InsertSpec`.
+  title?: string | undefined;
+  endpoint?: string | undefined;
   type?: string;
   widget?: WidgetClass | null;
   defaults?: Record<string, unknown>;

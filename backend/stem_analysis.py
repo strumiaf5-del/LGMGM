@@ -7,7 +7,7 @@ No depende de mastering.py — usa solo numpy/scipy — para poder importarse
 en cualquier contexto (job worker, script standalone, tests).
 """
 import numpy as np
-from scipy.signal import butter, filtfilt, welch
+from scipy.signal import butter, sosfiltfilt, welch
 
 # Bandas críticas para detección de colisiones genéricas (Hz)
 CRITICAL_BANDS = {
@@ -94,8 +94,10 @@ def _low_band_envelope(mono: np.ndarray, sr: int, lo=30, hi=250, hop=512) -> np.
         ds_sr = sr
 
     nyq = ds_sr / 2.0
-    b, a = butter(4, [max(lo / nyq, 1e-4), min(hi / nyq, 0.99)], btype="band")
-    filtered = filtfilt(b, a, mono_ds)
+    # BUGFIX (re-pass fix #13): usar SOS form (más estable numéricamente para
+    # orden 4) en vez de b,a form. scipy recomienda SOS para orden > 2.
+    sos = butter(4, [max(lo / nyq, 1e-4), min(hi / nyq, 0.99)], btype="band", output='sos')
+    filtered = sosfiltfilt(sos, mono_ds)
     n_frames = max(1, len(filtered) // hop)
     env = np.sqrt(np.array([
         np.mean(filtered[i * hop:(i + 1) * hop] ** 2) + 1e-12

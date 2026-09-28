@@ -20,7 +20,9 @@ const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 export interface ApiError extends Error {
   status: number;
   detail: string;
-  code?: string;
+  // `| undefined` (no `?` solo) para que `exactOptionalPropertyTypes` permita
+  // asignar `undefined` cuando `makeError` se llama sin `code`.
+  code?: string | undefined;
 }
 
 function makeError(status: number, detail: string, code?: string): ApiError {
@@ -296,10 +298,14 @@ function filenameFromResponse(res: Response, fallback = 'lgmdm-download'): strin
   const cd = res.headers.get('content-disposition') || '';
   const utf = cd.match(/filename\*=UTF-8''([^;]+)/i);
   if (utf) {
-    try { return decodeURIComponent(utf[1].trim().replace(/^"|"$/g, '')); } catch { /* ignore */ }
+    const g1 = utf[1];
+    if (g1) {
+      try { return decodeURIComponent(g1.trim().replace(/^"|"$/g, '')); } catch { /* ignore */ }
+    }
   }
   const plain = cd.match(/filename="?([^";]+)"?/i);
-  return plain ? plain[1].trim() : fallback;
+  const g1 = plain ? plain[1] : undefined;
+  return g1 ? g1.trim() : fallback;
 }
 
 export interface DownloadResult {

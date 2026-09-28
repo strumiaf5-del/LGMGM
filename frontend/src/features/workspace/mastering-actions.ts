@@ -93,7 +93,7 @@ declare global {
   }
 }
 
-const lg = () => (window.LGMDM = window.LGMDM || {}) as Record<string, unknown> & {
+const lg = () => (window.LGMDM = window.LGMDM || {}) as unknown as Record<string, unknown> & {
   state?: StateShape & { downloadReport?: (jobId: string) => Promise<void> };
   ui?: UiShape;
   api?: ApiShape;
@@ -153,7 +153,7 @@ async function submitMasterJob(): Promise<void> {
       throw new Error(`HTTP ${res.status}: ${text}`);
     }
     const data = await res.json() as { job_id: string };
-    if (!state.jobs) state.jobs = { mastering: {}, reference: {} } as StateShape['jobs'];
+    if (!state.jobs) state.jobs = { mastering: {}, reference: {} } as NonNullable<StateShape['jobs']>;
     if (state.jobs) {
       state.jobs.mastering = { ...state.jobs.mastering, jobId: data.job_id };
     }
@@ -207,7 +207,7 @@ async function submitMasterSync(): Promise<void> {
     const cd = res.headers.get('content-disposition');
     if (cd) {
       const m = cd.match(/filename\*=UTF-8''([^;]+)/) || cd.match(/filename="?([^";]+)"?/);
-      if (m) filename = decodeURIComponent(m[1]);
+      if (m && m[1]) filename = decodeURIComponent(m[1]);
     }
     const link = document.createElement('a');
     const masterObjUrl = URL.createObjectURL(blob);
@@ -269,7 +269,7 @@ document.getElementById('btnAutoMaster')?.addEventListener('click', async () => 
       throw new Error(`HTTP ${res.status}: ${text}`);
     }
     const data = await res.json() as { job_id: string; analysis?: Record<string, unknown>; ai_decision?: Record<string, string> };
-    if (!state.jobs) state.jobs = { mastering: {}, reference: {} } as StateShape['jobs'];
+    if (!state.jobs) state.jobs = { mastering: {}, reference: {} } as NonNullable<StateShape['jobs']>;
     if (state.jobs) state.jobs.mastering = { ...state.jobs.mastering, jobId: data.job_id };
     lg().ai?.setContext?.((data.analysis || {}) as Record<string, unknown>);
 
@@ -607,7 +607,7 @@ function startPolling(jobId: string): void {
         showStatus('Mastering completado ✓', 'done');
         document.getElementById('btnMaster')?.removeAttribute('disabled');
         const finalUrl = `${api.apiBase()}/download/${jobId}`;
-        if (!state.jobs) state.jobs = { mastering: {}, reference: {} } as StateShape['jobs'];
+        if (!state.jobs) state.jobs = { mastering: {}, reference: {} } as NonNullable<StateShape['jobs']>;
         if (state.jobs) state.jobs.mastering = { ...state.jobs.mastering, downloadUrl: finalUrl };
         state.downloadUrl = finalUrl;
         const btn = document.getElementById('btnDownload');
@@ -657,9 +657,10 @@ function startPolling(jobId: string): void {
         }
         window.renderAnalysisComparison?.(data.analysis_before || {}, data.analysis_after || {});
         // F-MB-GR — publicar chain_meters del master al metrics store.
-        if (data.chain_meters && typeof lg().metrics?.publish === 'function') {
+        const publish = lg().metrics?.publish;
+        if (data.chain_meters && typeof publish === 'function') {
           try {
-            lg().metrics!.publish!({
+            publish({
               ...(data.analysis_after || {}),
               chain_meters: data.chain_meters,
               output_lufs: data.analysis_after?.lufs,

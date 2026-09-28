@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import os
@@ -344,18 +345,83 @@ async def ws_master_stream(websocket: WebSocket):
         # input_gain_db corregido resultante es el que se usa para generar
         # todos los chunks del stream.
         # PERF: compute_lufs_corrected_gain analiza el audio completo — antes
-        # bloqueaba el inicio del stream. Ahora el stream arranca inmediato y
-        # el gain LUFS se aplica a partir del segundo chunk si ya está listo.
+        # bloqueaba el inicio del stream. Con la cadena liviana del preview (los
+        # 4 bypasses de arriba) mide ~0.18s en 10s de audio (verificado), así
+        # que ahora se awaitea con timeout corto (LUFS_AWAIT_TIMEOUT) y el gain
+        # se hornea como input_gain_db ANTES del stream: el chain limiter ve el
+        # nivel corregido desde el chunk 0. Si el future no resuelve a tiempo
+        # (hardware lento), el fallback post-chain con soft-knee aplica el gain
+        # cuando llega (path degradado, igual que antes).
         _lufs_gain_ready = False
         _lufs_gain_db = 0.0
         if chain_params.get("use_lufs_normalize"):
             target_lufs_val = float(chain_params.get("target_lufs", -14.0))
-            import asyncio
             _lufs_fut = asyncio.ensure_future(run_in_threadpool(
                 compute_lufs_corrected_gain, audio, sr, dict(chain_params), target_lufs_val
             ))
         else:
             _lufs_fut = None
+
+        # ── FIX (signal-flow): bake LUFS gain into the chain BEFORE streaming ──
+        # The corrected input_gain_db must reach the chain LIMITER (last stage
+        # of apply_mastering_chain, mastering.py:4215) so it limits the
+        # CORRECTED level. Before this, the gain was applied to the PCM bytes
+        # AFTER the chain (post-chain soft-knee below), so the limiter never saw
+        # the corrected level → wrong limiting when gain > 0 boosts quiet
+        # material, AND an audible level step mid-stream when the LUFS future
+        # resolved (chunk N-1 had no gain, chunk N jumped to the gain).
+        #
+        # Now we await the LUFS future with a short timeout and bake the
+        # corrected input_gain_db into chain_params BEFORE creating the chunk
+        # generator, so every chunk (from chunk 0) is limited at the corrected
+        # level. The light preview chain (stream bypasses nr/dyneq/reso/
+        # tonal_balance all on by default, lines above) makes
+        # compute_lufs_corrected_gain ~0.18s on a 10s preview (measured on this
+        # box, 44.1k, warm numba JIT; ~0.38s cold), so the await is well under
+        # the 1.0s timeout on normal hardware and stream-start latency is
+        # unaffected for the common case.
+        #
+        # asyncio.wait (NOT wait_for) is used so the future is NOT cancelled on
+        # timeout: the post-chain soft-knee fallback below still picks it up if
+        # it resolves later. wait_for would cancel the future, and the
+        # fallback's `_lufs_fut.result()` would raise CancelledError — a
+        # BaseException, not caught by `except Exception` at the fallback —
+        # which would break the stream.
+        LUFS_AWAIT_TIMEOUT = 1.0  # 5x the measured ~0.18s steady-state margin
+        if _lufs_fut is not None:
+            try:
+                _done, _pending = await asyncio.wait(
+                    [_lufs_fut], timeout=LUFS_AWAIT_TIMEOUT
+                )
+                if _lufs_fut in _done:
+                    try:
+                        corrected_gain, lufs_notes = _lufs_fut.result()
+                        # Bake the corrected gain into the chain so the limiter
+                        # sees the corrected level. compute_lufs_corrected_gain
+                        # returns the TOTAL input_gain_db (user trim + LUFS
+                        # correction), so this replaces — does not double-apply.
+                        chain_params["input_gain_db"] = float(corrected_gain)
+                        # Mark ready with 0.0 so the post-chain soft-knee block
+                        # below is SKIPPED (gain already baked into the chain).
+                        # The lufs_safety event is sent here, before the stream,
+                        # so the client shows the corrected gain from chunk 0.
+                        _lufs_gain_ready = True
+                        _lufs_gain_db = 0.0
+                        await websocket.send_json({
+                            "event": "lufs_safety",
+                            "target_lufs": round(target_lufs_val, 2),
+                            "corrected_input_gain_db": round(corrected_gain, 2),
+                            "notes": lufs_notes,
+                        })
+                    except Exception:
+                        # Future resolved with an error → no LUFS correction
+                        # available; fall through to stream without gain.
+                        _lufs_fut = None
+                # else: timed out → _lufs_fut still pending. The post-chain
+                # fallback loop below applies the gain (with soft-knee) when it
+                # resolves — i.e. the previous behavior. Stream starts now.
+            except Exception:
+                _lufs_fut = None
 
         chunk_gen = master_stream_to_pcm16(audio, sr, chunk_seconds=chunk_seconds,
                                           pcm_format=stream_pcm_format, **chain_params)
@@ -392,23 +458,66 @@ async def ws_master_stream(websocket: WebSocket):
             # Aplicar gain LUFS si está listo (solo después de que se calcule)
             if _lufs_gain_ready and abs(_lufs_gain_db) > 0.01:
                 gain_linear = 10.0 ** (_lufs_gain_db / 20.0)
+                # Fix #5 (re-pass): soft-knee safety net para TODOS los formatos
+                # (int16, float32, pcm24), no solo float32. Antes int16 y pcm24
+                # hard-clippeaban (fold-back aliasing en boost positivo). El soft-knee
+                # es identity para |x|<=0.98, asymptote a 1.0 (no fold-back).
+                # NOTA: este bloque es ahora el FALLBACK (path de timeout/error).
+                # El path principal (fix arquitectural de signal-flow) hornea
+                # input_gain_db en chain_params ANTES de crear el chunk_gen (ver
+                # LUFS_AWAIT_TIMEOUT arriba), así que el chain limiter ya ve el
+                # nivel corregido y este bloque se saltea (_lufs_gain_db=0.0).
+                # Solo se llega acá si el LUFS future no resolvió dentro del
+                # timeout (hardware lento) o tiró excepción — el gain se aplica
+                # post-chain con soft-knee como antes (limiting aproximado, pero
+                # sin fold-back). Es el degradado graceful, no el path normal.
+                _KNEE = 0.98
                 if stream_pcm_format == "int16":
-                    pcm_data = np.frombuffer(pcm_bytes, dtype=np.int16).astype(np.float32)
-                    pcm_data = np.clip(pcm_data * gain_linear, -32768, 32767)
-                    pcm_bytes = pcm_data.astype(np.int16).tobytes()
+                    pcm_data = np.frombuffer(pcm_bytes, dtype=np.int16).astype(np.float32) / 32768.0
+                    _scaled = pcm_data * gain_linear
+                    _abs_scaled = np.abs(_scaled)
+                    pcm_data = np.sign(_scaled) * np.where(
+                        _abs_scaled > _KNEE,
+                        1.0 - (1.0 - _KNEE) * np.exp(-(_abs_scaled - _KNEE)),
+                        _abs_scaled,
+                    )
+                    pcm_bytes = (pcm_data * 32767.0).astype(np.int16).tobytes()
                 elif stream_pcm_format == "float32":
                     pcm_data = np.frombuffer(pcm_bytes, dtype=np.float32)
-                    pcm_data = np.clip(pcm_data * gain_linear, -1.0, 1.0)
+                    _scaled = pcm_data * gain_linear
+                    _abs_scaled = np.abs(_scaled)
+                    pcm_data = np.sign(_scaled) * np.where(
+                        _abs_scaled > _KNEE,
+                        1.0 - (1.0 - _KNEE) * np.exp(-(_abs_scaled - _KNEE)),
+                        _abs_scaled,
+                    )
                     pcm_bytes = pcm_data.astype(np.float32).tobytes()
                 elif stream_pcm_format == "pcm24":
+                    # Fix #9 (re-pass): pcm24 decode roto — antes solo leía 2 bytes
+                    # (bytes 1,2) y cast a int16, perdiendo byte 0 y el signo/MSB.
+                    # Ahora lee los 3 bytes little-endian con sign extension.
                     pcm_u8 = np.frombuffer(pcm_bytes, dtype=np.uint8).reshape(-1, 3)
-                    audio = ((pcm_u8[:, 1].astype(np.int32) << 8) | pcm_u8[:, 2]).astype(np.int16)
-                    audio = np.clip(audio.astype(np.float32) * gain_linear, -32768, 32767).astype(np.int16)
-                    audio24 = audio.astype(np.int32) << 8
-                    out_u8 = np.empty(audio24.size * 3, dtype=np.uint8)
-                    out_u8[0::3] = (audio24 & 0xFF).astype(np.uint8)
-                    out_u8[1::3] = ((audio24 >> 8) & 0xFF).astype(np.uint8)
-                    out_u8[2::3] = ((audio24 >> 16) & 0xFF).astype(np.uint8)
+                    # 24-bit LE signed: byte0=LSB, byte1=mid, byte2=MSB (signed)
+                    audio24 = (pcm_u8[:, 0].astype(np.int32)
+                               | (pcm_u8[:, 1].astype(np.int32) << 8)
+                               | (pcm_u8[:, 2].astype(np.int32) << 16))
+                    # Sign extension: si bit 23 set, restar 2^24
+                    audio24 = np.where(audio24 >= (1 << 23), audio24 - (1 << 24), audio24)
+                    audio24_f = audio24.astype(np.float32) / 8388608.0  # normalize to [-1, 1)
+                    _scaled = audio24_f * gain_linear
+                    _abs_scaled = np.abs(_scaled)
+                    _clipped = np.sign(_scaled) * np.where(
+                        _abs_scaled > _KNEE,
+                        1.0 - (1.0 - _KNEE) * np.exp(-(_abs_scaled - _KNEE)),
+                        _abs_scaled,
+                    )
+                    # Re-encode a 24-bit LE
+                    q = np.rint(_clipped * 8388607.0).astype(np.int32)
+                    u = q.astype(np.uint32)
+                    out_u8 = np.empty(u.size * 3, dtype=np.uint8)
+                    out_u8[0::3] = (u & 0xFF).astype(np.uint8)
+                    out_u8[1::3] = ((u >> 8) & 0xFF).astype(np.uint8)
+                    out_u8[2::3] = ((u >> 16) & 0xFF).astype(np.uint8)
                     pcm_bytes = out_u8.tobytes()
                 else:
                     raise ValueError(f"Unsupported pcm_format: {stream_pcm_format}")
@@ -660,9 +769,11 @@ async def ws_ref_stream(websocket: WebSocket):
         )
 
         # ── 5. Streaming chunk a chunk ─────────────────────────────────────────
-        # Usamos master_stream_to_pcm16 que ya convierte a float32 bytes interleaved
+        # U-1: pcm_format="int16" para matchear /ws/master-stream y
+        # /ws/mix-stream. El FE (reference-mastering.ts) decodifica como
+        # Int16Array; sin esto el default float32 produce bit-pattern noise.
         chunk_gen = master_stream_to_pcm16(audio_matched, sr, chunk_seconds=chunk_seconds,
-                                           detect_dynamic_eq=False, **mb_chain_params)
+                                           pcm_format="int16", detect_dynamic_eq=False, **mb_chain_params)
         _SENTINEL = object()
 
         def _next_ref_chunk():
@@ -869,6 +980,10 @@ async def ws_mix_stream(websocket: WebSocket):
         chain_params = coerce_ws_chain_params(dict(mp.chain_params))
         for _bypass_key in ("nr_bypass", "dyneq_bypass", "reso_bypass", "tonal_balance_bypass"):
             chain_params.setdefault(_bypass_key, True)
+        # Fix #6 (re-pass): seed limiter_ceiling desde mp.master_limiter_ceiling
+        # para que el preview use el mismo ceiling que el render final (mixer.py:440).
+        # Sin esto, el preview usa el default 0.95 ≠ slider del usuario.
+        chain_params.setdefault("limiter_ceiling", float(mp.master_limiter_ceiling))
 
         chunk_gen = master_stream_to_pcm16(mix, sr, chunk_seconds=chunk_seconds,
                                           pcm_format="int16", **chain_params)

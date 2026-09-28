@@ -112,10 +112,11 @@ function initFlexLayout(): void {
 
   handle.addEventListener('pointerdown', (rawE) => {
     const e = rawE as PointerEvent;
-    if (!isDesktop() || sidebar!.classList.contains('collapsed')) return;
+    if (!isDesktop() || !sidebar) return;
+    if (sidebar.classList.contains('collapsed')) return;
     dragging = true;
     startX = e.clientX;
-    startW = sidebar!.getBoundingClientRect().width;
+    startW = sidebar.getBoundingClientRect().width;
     (handle as HTMLElement).setPointerCapture?.(e.pointerId);
     (handle as HTMLElement).classList.add('dragging');
     document.body.classList.add('lgmdm-layout-dragging');
@@ -151,7 +152,10 @@ function initFlexLayout(): void {
       e.preventDefault(); apply(maxW());
     }
   }, { signal });
-  if (collapseBtn) collapseBtn.addEventListener('click', () => setCollapsed(!sidebar!.classList.contains('collapsed')), { signal });
+  if (collapseBtn) collapseBtn.addEventListener('click', () => {
+    if (!sidebar) return;
+    setCollapsed(!sidebar.classList.contains('collapsed'));
+  }, { signal });
   if (uncollapseBtn) {
     uncollapseBtn.addEventListener('click', () => setCollapsed(false), { signal });
   }

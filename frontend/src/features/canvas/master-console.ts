@@ -3,6 +3,13 @@
 import { audioTap } from '../../core/audio-tap';
 
 // Bridge to the LGMDM global namespace.
+// TODO(U-2): `lgmdm(): any` es la raíz `any` de este archivo; alimenta ~20
+// accesos `(window.LGMDM as any)?.X` (ab, previewController, mixerEngine,
+// mixer, reference, proFeatures.audioTap, visualizerRender, params, state, ui,
+// utils, metrics, console). Migrar a un slice tipado cascada a todos esos
+// usos y choca con el trabajo de allocs de Agent 3 (per-frame draw, ~líneas
+// 250-450). Migración dedicada pendiente. Se migraron los 4 `as any`
+// aislados fuera de la región de draw (líneas 136, 644, 795) abajo.
 function lgmdm(): any {
   return window.LGMDM || (window.LGMDM = {} as any);
 }
@@ -16,7 +23,12 @@ function lgmdm(): any {
     raf: 0, start: performance.now(), playing: false, audio: null,
     ab: 'master', applying: false,
     stageBypass: { input: false, comp: false, stereo: false, limiter: false },
-    metrics: null, spectrum: [], waveHistory: [],
+    metrics: null, spectrum: [],
+    // W1: ring buffer pre-asignado (90 objetos fijos) — elimina push/shift
+    // y el alloc por frame. El consumer itera en orden cronológico.
+    waveHistory: (() => { const a: Array<{ peak: number; rms: number; gr: number }> = []; for (let i = 0; i < 90; i++) a.push({ peak: 0, rms: 0, gr: 0 }); return a; })(),
+    waveHistoryWriteIdx: 0,
+    waveHistoryLen: 0,
   };
 
   const refs = {
@@ -133,7 +145,7 @@ function lgmdm(): any {
     return `${m}:${s}`;
   }
 
-  function metricAmp(db: number | null | undefined, floor: number = -72): number { return (window as any).clamp01((Number(db ?? floor) - floor) / (0 - floor)); }
+  function metricAmp(db: number | null | undefined, floor: number = -72): number { return window.clamp01((Number(db ?? floor) - floor) / (0 - floor)); }
 
   function ensureScopeTap(): any {
     const tapApi = (window.LGMDM as any)?.proFeatures?.audioTap;
@@ -193,8 +205,16 @@ function lgmdm(): any {
     const m = state.metrics || {};
     const peakAmp = metricAmp(m.peak_db, -72);
     const rmsAmp = metricAmp(m.rms_db, -72);
-    state.waveHistory.push({ peak: peakAmp, rms: rmsAmp, gr: Math.max(0, Math.min(1, Math.abs(Number(m.comp_gr_db ?? 0)) / 12)) });
-    if (state.waveHistory.length > 90) state.waveHistory.shift();
+    // W1: escribe en el slot del ring (objeto fijo, muta in-place — cero alloc).
+    {
+      const wi = state.waveHistoryWriteIdx;
+      const wh = state.waveHistory[wi] as { peak: number; rms: number; gr: number };
+      wh.peak = peakAmp;
+      wh.rms = rmsAmp;
+      wh.gr = Math.max(0, Math.min(1, Math.abs(Number(m.comp_gr_db ?? 0)) / 12));
+      state.waveHistoryWriteIdx = (wi + 1) % 90;
+      if (state.waveHistoryLen < 90) state.waveHistoryLen++;
+    }
     const grad = ctx.createLinearGradient(0,0,w,0);
     grad.addColorStop(0,'rgba(87,230,255,.35)'); grad.addColorStop(.5,'rgba(169,140,255,.95)'); grad.addColorStop(1,'rgba(87,230,255,.35)');
     ctx.strokeStyle = grad; ctx.lineWidth = Math.max(1, 1.4 * dpr);
@@ -217,14 +237,19 @@ function lgmdm(): any {
     }
     ctx.strokeStyle = 'rgba(87,230,255,.28)'; ctx.lineWidth = Math.max(1, 1 * dpr); ctx.stroke();
     // Amber RMS history trail (real metrics, not fake texture)
-    const hist = state.waveHistory;
-    if (hist.length > 1) {
+    // W1: itera el ring en orden cronológico (oldest→newest). Si el ring
+    // está lleno (90), el oldest está en writeIdx; sino, en 0..len-1.
+    const hlen = state.waveHistoryLen;
+    if (hlen > 1) {
+      const start = (hlen === 90) ? state.waveHistoryWriteIdx : 0;
+      const ring = state.waveHistory;
       ctx.beginPath();
-      hist.forEach((item: { peak: number; rms: number; gr: number }, i: number) => {
-        const x = i / (hist.length - 1) * w;
+      for (let i = 0; i < hlen; i++) {
+        const item = ring[(start + i) % 90] as { peak: number; rms: number; gr: number };
+        const x = i / (hlen - 1) * w;
         const y = mid - item.rms * h * 0.36;
         i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
-      });
+      }
       ctx.strokeStyle = 'rgba(255,202,101,.85)'; ctx.lineWidth = Math.max(1, 1 * dpr); ctx.stroke();
     }
   }
@@ -254,7 +279,7 @@ function lgmdm(): any {
     try { an.getByteFrequencyData(state.wfBuf); } catch (_) { return; }
     const vr = (window.LGMDM as any)?.visualizerRender;
     if (vr?.drawWaterfallFrame) {
-      vr.drawWaterfallFrame(canvas, ctx, null, state.wfBuf);
+      vr.drawWaterfallFrame(canvas, ctx, state.wfBuf);
       return;
     }
     const img = ctx.getImageData(0, 0, w, h);
@@ -271,13 +296,19 @@ function lgmdm(): any {
     }
   }
 
+  // U-1: reusable filters array — `.length = 0` per call instead of `[]`,
+  // eliminating per-frame array alloc on the EQ response hot path.
+  const _eqFilters: Array<{ kind: string; freq: number; gain: number; Q: number }> = [];
+
   // EQ Chain Response — cascada de 10 biquads: 6 peak + LS + HS + HP + LP.
   // Usa RBJ Audio EQ Cookbook. Multiplica magnitudes, devuelve dB por bin.
   // FIX: usa `wCut` (cutoff) para los coeficientes del biquad y `w` (eval)
   // para evaluar la respuesta — antes los dos usaban la misma variable.
   function computeEqChainResponse(params: Record<string, unknown>, freqs: Float32Array, fs: number): Float32Array {
     const N = freqs.length;
-    const dbOut = new Float32Array(N);
+    // U-1: length-guarded reuse (mirrors state.timeBuf pattern at L183-184).
+    if (!state.dbOut || state.dbOut.length !== N) state.dbOut = new Float32Array(N);
+    const dbOut = state.dbOut;
     function magnitudeAt(f: number, type: { kind: string; freq: number; gain: number; Q: number }): number {
       let b0 = 0, b1 = 0, b2 = 0, a0 = 0, a1 = 0, a2 = 0;
       // Coeficientes: usan la frecuencia de CORTE del filtro (type.freq)
@@ -327,38 +358,38 @@ function lgmdm(): any {
       if (denMag < 1e-12 || !Number.isFinite(numMag) || !Number.isFinite(denMag)) return 1;
       return numMag / denMag;
     }
-    const filters = [];
+    _eqFilters.length = 0;
     const numF = (v: unknown, fb: number): number => { const n = parseFloat(String(v)); return Number.isFinite(n) ? n : fb; };
     const hpF = numF(params.hp_cutoff, 0);
-    if (hpF >= 20 && hpF <= 20000) filters.push({ kind: 'hpf', freq: hpF, gain: 0, Q: 0.707 });
+    if (hpF >= 20 && hpF <= 20000) _eqFilters.push({ kind: 'hpf', freq: hpF, gain: 0, Q: 0.707 });
     for (let i = 1; i <= 6; i++) {
       const f = numF(params[`eq${i}_freq`], 0);
       const g = numF(params[`eq${i}_gain`], 0);
       const q = numF(params[`eq${i}_q`], 1);
       if (f >= 20 && f <= 20000 && Math.abs(g) > 0.01) {
-        filters.push({ kind: 'peak', freq: f, gain: g, Q: Math.max(0.1, q) });
+        _eqFilters.push({ kind: 'peak', freq: f, gain: g, Q: Math.max(0.1, q) });
       }
     }
     const lsF = numF(params.low_shelf_freq_hz, 0);
     const lsG = numF(params.low_shelf_gain_db, 0);
     if (lsF >= 20 && lsF <= 20000 && Math.abs(lsG) > 0.01) {
-      filters.push({ kind: 'lowshelf', freq: lsF, gain: lsG, Q: 0.707 });
+      _eqFilters.push({ kind: 'lowshelf', freq: lsF, gain: lsG, Q: 0.707 });
     }
     const hsF = numF(params.high_shelf_freq_hz, 0);
     const hsG = numF(params.high_shelf_gain_db, 0);
     if (hsF >= 20 && hsF <= 20000 && Math.abs(hsG) > 0.01) {
-      filters.push({ kind: 'highshelf', freq: hsF, gain: hsG, Q: 0.707 });
+      _eqFilters.push({ kind: 'highshelf', freq: hsF, gain: hsG, Q: 0.707 });
     }
     const lpF = numF(params.lp_cutoff, 0);
     const lpBypass = params.lp_bypass === true || params.lp_bypass === 'true';
     if (!lpBypass && lpF >= 20 && lpF <= 20000) {
-      filters.push({ kind: 'lpf', freq: lpF, gain: 0, Q: 0.707 });
+      _eqFilters.push({ kind: 'lpf', freq: lpF, gain: 0, Q: 0.707 });
     }
     // Compute dB per freq bin (clamp a [-60, +60] para evitar log10(0))
     for (let i = 0; i < N; i++) {
       let H = 1;
-      for (let j = 0; j < filters.length; j++) {
-        H *= magnitudeAt(freqs[i], filters[j]);
+      for (let j = 0; j < _eqFilters.length; j++) {
+        H *= magnitudeAt(freqs[i], _eqFilters[j]);
       }
       let db = 20 * Math.log10(Math.max(1e-6, H));
       if (!Number.isFinite(db)) db = 0;
@@ -378,7 +409,9 @@ function lgmdm(): any {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, rect.width, rect.height);
     const N = 256;
-    const freqs = new Float32Array(N);
+    // U-1: length-guarded reuse (N is constant 256; mirrors state.wfBuf L251-252).
+    if (!state.eqFreqs || state.eqFreqs.length !== N) state.eqFreqs = new Float32Array(N);
+    const freqs = state.eqFreqs;
     const fMin = Math.log10(20), fMax = Math.log10(20000);
     for (let i = 0; i < N; i++) freqs[i] = Math.pow(10, fMin + (fMax - fMin) * i / (N - 1));
     let params: Record<string, any> = {};
@@ -633,7 +666,7 @@ function lgmdm(): any {
     LGMDM.dom.byId('fileInput')?.addEventListener('change',syncTrackInfo);
     window.addEventListener('lgmdm:preview-state', (ev: Event) => {
       const btn = LGMDM.dom.byId('consolePlayBtn');
-      const detail = ((ev as CustomEvent).detail || {}) as any;
+      const detail = ((ev as CustomEvent).detail || {}) as { state?: string; text?: string };
       if (btn) btn.disabled = detail.state !== 'ready';
       if (detail.state === 'ready') setStatus('Preview completo listo para reproducir', true);
       else if (detail.state === 'processing') setStatus(detail.text || 'Procesando Preview en servidor…', true);
@@ -664,6 +697,18 @@ function lgmdm(): any {
       state.raf = requestAnimationFrame(tick);
     };
     state.raf=requestAnimationFrame(tick);
+    // W2 fix (web-audio-api re-pass): reduced-motion RAF stop era one-way.
+    // matchMedia listener para restart el RAF si el user togglea reduced-motion
+    // de "reduce" a "no-preference". Sin esto, una vez que el tick hace
+    // state.raf=0 por prefersReducedMotion(), el loop nunca se reinicia.
+    const _mqReduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+    if (_mqReduced.addEventListener) {
+      _mqReduced.addEventListener('change', (e) => {
+        if (!e.matches && wired && state.raf === 0) {
+          state.raf = requestAnimationFrame(tick);
+        }
+      });
+    }
     // Consume the shared Metrics Store instead of wrapping another producer.
     const metricsStore = (window.LGMDM as any)?.metrics;
     if (metricsStore) {
@@ -718,7 +763,11 @@ function lgmdm(): any {
     if(state._waterfallCleanup){ state._waterfallCleanup(); state._waterfallCleanup=null; }
     if(state._eqChainCleanup){ state._eqChainCleanup(); state._eqChainCleanup=null; }
     if(state.unsubscribeMetrics){ state.unsubscribeMetrics(); state.unsubscribeMetrics=null; }
-    state.timeBuf = null; state.wfBuf = null; state.waveHistory = [];
+    state.timeBuf = null; state.wfBuf = null;
+    // W1: resetear contadores del ring (los objetos quedan para reusar tras HMR).
+    state.waveHistoryWriteIdx = 0; state.waveHistoryLen = 0;
+    // U-1: release the EQ-response reusable buffers too.
+    state.dbOut = null; state.eqFreqs = null; _eqFilters.length = 0;
     wired=false;
   }
   root.masterConsole.teardown=teardown;
@@ -782,4 +831,4 @@ export type MasterConsole = {
 };
 
 const g = lgmdm();
-(g as any).console = (g as any).masterConsole;
+g.console = g.masterConsole;

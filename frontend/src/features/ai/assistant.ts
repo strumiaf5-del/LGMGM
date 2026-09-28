@@ -49,7 +49,7 @@ const AI_SUGGESTIONS = [
   '¿Tengo problemas de clipping?',
 ];
 
-const lg = () => (window.LGMDM = window.LGMDM || {}) as Record<string, unknown> & {
+const lg = () => (window.LGMDM = window.LGMDM || {}) as unknown as Record<string, unknown> & {
   state?: StateShape;
   api?: ApiShape;
   ui?: UiShape;
@@ -424,9 +424,14 @@ document.getElementById('aiInput')?.addEventListener('input', function (this: HT
   const aside = document.querySelector('aside');
   const hint = document.getElementById('asideScrollHint');
   if (!aside || !hint) return;
+  // U-3: captura no-null después del guard. La función anidada `updateScrollHint`
+  // no ve el narrow del guard (closure captura el tipo declarado `| null`), por
+  // eso antes usaba `aside!`/`hint!`.
+  const asideEl = aside;
+  const hintEl = hint;
   function updateScrollHint(): void {
-    const atBottom = aside!.scrollHeight - aside!.scrollTop - aside!.clientHeight < 20;
-    hint!.classList.toggle('hidden', atBottom);
+    const atBottom = asideEl.scrollHeight - asideEl.scrollTop - asideEl.clientHeight < 20;
+    hintEl.classList.toggle('hidden', atBottom);
   }
   aside.addEventListener('scroll', updateScrollHint, { passive: true });
   updateScrollHint();

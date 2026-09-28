@@ -76,7 +76,8 @@ def _synthesize_ir(sr: int, decay_time: float, size: float = 1.0) -> np.ndarray:
       - decay_time: RT60 en segundos (tiempo para -60dB)
       - size: factor de escala del espacio
 
-    Usa: reverberador FDN (Feedback Delay Network) simplificado
+    Usa: suma de combs estilo Schroeder (4 combs independientes con delays
+    primos, sin matriz de mezcla -- NO es un FDN verdadero).
     """
     # F2.7: decay_time <= 0 hace que `decay_rate = log(0.001)/decay_time` produzca
     # Inf/NaN y que `np.zeros(int(sr * -k))` genere shapes inválidos. Forzamos un
@@ -110,7 +111,15 @@ def _synthesize_ir(sr: int, decay_time: float, size: float = 1.0) -> np.ndarray:
             impulse[delay] = 1.0
 
             # Reverse decay para efecto más natural
-            decayed = impulse * decay * (fb ** np.arange(ir_samples / delay + 1)[:ir_samples])
+            # BUGFIX: broadcasting crash. `fb ** np.arange(ir_samples / delay + 1)`
+            # producía un array de length ~ir_samples/delay (mucho más corto que
+            # `impulse` de length ir_samples) → ValueError al multiplicar. El slice
+            # `[:ir_samples]` era no-op (el array ya era más corto). Reemplazado por
+            # `fb ** (np.arange(ir_samples) / delay)` que produce un array de length
+            # ir_samples (factor fb^(n/delay) por muestra n). Sin este fix,
+            # `_synthesize_ir` crashea y `mixer.py:218-235` lo catchea silenciosamente
+            # → reverb MUERTO en producción (audio dry sin reverb).
+            decayed = impulse * decay * (fb ** (np.arange(ir_samples) / delay))
             ir += decayed / len(delays)
 
     # Normalizar
@@ -187,14 +196,23 @@ def apply_convolution_reverb(
     # Aplicar convolución a cada canal
     output = np.zeros_like(audio_to_process)
     for ch in range(audio_to_process.shape[0]):
-        # FFT convolution (más eficiente que direct)
+        # FFT convolution (más eficiente que direct).
+        # mode='full' + truncate a len(dry): el wet arranca al mismo tiempo
+        # que el dry y la cola de reverb le sigue. Antes se usaba mode='same'
+        # que centra el wet → el reverb PREDECÍA al dry (alineación temporal
+        # incorrecta, audible como pre-echo/smeared attack).
         dry = audio_to_process[ch]
-        wet = signal.fftconvolve(dry, ir_scaled, mode='same')
+        wet = signal.fftconvolve(dry, ir_scaled, mode='full')[:len(dry)]
 
-        # Normalizar wet para evitar clipping
+        # Normalizar wet al nivel del dry. Antes se normalizaba al pico
+        # absoluto 1.0, lo que hacía que el wet dominara la mezcla para drys
+        # tranquilos (wet pico 1.0 >> dry pico). Ahora el pico del wet matchea
+        # el pico del dry, así wet_amount controla la proporción wet/dry de
+        # forma independiente del nivel del dry (fix CC-2).
         wet_max = np.max(np.abs(wet))
         if wet_max > 1e-6:
-            wet = wet / wet_max
+            dry_peak = np.max(np.abs(dry))
+            wet = wet * (dry_peak / wet_max)
 
         # Mix
         output[ch] = (1.0 - wet_amount) * dry + wet_amount * wet

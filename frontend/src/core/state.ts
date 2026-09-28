@@ -14,6 +14,26 @@ export interface StemsPayload {
   available: string[];
 }
 
+// U-5: branded type para IDs de job. `JobId` es `string` estructuralmente pero
+// con un brand fantasma, así no se puede asignar un `string` cualquiera sin
+// afirmarlo en la frontera (p.ej. `data.job_id as JobId` donde entra del backend).
+// Sólo se aplica a `currentJobId` (scope pedido por U-5).
+//
+// TP4: `LibraryId` y `SessionId` definidos como branded types para uso futuro,
+// PERO no aplicados a los campos de `PublicState` todavía. Razón: los write-sites
+// de `_previewLibraryId` / `_previewSessionId` / `reference.libraryId` viven en
+// archivos fuera del scope de este agente (`features/workspace/file-handling.ts`
+// líneas 178-179, 494; `features/library/reference-picker.ts` línea 263).
+// Aplicarlos acá introduciría 4 errores TS en archivos que no puedo editar →
+// `tsc --noEmit` no llegaría a 0. Cuando esos archivos se migren, aplicar:
+//   `PublicState._previewLibraryId: LibraryId | null`
+//   `PublicState._previewSessionId: SessionId | null`
+//   `PublicState.reference.libraryId: LibraryId | null`
+// y los write-sites con `as LibraryId` / `as SessionId` en la frontera del backend.
+export type JobId = string & { readonly __brand: 'JobId' };
+export type LibraryId = string & { readonly __brand: 'LibraryId' };
+export type SessionId = string & { readonly __brand: 'SessionId' };
+
 export interface PublicState {
   reference: { file: File | null; libraryId: string | null };
   runtime: {
@@ -29,9 +49,6 @@ export interface PublicState {
   lastAnalysisData: Record<string, unknown> | null;
   stems: StemsPayload | null;
   cachedFileBuffer: ArrayBuffer | null;
-  metersRafId: number | null;
-  metersAudioCtx: AudioContext | null;
-  metersSourceNode: AudioNode | null;
   _previewLibraryId: string | null;
   _previewSessionId: string | null;
   previewAudioUrl: string | null;
@@ -112,25 +129,22 @@ let selectedFile: File | null = null;
 let cachedFileBuffer: ArrayBuffer | null = null;
 let _previewSessionId: string | null = null;
 let _previewLibraryId: string | null = null;
-let currentJobId: string | null = null;
+let currentJobId: JobId | null = null;
 let downloadUrl: string | null = null;
 let _stems: StemsPayload | null = null;
 
 let _themeColorsCache: ThemePalette | null = null;
 
-// Preview/meters (lo usan 30-preview-controller y 10-meters-dashboard)
+// Preview (lo usan 30-preview-controller y 10-meters-dashboard).
+// U-4: the meters* closure vars that lived here (metersAudioCtx/SourceNode/
+// AnalyserL/R/Splitter/RafId/LufsRingBuffer + METERS_LUFS_WINDOW) were leftover
+// from a removed live-meters implementation (replaced by timeline-meters.ts).
+// They were never assigned — only `|| null` inits + `= null` in teardown — so
+// the teardown branches were no-ops. Removed 2026-09-27.
 let previewDebounceTimer: number | null = null;
 let previewAbortController: AbortController | null = null;
 let previewAudioUrl: string | null = null;
 let previewWS: WebSocket | null = null;
-let metersAudioCtx: AudioContext | null = null;
-let metersSourceNode: AudioNode | null = null;
-let metersAnalyserL: AnalyserNode | null = null;
-let metersAnalyserR: AnalyserNode | null = null;
-let metersRafId: number | null = null;
-let metersSplitter: AudioNode | null = null;
-let metersLufsRingBuffer: number[] = [];
-const METERS_LUFS_WINDOW = 60;
 
 // AI assistant state (lo usa 11-ai-assistant-ux)
 let lastAnalysisData: Record<string, unknown> | null = null;
@@ -352,9 +366,6 @@ _publicState.getLastAnalysis = function getLastAnalysis(): Record<string, unknow
 
 // Cross-script bridges for plain `<script>` consumers (non-module scope sharing).
 _publicState.cachedFileBuffer = _publicState.cachedFileBuffer || null;
-_publicState.metersRafId = _publicState.metersRafId || null;
-_publicState.metersAudioCtx = _publicState.metersAudioCtx || null;
-_publicState.metersSourceNode = _publicState.metersSourceNode || null;
 _publicState._previewLibraryId = _publicState._previewLibraryId || null;
 _publicState._previewSessionId = _publicState._previewSessionId || null;
 _publicState.previewAudioUrl = _publicState.previewAudioUrl || null;

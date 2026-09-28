@@ -53,12 +53,38 @@ def _get_device(device):
 def _resample(audio_2d: np.ndarray, sr_in: int, sr_out: int) -> np.ndarray:
     if sr_in == sr_out:
         return audio_2d
-    from math import gcd
+    # FIX U-6 (categoría B): el doble resample polifase (orig->model_sr acá, y
+    # model_sr->orig en el loop de stems más abajo) introduce pre-ringing y
+    # artefactos de fase. Demucs requiere 44100 Hz fijo, así que el round-trip
+    # es inevitable y NO se elimina. En cambio se mejora la CALIDAD del
+    # resample usando soxr (libsamplerate/soxr, el mismo motor que usa librosa
+    # por defecto) con quality='HQ' en lugar de scipy.signal.resample_poly
+    # con su filtro por defecto: soxr usa un filtro anti-aliasing de fase
+    # lineal mejor diseñado. El pre-ringing es inherente a cualquier
+    # resampler de fase lineal y no se elimina del todo, pero soxr reduce los
+    # artefactos respecto al polyphase por defecto de scipy.
+    #
+    # IMPORTANTE de layout: soxr espera 2D como [frame, channel] y resamplea
+    # el eje 0. Nuestro audio_2d es [channel, frame], así que transponemos
+    # antes/después. (Verificado: input (2,10000) sin transponer -> soxr
+    # devuelve (1,10000), es decir resamplea los canales. Con transpose ->
+    # (5000,2) -> back (2,5000), correcto.)
+    try:
+        import soxr
+        is_1d = audio_2d.ndim == 1
+        x = audio_2d[:, None] if is_1d else audio_2d.T
+        x = np.ascontiguousarray(x, dtype=np.float32)
+        y = soxr.resample(x, int(sr_in), int(sr_out), quality="HQ")
+        out = y[:, 0] if is_1d else y.T
+        return np.ascontiguousarray(out, dtype=np.float32)
+    except ImportError:
+        # Fallback: scipy polyphase (comportamiento anterior) si soxr no está.
+        from math import gcd
 
-    from scipy.signal import resample_poly
-    g = gcd(int(sr_in), int(sr_out))
-    up, down = sr_out // g, sr_in // g
-    return resample_poly(audio_2d, up, down, axis=-1).astype(np.float32)
+        from scipy.signal import resample_poly
+        g = gcd(int(sr_in), int(sr_out))
+        up, down = sr_out // g, sr_in // g
+        return resample_poly(audio_2d, up, down, axis=-1).astype(np.float32)
 
 
 def separate_stems(audio: np.ndarray, sr: int, progress_cb=None,
@@ -111,6 +137,12 @@ def separate_stems(audio: np.ndarray, sr: int, progress_cb=None,
         raise ValueError("audio debe ser mono o estéreo")
 
     _report(3, "Remuestreando…")
+    # FIX U-6 (categoría B): doble resample (orig->model_sr acá, model_sr->orig
+    # en el loop de stems). Demucs requiere 44100 Hz fijo, así que el round-trip
+    # es inevitable. La CALIDAD del resample mejoró: _resample ahora usa soxr
+    # quality='HQ' (mejor filtro anti-aliasing que scipy resample_poly por
+    # defecto), con fallback a scipy si soxr no está disponible. El
+    # pre-ringing residual es inherente a fase lineal y queda como limitación.
     audio_model_sr = _resample(audio_2d, sr, model_sr)
 
     wav = torch.from_numpy(audio_model_sr)

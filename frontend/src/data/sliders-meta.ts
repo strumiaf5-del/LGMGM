@@ -4,7 +4,7 @@ export interface SliderMetaEntry {
   fmt: string;
 }
 
-export const SLIDERS_META: readonly SliderMetaEntry[] = Object.freeze([
+export const SLIDERS_META = Object.freeze([
   { id: "s-ingain", vid: "v-ingain", fmt: "signedDb" },
   { id: "s-peak", vid: "v-peak", fmt: "linearToDbT" },
   { id: "s-lufstarget", vid: "v-lufstarget", fmt: "lufs" },
@@ -131,5 +131,5 @@ export const SLIDERS_META: readonly SliderMetaEntry[] = Object.freeze([
   { id: "s-mscomp-pdr-hold", vid: "v-mscomp-pdr-hold", fmt: "ms" },
   { id: "s-clip-ceiling", vid: "v-clip-ceiling", fmt: "float2" },
   { id: "s-clip-drive", vid: "v-clip-drive", fmt: "parseSignedDb" }
-]) as readonly SliderMetaEntry[];
+]) satisfies readonly SliderMetaEntry[];
 

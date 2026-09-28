@@ -28,6 +28,7 @@ import './../../css/widgets/pro-insert-rack.css';
 import './../../css/widgets/pro-widgets-v2.css';
 
 import { validateSession, getSession } from '../features/auth/session';
+import { TOKEN_KEY, USER_KEY } from '../core/api';
 import '../core/compat'; // browser compat check (wall si Chrome<108/Firefox<108/Opera<94) — must load FIRST
 import '../core/state'; // mounts window.LGMDM.state (single source of truth) — must load BEFORE file-handling
 import '../features/workspace/file-handling'; // fileInput → state.selectedFile + library + reference handling
@@ -54,6 +55,11 @@ import '../features/editor/undo-redo'; // Ctrl+Z / Ctrl+H history panel
 
 // Canvas / audio pipeline.
 import '../features/audio/mixer-engine'; // exposes window.LGMDM.mixerEngine (audioTap reads masterGain)
+// WS9 TODO: /ws/master-stream (routers/streaming.py:195) es backend-only — sin
+// consumer frontend (verificado: grep "master-stream" frontend/src → 0 matches;
+// solo aparece en API.md:169). El preview en vivo usa /preview + /preview/meters
+// polling (preview-controller.ts) en lugar de este WS. No implementar consumer
+// acá sin antes decidir si el endpoint se mantiene o se remueve del backend.
 import '../features/canvas/visualizer-helpers'; // exposes window.LGMDM.ab (audioTap reads getGainNode) + visualizers
 import '../features/canvas/master-console'; // exposes window.LGMDM.console (getChainOverrides, isPlaying)
 import '../features/canvas/params-builder'; // exposes window.LGMDM.params (collect/build/renderPreview)
@@ -104,7 +110,25 @@ import '../features/pro/widgets/spectral-tilt';
 // Keyboard shortcuts (only loaded on the main console).
 import '../core/keyboard-shortcuts';
 
+// WT1: ?mockauth=1 short-circuits auth for frontend-only smoke testing
+// (no backend). Injects a fake session into sessionStorage before boot() so
+// getSession() returns a mock user and validateSession() is skipped.
+// Uso: abrí la consola con `index.html?mockauth=1` cuando el backend no está.
+const _mockAuth = (() => {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('mockauth') === '1') {
+      sessionStorage.setItem(TOKEN_KEY, 'mock-token');
+      sessionStorage.setItem(USER_KEY, JSON.stringify({ id: 'mock', email: 'mock@local', name: 'Mock', role: 'admin', status: 'approved' }));
+      return true;
+    }
+  } catch { /* ignore */ }
+  return false;
+})();
+
 async function boot(): Promise<void> {
+  // WT1: skip validation in mockauth mode (session injected above).
+  if (_mockAuth) return;
   const ok = await validateSession();
   if (!ok) {
     // Not authenticated — send to login. validateSession already cleared the

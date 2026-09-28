@@ -129,7 +129,7 @@ let _activeFader: ActiveFader | null = null;
 let _channelTemplate: HTMLTemplateElement | null = null;
 let _eqBandTemplate: HTMLTemplateElement | null = null;
 
-const lg = () => (window.LGMDM = window.LGMDM || {}) as Record<string, unknown> & {
+const lg = () => (window.LGMDM = window.LGMDM || {}) as unknown as Record<string, unknown> & {
   ui?: UiShape;
   mixerEngine?: MixerEngineShape;
   mixerUiModel?: MixerUiModelShape;
@@ -768,7 +768,8 @@ function bindMixerEvents(): void {
       } else if (target.matches('[data-action="reset"]')) {
         const m = model();
         if (m) {
-          Object.assign(r.mixerState.stems[stem].params, m.defaultStemParams());
+          const p = r.mixerState.stems[stem]?.params;
+          if (p) Object.assign(p, m.defaultStemParams());
           renderMixer();
         }
       }
@@ -905,8 +906,9 @@ const mixerUiApi = (wLGMDM.mixerUi = wLGMDM.mixerUi || {}) as Record<string, unk
 (mixerUiApi as { buildStemLibraryIdMap: (n: string[]) => Record<string, string> }).buildStemLibraryIdMap = buildStemLibraryIdMap;
 window.buildStemLibraryIdMap = buildStemLibraryIdMap;
 
-if (typeof window.buildStemLibraryIdMap === 'function' && runtime()) {
-  runtime()!.buildStemLibraryIdMap = buildStemLibraryIdMap;
+if (typeof window.buildStemLibraryIdMap === 'function') {
+  const r = runtime();
+  if (r) r.buildStemLibraryIdMap = buildStemLibraryIdMap;
 }
 
 // FIX M-NEW-1: el flag `mixerUIBound` se seteaba pero no se consultaba → el

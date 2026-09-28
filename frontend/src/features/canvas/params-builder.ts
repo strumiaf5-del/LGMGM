@@ -3,14 +3,39 @@
 import { requireById } from '../../core/dom';
 
 (function () {
-  const LGMDM: any = (window as any).LGMDM || ((window as any).LGMDM = {});
+  // TP2: `const LGMDM: any` era la raíz `any` de este archivo. Migrada a un
+  // slice tipado `LgmdmLocalSlice`. El default generic `HTMLInputElement` en
+  // `requireById`/`byId` cubre el uso real (`.value` en inputs/selects,
+  // `.checked` en checkboxes) sin necesidad de type-args por call-site.
+  interface LgmdmDomSlice {
+    requireById: <T extends HTMLElement = HTMLInputElement>(id: string, owner?: string) => T;
+    byId: <T extends HTMLElement = HTMLInputElement>(id: string) => T | null;
+  }
+  interface LgmdmConsoleSlice {
+    getChainOverrides?: () => Record<string, string | boolean | number>;
+  }
+  interface LgmdmUiSlice {
+    escapeHtml: (s: unknown) => string;
+  }
+  interface LgmdmFormattersSlice {
+    formatDbValue?: (v: unknown, digits?: number) => string;
+  }
+  interface LgmdmLocalSlice {
+    dom: LgmdmDomSlice;
+    console?: LgmdmConsoleSlice;
+    ui: LgmdmUiSlice;
+    formatters?: LgmdmFormattersSlice;
+    [key: string]: unknown;
+  }
+  const w0 = window as unknown as { LGMDM?: LgmdmLocalSlice };
+  const LGMDM: LgmdmLocalSlice = w0.LGMDM ?? (w0.LGMDM = {} as LgmdmLocalSlice);
       function getParamVal(id: string): string {
         const el = LGMDM.dom.requireById(id, "06-params-builder.js");
         return (el.dataset && el.dataset.consoleSaved != null) ? el.dataset.consoleSaved : el.value;
       }
-      function collectMasterParamsObj(): Record<string, any> {
+      function collectMasterParamsObj(): Record<string, string | boolean | number> {
         const platform = LGMDM.dom.requireById("s-platform", "06-params-builder.js").value;
-        const obj: Record<string, any> = {
+        const obj: Record<string, string | boolean | number> = {
           input_gain_db: LGMDM.dom.requireById("s-ingain", "06-params-builder.js").value,
           target_peak: LGMDM.dom.requireById("s-peak", "06-params-builder.js").value,
           use_lufs_normalize: LGMDM.dom.requireById("s-uselufs", "06-params-builder.js").checked,
@@ -133,7 +158,7 @@ import { requireById } from '../../core/dom';
           mb_stereo_high_crossover: LGMDM.dom.requireById("s-mb-sw-highx", "06-params-builder.js").value,
         };
         // Master console overrides (A/B + per-stage bypass)
-        const consoleOverrides = (window.LGMDM as any)?.console?.getChainOverrides?.() || {};
+        const consoleOverrides = LGMDM?.console?.getChainOverrides?.() || {};
         Object.assign(obj, consoleOverrides);
         // Dynamic EQ
         obj.parallel_bypass = LGMDM.dom.requireById("parallelBypass", "06-params-builder.js").checked;
@@ -203,11 +228,13 @@ import { requireById } from '../../core/dom';
         const obj = collectMasterParamsObj();
         // URLSearchParams convierte null/undefined en el string literal "null"/"undefined",
         // lo cual rompe la validación de FastAPI (pattern regex). Se filtran esos valores
-        // para que el backend reciba el parámetro directamente omitido y use su default.
-        Object.keys(obj).forEach((k) => {
-          if (obj[k] === null || obj[k] === undefined) delete obj[k];
-        });
-        return new URLSearchParams(obj);
+        // y se stringifican el resto (booleans/numbers → "true"/"false"/"123") para que
+        // el backend reciba el parámetro directamente omitido o como string y use su default.
+        const stringObj: Record<string, string> = {};
+        for (const [k, v] of Object.entries(obj)) {
+          if (v !== null && v !== undefined) stringObj[k] = String(v);
+        }
+        return new URLSearchParams(stringObj);
       }
 
       // ── Vista previa de parámetros corregidos antes de masterizar ───────────────
@@ -513,9 +540,11 @@ import { requireById } from '../../core/dom';
         mb_stereo_low_crossover: "Cruce low (Hz)",
         mb_stereo_high_crossover: "Cruce high (Hz)",
       };
-      const DITHER_MODE_LABELS = { tpdf: "TPDF plano", high_shelf: "High-shelf", f_weighted: "F-weighted" };
-      function formatParamValue(v: any, key: string): string {
-        if (key === "dither_mode") return (DITHER_MODE_LABELS as any)[v] || v;
+      const DITHER_MODE_LABELS: Record<string, string> = { tpdf: "TPDF plano", high_shelf: "High-shelf", f_weighted: "F-weighted" };
+      function formatParamValue(v: unknown, key: string): string {
+        if (key === "dither_mode") {
+          return typeof v === 'string' ? (DITHER_MODE_LABELS[v] || v) : String(v);
+        }
         if (Array.isArray(v)) {
           if (key === "band_gains_array") {
             const activas = v.filter((b) => b && b.gain_db && Math.abs(b.gain_db) > 0).length;
@@ -523,9 +552,9 @@ import { requireById } from '../../core/dom';
           }
           return `${v.length} elementos`;
         }
-        const n = parseFloat(v);
+        const n = parseFloat(String(v));
         if (key && key.includes("ratio") && !Number.isNaN(n)) return `Ratio ${n.toFixed(1)}:1`;
-        if (key && key.includes("threshold_db") && !Number.isNaN(n)) return `Threshold ${(LGMDM as any).formatters?.formatDbValue?.(n) ?? n.toFixed(1) + ' dB'}`;
+        if (key && key.includes("threshold_db") && !Number.isNaN(n)) return `Threshold ${LGMDM.formatters?.formatDbValue?.(n) ?? n.toFixed(1) + ' dB'}`;
         if (key && key.includes("attack_ms") && !Number.isNaN(n)) return `Attack ${n.toFixed(1)} ms`;
         if (key && key.includes("release_ms") && !Number.isNaN(n)) return `Release ${Math.round(n)} ms`;
         if (key && key.includes("makeup_db") && !Number.isNaN(n))
@@ -533,11 +562,11 @@ import { requireById } from '../../core/dom';
         if (v === true) return "Sí";
         if (v === false) return "No";
         if (v === "" || v == null) return "—";
-        return v;
+        return String(v);
       }
 
       function renderParamsPreview(
-        paramsObj: Record<string, any>,
+        paramsObj: Record<string, string | boolean | number>,
         {
           onConfirm,
           onCancel,
@@ -589,6 +618,26 @@ import { requireById } from '../../core/dom';
         return panel;
       }
 
-(function(){ const LG=window.LGMDM=window.LGMDM||{} as any; (LG as any).params=Object.assign(LG.params||{}, { collect: collectMasterParamsObj, build: buildParams, renderPreview: renderParamsPreview }); })();
+// Tipado del registro `LGMDM.params` (área FIX K6). Antes `{} as any` +
+// `(LG as any).params`. Ahora slice local `ParamsSlice` con los 3 handlers
+// tipados vía `typeof`. El cast pasa por `unknown` porque la declaración
+// global de `Window.LGMDM` (core/state.ts) es deliberadamente mínima.
+interface ParamsSlice {
+  params?: {
+    collect: typeof collectMasterParamsObj;
+    build: typeof buildParams;
+    renderPreview: typeof renderParamsPreview;
+  };
+  [key: string]: unknown;
+}
+(function () {
+  const w = window as unknown as { LGMDM?: ParamsSlice };
+  const LG = w.LGMDM = w.LGMDM || {};
+  LG.params = Object.assign(LG.params || {}, {
+    collect: collectMasterParamsObj,
+    build: buildParams,
+    renderPreview: renderParamsPreview,
+  });
+})();
 
 })();

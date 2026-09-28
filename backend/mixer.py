@@ -28,12 +28,11 @@ try:
         eq_high_pass,
         eq_low_pass,
         eq_parametric_band,
-        limiter,
         measure_lufs_integrated,
         stereo_width,
         transient_shaper,
     )
-    from .pitch_correction import PitchCorrectionProcessor
+    from .pitch_correction import PitchCorrectionProcessor, detect_key
     from .reverb import ReverbProcessor
 except ImportError:
     from config import PROCESSED_DIR
@@ -43,12 +42,11 @@ except ImportError:
         eq_high_pass,
         eq_low_pass,
         eq_parametric_band,
-        limiter,
         measure_lufs_integrated,
         stereo_width,
         transient_shaper,
     )
-    from pitch_correction import PitchCorrectionProcessor
+    from pitch_correction import PitchCorrectionProcessor, detect_key
     from reverb import ReverbProcessor
 
 
@@ -127,6 +125,10 @@ class StemParams:
 class MixParams:
     """Parámetros globales del mix."""
     master_gain_db: float = 0.0
+    # Deprecated: kept for backward compat. The brickwall ceiling is now applied
+    # by the mastering chain's stage-15 limiter (chain_params["limiter_ceiling"]).
+    # This value only seeds chain_params["limiter_ceiling"] when the caller did
+    # not set it explicitly (see mix_and_master).
     master_limiter_ceiling: float = 0.95
     normalize_before_master: bool = True
     target_lufs: float = -14.0
@@ -234,15 +236,32 @@ def process_stem(audio: np.ndarray, sr: int, p: StemParams) -> tuple:
 
     # 9. Pitch Correction (si está habilitado)
     if p.pitch_correction_enabled and p.pitch_correction_mode != "OFF":
+        # FIX U-5 (categoría B): L y R se procesaban de forma independiente; si
+        # scale=None, cada canal llamaba a detect_key sobre su propia señal y
+        # podía cuantizar a escalas distintas (divergencia de pitch estéreo).
+        # Ahora, para estéreo con scale en auto (None/""), detectamos la
+        # tonalidad UNA sola vez sobre la señal mid (L+R)/2 y se la pasamos a
+        # AMBOS canales, garantizando cuantización a la misma escala. No
+        # requiere refactorizar PitchCorrectionProcessor.process: detect_key
+        # ya es una función pública de pitch_correction, y process acepta
+        # `scale` como string. Para mono o scale explícito, comportamiento
+        # idéntico al anterior.
         try:
             processor = PitchCorrectionProcessor(sr)
+            requested_scale = p.pitch_correction_scale
+            if requested_scale == "":
+                requested_scale = None
+            shared_scale = requested_scale
+            if shared_scale is None and audio.ndim == 2 and audio.shape[0] == 2:
+                mid = (audio[0] + audio[1]) * 0.5
+                shared_scale, _shared_conf = detect_key(mid, sr)
             if audio.ndim == 2 and audio.shape[0] == 2:
                 corrected = np.stack([
-                    processor.process(audio[0], mode=p.pitch_correction_mode, scale=p.pitch_correction_scale, glide_time_ms=p.pitch_correction_glide_ms),
-                    processor.process(audio[1], mode=p.pitch_correction_mode, scale=p.pitch_correction_scale, glide_time_ms=p.pitch_correction_glide_ms),
+                    processor.process(audio[0], mode=p.pitch_correction_mode, scale=shared_scale, glide_time_ms=p.pitch_correction_glide_ms),
+                    processor.process(audio[1], mode=p.pitch_correction_mode, scale=shared_scale, glide_time_ms=p.pitch_correction_glide_ms),
                 ])
             else:
-                corrected = processor.process(audio, mode=p.pitch_correction_mode, scale=p.pitch_correction_scale, glide_time_ms=p.pitch_correction_glide_ms)
+                corrected = processor.process(audio, mode=p.pitch_correction_mode, scale=shared_scale, glide_time_ms=p.pitch_correction_glide_ms)
             audio = corrected
             meters["pitch_correction"] = {
                 "mode": p.pitch_correction_mode,
@@ -265,16 +284,49 @@ def apply_sidechain(
     ratio: float = 6.0,
     attack_ms: float = 5.0,
     release_ms: float = 80.0,
+    lookahead_samples: int = 0,
 ) -> tuple:
     """Sidechain ducking: comprime `target` usando la envolvente de `trigger`.
 
     Típico uso: comprimir el bajo cuando el kick pega.
     Devuelve (audio_duckeado, meter).
+
+    ``lookahead_samples`` (default 0) es un retardo opt-in del target para
+    alinearlo con la envolvente CAUSAL del trigger. La envolvente que produce
+    _smooth_envelope está atrasada ~attack_ms porque el ataque del detector
+    integra hacia arriba (no es instantáneo): sin retardo, los primeros
+    ~attack_ms del target pasan sin ducking y el transient del kick se
+    escapa sin comprimir. Con ``lookahead_samples = int(attack_ms * sr /
+    1000)`` se prependean ceros al target y se trimea el final (misma
+    longitud), de modo que el target queda alineado con la envolvente ya
+    levantada. Introduce una latencia de ``lookahead_samples`` muestras en el
+    target respecto al trigger y al resto de los stems. Es opt-in (default
+    0 = comportamiento anterior) porque los callers actuales no esperan el
+    cambio de timing relativo; quien quiera el fix debe pasarlo
+    explícitamente. La salida siempre conserva la longitud de entrada.
     """
     # Asegurar misma longitud
     min_len = min(target.shape[-1], trigger.shape[-1])
     target  = target[..., :min_len]
     trigger = trigger[..., :min_len]
+
+    # FIX U-4 (categoría B): retardo opt-in del target. Se hace DESPUÉS de
+    # recortar a min_len y ANTES de calcular la envolvente, de modo que la
+    # GR (calculada sobre el trigger sin retardo) se aplique al target ya
+    # alineado. prepend zeros + trim final = misma longitud, sin romper a
+    # _match_length (que paddea al final, no al inicio).
+    if lookahead_samples > 0:
+        if lookahead_samples >= min_len:
+            lookahead_samples = max(0, min_len - 1)
+        if target.ndim == 2:
+            target = np.pad(
+                target,
+                ((0, 0), (lookahead_samples, 0)),
+                mode="constant",
+            )
+        else:
+            target = np.pad(target, (lookahead_samples, 0), mode="constant")
+        target = target[..., :min_len]
 
     # Extraer envolvente del trigger (mono)
     trigger_mono = trigger.mean(axis=0) if trigger.ndim == 2 else trigger
@@ -420,14 +472,18 @@ def mix_and_master(
     # Guardar mix temporal para process_audio si se pasan chain_params completos
     # Alternativamente, aplicar apply_mastering_chain directo
     chain_params = dict(mix_params.chain_params)
+    # Synchronize the brickwall ceiling: if the caller did not explicitly set
+    # chain_params["limiter_ceiling"], seed it from MixParams.master_limiter_ceiling
+    # so the chain's stage-15 limiter (mastering.py:4580) uses the user's
+    # ceiling. A second limiter here would double-limit with divergent ceilings (CC-1).
+    chain_params.setdefault("limiter_ceiling", float(mix_params.master_limiter_ceiling))
     mastered, chain_meters = apply_mastering_chain(mix, sr, **chain_params)
     mastered = mastered.astype(np.float32)
 
     _report(80, "Limitador final")
 
-    # Limiter de seguridad final
-    ceiling = float(mix_params.master_limiter_ceiling)
-    mastered = limiter(mastered, sr, ceiling=ceiling, release_ms=60.0, lookahead_ms=5.0)
+    # Limiter already applied at chain stage 15 (chain_params["limiter_ceiling"]).
+    # Removed second limiter to avoid double-limiting with divergent ceilings.
 
     _report(90, "Guardando")
 
