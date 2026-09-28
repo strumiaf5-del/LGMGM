@@ -542,7 +542,7 @@ function renderStemsPanel(stemAnalysis: Record<string, unknown>, jobId: string, 
   const wrap = document.createElement('div');
   wrap.className = 'stems-wrap';
 
-  const safe = ui().escapeHtml || ((s: unknown) => String(s));
+  const safe = ui().escapeHtml || ((s: unknown) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c] as string)));
   const cards = Object.values(stems).map((s) => `
     <div class="stem-card ${s.is_silent ? 'silent' : ''}">
       <div class="stem-title">${safe(s.label || s.name)}</div>

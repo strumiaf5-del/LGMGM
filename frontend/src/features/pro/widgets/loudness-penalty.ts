@@ -105,6 +105,15 @@ function buildAuthHeaders(method: 'POST'): Record<string, string> {
 }
 
 // ── Widget ────────────────────────────────────────────────────
+/**
+ * Widget visual del insert "Loudness Penalty" — visualiza la penalización
+ * de loudness (dB) a lo largo del espectro vs. un target de referencia
+ * (típicamente -14 LUFS para streaming). State: target_lufs, penalty_curve,
+ * per_band_db, bypass.
+ *
+ * Lifecycle: `init(canvas, opts)` setea el canvas, arranca el RAF tick;
+ * `update(state)` refresca el state; `teardown()` cancela el RAF.
+ */
 export class LoudnessPenaltyWidget {
   /** Insert instance (set by proInsertRack.create, MX-01). */
   static Insert: unknown = null;

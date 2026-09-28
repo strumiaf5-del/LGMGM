@@ -2,6 +2,7 @@
 
 import { byId } from '../../core/dom';
 import { apiUrl } from '../../core/api';
+import { escapeHtml } from '../../core/ui';
 import { getPrefersReducedMotion } from '../../core/utils';
 import {
   CATALOG,
@@ -139,7 +140,32 @@ const STATE_KEY = 'lgmdm.insert_rack.state.v1';
 function loadState(): RackPersistedState | null {
   try {
     const raw = localStorage.getItem(STATE_KEY);
-    return raw ? (JSON.parse(raw) as RackPersistedState) : null;
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as unknown;
+    // MAJ-5 (Skill 3 M-3): validar el shape del payload persistido antes de
+    // devolverlo. localStorage es user-editable; sin guard, cualquier clave
+    // arbitraria (incluido el `order` que drives el render del grid) se cuela.
+    if (!parsed || typeof parsed !== 'object') return null;
+    const obj = parsed as Record<string, unknown>;
+    const out: RackPersistedState = {};
+    if (Array.isArray(obj.order) && obj.order.every((id) => typeof id === 'string')) {
+      out.order = obj.order as string[];
+    }
+    if (obj.bypass && typeof obj.bypass === 'object') {
+      out.bypass = obj.bypass as Record<string, boolean>;
+    }
+    if (typeof obj.minimized === 'boolean') out.minimized = obj.minimized;
+    if (typeof obj.hidden === 'boolean') out.hidden = obj.hidden;
+    if (obj.mode === 'floating' || obj.mode === 'docked') out.mode = obj.mode;
+    if (
+      obj.position &&
+      typeof obj.position === 'object' &&
+      typeof (obj.position as { left?: unknown }).left === 'number' &&
+      typeof (obj.position as { top?: unknown }).top === 'number'
+    ) {
+      out.position = obj.position as { left: number; top: number };
+    }
+    return out;
   } catch {
     return null;
   }
@@ -813,8 +839,14 @@ function openDetail(insertId: string): void {
               entries
                 .map(
                   ([k, v]) =>
-                    `<li><code>${k}</code>: ${
-                      typeof v === 'number' ? v.toFixed(2) : String(v)
+                    // MAJ-4 (Skill 3 M-1): escape `k` (param key) por si llega de
+                    // backend con HTML; `v` se coerce a string segura (número
+                    // formateado o String(), pero pasado por escapeHtml igual
+                    // porque objetos arbitrarios pueden contener `<` en toString).
+                    `<li><code>${escapeHtml(k)}</code>: ${
+                      typeof v === 'number'
+                        ? escapeHtml(v.toFixed(2))
+                        : escapeHtml(String(v ?? ''))
                     }</li>`,
                 )
                 .join('') +
@@ -1098,6 +1130,22 @@ function remove(id: string): boolean {
   return true;
 }
 
+/**
+ * API pública del Pro Insert Rack. Expone:
+ * - `create/remove/CATALOG/registry`: lifecycle de inserts (registry es
+ *   mutable: widgets legacy lo asignan).
+ * - `mount`: monta el shell en `#proInsertRack` (o lo crea si no existe).
+ *   Re-entrar es idempotente (HMR-safe via teardown del rack previo).
+ * - `processOne/processAll/runChain`: procesa 1 insert o toda la cadena
+ *   contra el backend `/dsp/<id>`. `runChain` toma el `selectedFile` del
+ *   `window.LGMDM.state`, encadena outputs como input del siguiente insert,
+ *   y renderiza el resultado en `#previewAudioWrap`.
+ * - `open/close/toggle/reset`: visibilidad del panel + persistencia.
+ * - `teardown`: libera el AbortController y desconecta observers.
+ *
+ * Monta automáticamente al cargar el DOM (a menos que el rack no exista en
+ * la página de login — ver early-return en `persistFromDom`).
+ */
 export const proInsertRack: ProInsertRackApi = {
   create,
   remove,

@@ -286,18 +286,14 @@ async function applyPitchCorrection(): Promise<void> {
     if (applyBtn) applyBtn.disabled = true;
     if (progEl) progEl.style.display = 'block';
 
-    const headers: Record<string, string> = {};
-    if (token) headers['Authorization'] = `Bearer ${token}`;
-    // CSRF header for non-safe methods
-    const csrfToken = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content
-      || (window as unknown as { _csrfToken?: string })._csrfToken;
-    if (csrfToken) headers['X-CSRF-Token'] = csrfToken;
-
-    const response = await fetch(pitchUrl, {
-      method: 'POST',
-      headers,
-      body: formData,
-    });
+    // CRIT-X6 (audit): use the API bridge (api.client.post) so auth + CSRF
+    // are injected automatically by `withAuthHeaders` in core/api.ts. Replaces
+    // the previous raw `fetch()` that bypassed the bridge AND read a
+    // never-initialized `_csrfToken` global. Same pattern as
+    // `submitMasterSync` in mastering-actions.ts:200.
+    const api = lg().api;
+    if (!api) throw new Error('API bridge no inicializada (window.LGMDM.api)');
+    const response = await api.client.post(pitchUrl, { body: formData });
 
     if (!response.ok) {
       let errText = '';

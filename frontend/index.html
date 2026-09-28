@@ -50,7 +50,7 @@
 </head>
 <body>
 <a href="#main" class="sr-only sr-only-focusable">Saltar al contenido principal</a>
-<div id="auth-overlay" class="hidden" style="display: none;"></div>
+<div id="auth-overlay" class="hidden"></div>
 <div id="app-container" class="app-container">
 <!-- HEADER -->
 <header class="app-header"><div class="header-left"><div class="brand-lockup"><div aria-hidden="true" class="logo-mark">LG</div><div class="brand-copy"><h1 class="logo">LGMDM</h1><span class="brand-subtitle">INTELLIGENT MASTERING CONSOLE</span></div></div></div><div class="header-center"><div class="system-chip"><span aria-hidden="true" class="system-dot"></span><span>ENGINE READY</span></div></div><div class="header-right"><button id="btnOpenPremiumSuite" class="header-btn header-btn--wide" type="button" title="Suite Premium (12 funciones avanzadas de masterización)"><svg class="header-btn-svg" viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2.5L2 6l6 7.5 6-7.5-2-3.5H4z"/><path d="M2 6h12"/><path d="M5.5 2.5L7 6l1 7.5 1-7.5 1.5-3.5"/></svg><span>SUITE PRO</span></button><button id="btnToggleInsertRack" class="header-btn header-btn--wide" type="button" title="Pro Insert Rack — 10 inserts DSP premium (arrastrable)" aria-expanded="false" aria-controls="proInsertRack"><svg class="header-btn-svg" viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2.5" width="12" height="3.5" rx="1"/><rect x="2" y="6.5" width="12" height="3.5" rx="1"/><rect x="2" y="10.5" width="12" height="3.5" rx="1"/><circle cx="5" cy="4.2" r="0.8" fill="currentColor"/><circle cx="11" cy="8.2" r="0.8" fill="currentColor"/><circle cx="5" cy="12.2" r="0.8" fill="currentColor"/></svg><span>RACK</span></button><button id="historyToggleBtn" class="header-btn" type="button" title="Historial de cambios (Ctrl+H)" aria-label="Mostrar historial de cambios (Ctrl+H)"><svg class="header-btn-svg" viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8a5.5 5.5 0 1 1 1.6 3.9"/><path d="M2 4v4h4"/><path d="M8 5v3.2l2.2 1.3"/></svg></button><button aria-label="Cambiar tema visual" class="header-btn" id="theme-switcher-btn" title="Cambiar tema visual" type="button"><svg class="header-btn-svg" viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"/><path d="M8 2a6 6 0 0 1 0 12V2z"/></svg></button><div id="auth-user-bar" hidden=""><span class="auth-user-name">Usuario</span><button id="admin-panel-btn" class="header-btn auth-admin-btn" type="button" title="Panel de administración de usuarios" aria-label="Panel de administración" hidden=""><svg class="header-btn-svg" viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="2.5"/><path d="M8 1.5v1.8M8 12.7v1.8M1.5 8h1.8M12.7 8h1.8M3.4 3.4l1.3 1.3M11.3 11.3l1.3 1.3M3.4 12.6l1.3-1.3M11.3 4.7l1.3-1.3"/></svg></button><button id="logout-btn" class="header-btn auth-logout-btn" type="button" title="Cerrar sesión" aria-label="Cerrar sesión">⎋</button></div></div></header>
@@ -2328,9 +2328,10 @@
 <!-- SCRIPTS - Orden importante -->
 <noscript>
   <!-- FIX B1: noscript fallback — sin JS la consola no funciona. -->
-  <div role="alert" style="position:fixed;inset:0;background:rgba(8,11,20,0.95);color:#f1f5f9;display:flex;align-items:center;justify-content:center;padding:2rem;font-family:system-ui,sans-serif;z-index:2147483647">
-    <div style="max-width:480px;text-align:center">
-      <h2 style="color:#52f2bd">JavaScript es requerido</h2>
+  <!-- MAJ-2 (CSP): inline styles movidos a .js-required-* en css/components/auth.css. -->
+  <div role="alert" class="js-required-overlay">
+    <div class="js-required-card">
+      <h2 class="js-required-title">JavaScript es requerido</h2>
       <p>LGMDM Studio necesita JavaScript habilitado para funcionar.</p>
     </div>
   </div>

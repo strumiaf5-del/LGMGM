@@ -36,6 +36,10 @@ function makeError(status: number, detail: string, code?: string): ApiError {
 
 // ── Token & headers ────────────────────────────────────────────
 function getAuthToken(): string | null {
+  // CRIT-X2: el token retornado se usa SOLO para inyectar el header
+  // `Authorization: Bearer` (ver `withAuthHeaders`). Nunca fluye a DOM
+  // desde este módulo. El watchdog defensivo vive en
+  // `features/auth/session.ts:clearSessionOnXss()`.
   try { return sessionStorage.getItem(TOKEN_KEY); } catch { return null; }
 }
 
@@ -52,6 +56,9 @@ function withAuthHeaders(headers: HeadersInit | undefined, method = 'GET'): Reco
     ...((headers as Record<string, string>) || {}),
   };
   const token = getAuthToken();
+  // CRIT-X2: el token se concatena en una cabecera HTTP, no en DOM.
+  // TODO: cuando auth.py emita cookie httpOnly, eliminar este header y
+  // confiar en `credentials: 'include'` (ya presente en `request`).
   if (token) base['Authorization'] = `Bearer ${token}`;
   const normalizedMethod = String(method || 'GET').toUpperCase();
   if (!SAFE_METHODS.has(normalizedMethod)) {

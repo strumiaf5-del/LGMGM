@@ -4,19 +4,23 @@ import { audioTap } from '../../core/audio-tap';
 
 // Bridge to the LGMDM global namespace.
 // TODO(U-2): `lgmdm(): any` es la raíz `any` de este archivo; alimenta ~20
-// accesos `(window.LGMDM as any)?.X` (ab, previewController, mixerEngine,
+// accesos `(window.LGMDM as LGMDMNamespace)?.X` (ab, previewController, mixerEngine,
 // mixer, reference, proFeatures.audioTap, visualizerRender, params, state, ui,
 // utils, metrics, console). Migrar a un slice tipado cascada a todos esos
 // usos y choca con el trabajo de allocs de Agent 3 (per-frame draw, ~líneas
 // 250-450). Migración dedicada pendiente. Se migraron los 4 `as any`
 // aislados fuera de la región de draw (líneas 136, 644, 795) abajo.
-function lgmdm(): any {
-  return window.LGMDM || (window.LGMDM = {} as any);
+// Typed slice of window.LGMDM that allows deep indexing (LGMDM.ui.X) like `any`
+// did, but with a non-`any` return signature at the function boundary.
+type LGMDMNamespace = Record<string, any>;
+
+function lgmdm(): LGMDMNamespace {
+  return window.LGMDM || (window.LGMDM = {} as LGMDMNamespace);
 }
 
 (() => {
   'use strict';
-  const root: any = window.LGMDM = window.LGMDM || {};
+  const root = (window.LGMDM = window.LGMDM || {}) as LGMDMNamespace;
   root.masterConsole = root.masterConsole || {};
   const LGMDM = root;
   const state: any = {
@@ -112,8 +116,8 @@ function lgmdm(): any {
     LGMDM.dom.byId('consoleABReadout')?.replaceChildren(document.createTextNode(mode === 'master' ? 'MASTER' : 'ORIGINAL'));
     LGMDM.dom.byId('consoleABMaster')?.classList.toggle('active', mode === 'master');
     LGMDM.dom.byId('consoleABOriginal')?.classList.toggle('active', mode === 'original');
-    if (typeof (window.LGMDM as any)?.ab?.setMode === 'function') {
-      try { (window.LGMDM as any).ab.setMode(mode); return; } catch (_) {}
+    if (typeof (window.LGMDM as LGMDMNamespace)?.ab?.setMode === 'function') {
+      try { (window.LGMDM as LGMDMNamespace).ab.setMode(mode); return; } catch (_) {}
     }
     const audio = getPreviewAudio();
     if (audio) audio.dataset.abMode = mode;
@@ -129,14 +133,14 @@ function lgmdm(): any {
     document.querySelectorAll('#previewAudioWrap audio, #mxrServerPreviewAudio').forEach((a) => {
       try { (a as HTMLAudioElement).pause(); (a as HTMLAudioElement).currentTime = 0; } catch (_) {}
     });
-    (window.LGMDM as any)?.previewController?.stop?.();
+    (window.LGMDM as LGMDMNamespace)?.previewController?.stop?.();
     // FIX C2: mixer.stopPreview doesn't exist (it's on mixerEngine or mixer.functions).
-    (window.LGMDM as any)?.mixerEngine?.stopPreview?.(true);
-    (window.LGMDM as any)?.mixer?.functions?.stopPreview?.(true);
+    (window.LGMDM as LGMDMNamespace)?.mixerEngine?.stopPreview?.(true);
+    (window.LGMDM as LGMDMNamespace)?.mixer?.functions?.stopPreview?.(true);
     // FIX C2: ab.stop doesn't exist — use the global stopABPlayer or ab.teardown.
     if (typeof (window as any).stopABPlayer === 'function') (window as any).stopABPlayer();
-    (window.LGMDM as any)?.ab?.stop?.();
-    (window.LGMDM as any)?.reference?.stopRefPreview?.();
+    (window.LGMDM as LGMDMNamespace)?.ab?.stop?.();
+    (window.LGMDM as LGMDMNamespace)?.reference?.stopRefPreview?.();
   }
   function formatTime(sec: number): string {
     if (!Number.isFinite(sec)) return '--:--';
@@ -148,7 +152,7 @@ function lgmdm(): any {
   function metricAmp(db: number | null | undefined, floor: number = -72): number { return window.clamp01((Number(db ?? floor) - floor) / (0 - floor)); }
 
   function ensureScopeTap(): any {
-    const tapApi = (window.LGMDM as any)?.proFeatures?.audioTap;
+    const tapApi = (window.LGMDM as LGMDMNamespace)?.proFeatures?.audioTap;
     if (!tapApi?.ensure) return null;
     try { return tapApi.ensure(); } catch (_) { return null; }
   }
@@ -277,7 +281,7 @@ function lgmdm(): any {
       state.wfBuf = new Uint8Array(an.frequencyBinCount);
     }
     try { an.getByteFrequencyData(state.wfBuf); } catch (_) { return; }
-    const vr = (window.LGMDM as any)?.visualizerRender;
+    const vr = (window.LGMDM as LGMDMNamespace)?.visualizerRender;
     if (vr?.drawWaterfallFrame) {
       vr.drawWaterfallFrame(canvas, ctx, state.wfBuf);
       return;
@@ -415,7 +419,7 @@ function lgmdm(): any {
     const fMin = Math.log10(20), fMax = Math.log10(20000);
     for (let i = 0; i < N; i++) freqs[i] = Math.pow(10, fMin + (fMax - fMin) * i / (N - 1));
     let params: Record<string, any> = {};
-    try { params = ((window.LGMDM as any)?.params?.collect?.() || {}); } catch (_) {}
+    try { params = ((window.LGMDM as LGMDMNamespace)?.params?.collect?.() || {}); } catch (_) {}
     const audio: any = state.audio || document.querySelector('#previewAudioWrap audio');
     const fs = (audio && Number.isFinite(audio.sampleRate) && audio.sampleRate > 0) ? audio.sampleRate : 48000;
     const dbMin = -24, dbMax = 24;
@@ -472,7 +476,7 @@ function lgmdm(): any {
       bands = fftMags.map((v: any) => Number(v));
     } else if (s7) {
       const order = ['sub_bass', 'bass', 'low_mid', 'mid', 'upper_mid', 'presence', 'air'];
-      bands = order.map((k) => Number((s7 as any)[k])).filter(Number.isFinite);
+      bands = order.map((k) => Number(s7[k])).filter(Number.isFinite);
       edges = [20, 80, 250, 500, 2000, 4000, 8000];
     }
     const rect = canvas.getBoundingClientRect();
@@ -521,7 +525,7 @@ function lgmdm(): any {
 
   function setStatus(text: string, active: boolean = false): void { LGMDM.dom.byId('consoleStatus')?.replaceChildren(document.createTextNode(text)); document.querySelector('.lg-status-dot')?.classList.toggle('active', active); }
   function syncTrackInfo() {
-    const file = (LGMDM as any).state?.selectedFile ?? null;
+    const file = LGMDM.state?.selectedFile ?? null;
     if(!file){
       LGMDM.dom.byId('consoleTrackTitle')?.replaceChildren(document.createTextNode('Sin archivo cargado'));
       LGMDM.dom.byId('consoleTrackMeta')?.replaceChildren(document.createTextNode('Esperando señal'));
@@ -601,7 +605,7 @@ function lgmdm(): any {
     if (state.applying) return;
     clearTimeout(root.masterConsole.previewTimer);
     root.masterConsole.previewTimer = setTimeout(() => {
-      (window.LGMDM as any)?.previewController?.request?.();
+      (window.LGMDM as LGMDMNamespace)?.previewController?.request?.();
     }, 350);
   }
 
@@ -634,7 +638,7 @@ function lgmdm(): any {
     LGMDM.dom.byId('consoleMasterBtn')?.addEventListener('click',()=>{LGMDM.dom.byId('btnMasterAsync')?.click();setStatus('Mastering en cola…',true);});
     LGMDM.dom.byId('consolePlayBtn')?.addEventListener('click',()=>{
       const audio=getPreviewAudio();
-      if(!audio || !(window.LGMDM as any)?.previewController?.isReady?.()) {
+      if(!audio || !(window.LGMDM as LGMDMNamespace)?.previewController?.isReady?.()) {
         return setStatus('El Preview todavía no está listo: debe terminar el procesamiento del servidor.');
       }
       const pb = LGMDM.dom.byId('consolePlayBtn');
@@ -646,14 +650,14 @@ function lgmdm(): any {
     });
     const livePreviewToggle = LGMDM.dom.byId('s-livepreview');
     if (livePreviewToggle) {
-      const bind = (window.LGMDM as any).ui.bindOnce;
+      const bind = (window.LGMDM as LGMDMNamespace).ui.bindOnce;
       bind(livePreviewToggle, 'change', (ev: Event) => {
         if (ev && ev.isTrusted === false) return;
-        if (livePreviewToggle.checked && (LGMDM as any).state?.selectedFile) {
+        if (livePreviewToggle.checked && LGMDM.state?.selectedFile) {
           setStatus('Preview habilitado · procesando en servidor…', true);
-          (window.LGMDM as any)?.previewController?.request?.();
+          (window.LGMDM as LGMDMNamespace)?.previewController?.request?.();
         } else if (!livePreviewToggle.checked) {
-          (window.LGMDM as any)?.previewController?.stop?.();
+          (window.LGMDM as LGMDMNamespace)?.previewController?.stop?.();
           setStatus('Preview deshabilitado');
         }
       }, 'server-preview-toggle-console');
@@ -677,7 +681,7 @@ function lgmdm(): any {
     state._fileNameObserver = observer;
     const tick=()=>{
       if (!wired) return;
-      if ((window.LGMDM as any).utils.prefersReducedMotion()) {
+      if ((window.LGMDM as LGMDMNamespace).utils.prefersReducedMotion()) {
         state.raf = 0;
         return;
       }
@@ -710,7 +714,7 @@ function lgmdm(): any {
       });
     }
     // Consume the shared Metrics Store instead of wrapping another producer.
-    const metricsStore = (window.LGMDM as any)?.metrics;
+    const metricsStore = (window.LGMDM as LGMDMNamespace)?.metrics;
     if (metricsStore) {
       state.unsubscribeMetrics?.();
       state.unsubscribeMetrics = metricsStore.subscribe(({ metrics }: any) => {

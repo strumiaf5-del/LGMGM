@@ -12,13 +12,19 @@ import { audioEngine } from '../../core/audio-engine';
 // `Record<string, unknown>`: metricsHtml, renderAnalysisSingle,
 // renderAnalysisComparison, renderPerceptualStandalone (alinean con las
 // declaraciones globales en mastering-actions.ts:82-84).
-function lgmdm(): any {
-  return window.LGMDM || (window.LGMDM = {} as any);
+// Typed slice of window.LGMDM that allows deep indexing (LGMDM.ui.X) like `any`
+// did, but with a non-`any` return signature at the function boundary.
+type LGMDMNamespace = Record<string, any>;
+
+function lgmdm(): LGMDMNamespace {
+  return window.LGMDM || (window.LGMDM = {} as LGMDMNamespace);
 }
 
 (function () {
-  const LGMDM: any = lgmdm();
-  function themeColors(): any { return (window as any).themeColors?.() ?? {}; }
+  const LGMDM = lgmdm();
+  function themeColors(): Record<string, any> {
+    return window.themeColors?.() ?? {};
+  }
   function xFromFreq(f: number, padL: number, plotW: number, logMin: number, logMax: number): number {
     return (window as any).xFromFreq?.(f, padL, plotW, logMin, logMax) ?? padL;
   }
@@ -190,19 +196,19 @@ const PERCEPTUAL_LABELS = {
 // Qué valor de cada dimensión se considera "problemático" a simple vista
 // (colorea la fila en rojo/amarillo); el resto queda neutral (no hay un
 // valor objetivamente "malo" — depende del género).
-const PERCEPTUAL_BAD_VALUES = {
+const PERCEPTUAL_BAD_VALUES: Record<string, string[]> = {
   clarity: ["muddy", "harsh"],
   stereo_coherence: ["phase_issues"],
   mix_cohesion: ["over_compressed", "disconnected"],
   headroom_feel: ["cramped"],
 };
-const PERCEPTUAL_WARN_VALUES = {
+const PERCEPTUAL_WARN_VALUES: Record<string, string[]> = {
   presence_feel: ["in_your_face"],
 };
 
 function perceptualValueClass(key: string, value: string): string {
-  if ((PERCEPTUAL_BAD_VALUES as any)[key]?.includes(value)) return "bad";
-  if ((PERCEPTUAL_WARN_VALUES as any)[key]?.includes(value)) return "warn";
+  if (PERCEPTUAL_BAD_VALUES[key]?.includes(value)) return "bad";
+  if (PERCEPTUAL_WARN_VALUES[key]?.includes(value)) return "warn";
   return "neutral";
 }
 

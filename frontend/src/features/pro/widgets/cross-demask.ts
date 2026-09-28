@@ -57,6 +57,15 @@ function getAvailableStems(): string[] {
 
 let _uidCounter = 0;
 
+/**
+ * Widget visual del insert "Cross Demasking" — resta una copia del stem
+ * masking (e.g. vocals) del espectro del target (e.g. drums) para exponer
+ * componentes enmascarados. State: target_stem, masking_stem, depth_db,
+ * sensitivity, bypass.
+ *
+ * Lifecycle: `init(rootEl)` monta el DOM y registra listeners con
+ * `bindOnce` para evitar duplicados en HMR; `teardown()` libera todo.
+ */
 export class CrossDemaskWidget {
   root: HTMLElement | null = null;
   cardEl: HTMLDivElement | null = null;

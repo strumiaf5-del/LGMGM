@@ -215,7 +215,7 @@ import { requireById } from '../../core/dom';
         obj.tonal_balance_max_boost_db = LGMDM.dom.requireById("s-tonalbal-boost", "06-params-builder.js").value;
         obj.tonal_balance_max_cut_db = LGMDM.dom.requireById("s-tonalbal-cut", "06-params-builder.js").value;
         obj.tonal_balance_max_bands = LGMDM.dom.requireById("s-tonalbal-bands", "06-params-builder.js").value;
-        const platformTargetVal = LGMDM.dom.requireById("s-platform", "06-params-builder.js")?.value || "";
+        const platformTargetVal = LGMDM.dom.requireById("s-platform", "06-params-builder.js").value;
         if (platformTargetVal) obj.platform_target = platformTargetVal;
         // FIX G: arrancar preview desde segundo 30 del track (no desde el
         // segundo 15 default). Backend ya soporta este parámetro en

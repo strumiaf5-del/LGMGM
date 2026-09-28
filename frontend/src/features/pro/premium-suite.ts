@@ -9,7 +9,10 @@ import { audioEngine } from '../../core/audio-engine';
 (function (global) {
   'use strict';
 
-  const LG: any = global.LGMDM = global.LGMDM || {};
+  // Typed slice of the LGMDM namespace that allows deep indexing (LGMDM.ui.X)
+  // like `any` did, but with a non-`any` type for the root constant.
+  type LGMDMNamespace = Record<string, any>;
+  const LG: LGMDMNamespace = (global.LGMDM = global.LGMDM || {}) as LGMDMNamespace;
   const el = (id: string): HTMLElement | null => document.getElementById(id) || document.querySelector(`[data-status-id="${id}"]`);
 
   const $canvas = (id: string): HTMLCanvasElement | null => (document.getElementById(id) || document.querySelector(`[data-status-id="${id}"]`)) as HTMLCanvasElement | null;
@@ -22,8 +25,8 @@ import { audioEngine } from '../../core/audio-engine';
   type ComplianceMetrics = { lufs: number; tp: number; lra: number; isLive: boolean };
   type GonioParticle = { x: number; y: number; vx: number; vy: number; life: number; maxLife: number; active: boolean };
   const escapeHtml = LG.ui?.escapeHtml || ((str: unknown) => String(str ?? '').replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m] as string)));
-  const getSelectedFile = (): any => (typeof LGMDM !== 'undefined' && LGMDM.state?.getSelectedFile?.()) || null;
-  const getLastAnalysis = (): any => (typeof LGMDM !== 'undefined' && LGMDM.state?.getLastAnalysis?.()) || null;
+  const getSelectedFile = (): File | null => (typeof LGMDM !== 'undefined' && LGMDM.state?.getSelectedFile?.()) || null;
+  const getLastAnalysis = (): Record<string, unknown> | null => (typeof LGMDM !== 'undefined' && LGMDM.state?.getLastAnalysis?.()) || null;
   const LGMDM = LG;
 
   const STORAGE_KEY_DEMASK = 'lg_premium_demask_settings';
@@ -384,7 +387,7 @@ import { audioEngine } from '../../core/audio-engine';
     });
   }
 
-  function open(tabName: any = 'compliance') {
+  function open(tabName: string = 'compliance') {
     ensureModal();
     const modal = el('premiumSuiteModal');
     if (!modal) return;
@@ -645,7 +648,7 @@ import { audioEngine } from '../../core/audio-engine';
       if (status) status.textContent = `✓ Re-análisis OK · LUFS ${lufs.toFixed(1)} · TP ${tp.toFixed(1)} dBTP`;
       LGMDM.ui?.showToast?.(`Re-análisis completado · LUFS ${lufs.toFixed(1)} · TP ${tp.toFixed(1)} dBTP`, 'success', 3500);
     } catch (err: unknown) {
-      const e = err as any;
+      const e = err as Error;
       if (status) status.textContent = `❌ Error en re-análisis: ${e.message || e}`;
       const safeMessage = (e.message && e.message.length < 200 && !e.message.includes("\n"))
         ? `Error en re-análisis: ${e.message}`
@@ -1001,7 +1004,7 @@ import { audioEngine } from '../../core/audio-engine';
       let _lastFrame = 0;
       const _FRAME_INTERVAL = 1000 / 60;
 
-      const tick = (now: any) => {
+      const tick = (now: number) => {
         if (!state.stereo.rafId) return; // fue cancelado
         if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
           cancelAnimationFrame(state.stereo.rafId);
@@ -1149,7 +1152,7 @@ import { audioEngine } from '../../core/audio-engine';
     }
   };
 
-  function audioBufferToWavBlob(audioBuffer: any, bitDepth: any = 16) {
+  function audioBufferToWavBlob(audioBuffer: AudioBuffer, bitDepth: number = 16) {
     const numCh = audioBuffer.numberOfChannels;
     const sampleRate = audioBuffer.sampleRate;
     const numFrames = audioBuffer.length;
@@ -1194,7 +1197,7 @@ import { audioEngine } from '../../core/audio-engine';
     }
     return new Blob([view], { type: 'audio/wav' });
   }
-  function writeString(view: any, offset: any, str: any) {
+  function writeString(view: DataView, offset: number, str: string) {
     for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
   }
 
@@ -1269,7 +1272,7 @@ import { audioEngine } from '../../core/audio-engine';
           <div>
             <strong class="pro-card-title">📁 Archivo de Audio</strong>
             <p class="pro-caption-muted">
-              Pista actual: <span id="codecCurrentFile" class="pro-current-file">${getSelectedFile() ? escapeHtml(getSelectedFile().name) : 'Ningún archivo cargado en consola'}</span>
+              Pista actual: <span id="codecCurrentFile" class="pro-current-file">${((): string => { const f = getSelectedFile(); return f ? escapeHtml(f.name) : 'Ningún archivo cargado en consola'; })()}</span>
             </p>
           </div>
           <button class="pro-primary" id="btnRunCodec" style="padding: 8px 18px;">⚡ Procesar Códec</button>
@@ -1489,7 +1492,7 @@ import { audioEngine } from '../../core/audio-engine';
       let _lastFrame = 0;
       const _FRAME_INTERVAL = 1000 / 60;
 
-      const tick = (now: any) => {
+      const tick = (now: number) => {
         if (!state.waterfall.animating || !state.waterfall.rafId) return;
         if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
           cancelAnimationFrame(state.waterfall.rafId);
@@ -1540,7 +1543,7 @@ import { audioEngine } from '../../core/audio-engine';
         const waterfallRow2 = new Uint8Array(bins);
         let _lastFrameR = 0;
         const _FRAME_INTERVAL_R = 1000 / 60;
-        const tickResume = (now: any) => {
+        const tickResume = (now: number) => {
           if (!state.waterfall.animating || !state.waterfall.rafId) return;
           if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
             cancelAnimationFrame(state.waterfall.rafId);
@@ -1699,11 +1702,11 @@ import { audioEngine } from '../../core/audio-engine';
       </div>
     `;
 
-    const updateKick = (val: any) => {
+    const updateKick = (val: number) => {
       const out = el('demaskKickDepthVal');
       if (out) out.textContent = `${val}%`;
     };
-    const updateVox = (val: any) => {
+    const updateVox = (val: number) => {
       const out = el('demaskVoxDepthVal');
       if (out) out.textContent = `${val}%`;
     };
@@ -1777,6 +1780,12 @@ import { audioEngine } from '../../core/audio-engine';
   }
 
   async function apiPostDsp(endpoint: string, formData: FormData) {
+    // CRIT-X2: el token viaja SOLO en `Authorization` header (no en DOM,
+    // no en URL, no en logs). El fallback literal 'master_auth_token'
+    // espeja la constante `TOKEN_KEY` exportada de core/api.ts; cambiar
+    // el nombre allí requiere buscar este string también.
+    // TODO: cuando auth.py emita cookie httpOnly, eliminar ambos y usar
+    // `credentials: 'include'`.
     const apiBase = window.safeApiBase();
     const token = (typeof LGMDM !== 'undefined' && LGMDM.api && typeof LGMDM.api.authToken === 'function')
       ? LGMDM.api.authToken()
@@ -2418,7 +2427,7 @@ import { audioEngine } from '../../core/audio-engine';
     _proPendingCanvas.set(tabId, entry);
   }
 
-  function _proPanelShell(tabId: any, title: any, subtitle: any, leftExtraHtml: any) {
+  function _proPanelShell(tabId: string, title: string, subtitle: string, leftExtraHtml: string) {
     const camelBase = tabId.replace(/-([a-z])/g, (_: string, c: string) => c.toUpperCase());
     const filePicker = `${camelBase}File`;
     const statusId = `${camelBase}Status`;
@@ -2430,7 +2439,7 @@ import { audioEngine } from '../../core/audio-engine';
           <div class="pro-meter-card">
             <strong class="pro-card-title">📁 Archivo de Audio</strong>
             <p class="pro-caption-muted">
-              Pista actual: <span class="pro-current-file">${getSelectedFile() ? escapeHtml(getSelectedFile().name) : 'Ningún archivo cargado en consola'}</span>
+              Pista actual: <span class="pro-current-file">${((): string => { const f = getSelectedFile(); return f ? escapeHtml(f.name) : 'Ningún archivo cargado en consola'; })()}</span>
             </p>
             <div class="pro-section-gap-tight">
               <label class="pro-label-muted">O seleccionar archivo alternativo:</label>
@@ -3049,7 +3058,7 @@ import { audioEngine } from '../../core/audio-engine';
   //   - Se preserva currentTime al alternar para que la comparación sea continua.
   //   - El botón activo refleja qué audio está cargado en el player.
   //   - Llamar setupABCompare() después de poblar el `processedUrl` y el `originalFile`.
-  function setupABCompare(prefix: any, originalFile: any, processedUrl: any) {
+  function setupABCompare(prefix: string, originalFile: Blob | File, processedUrl: string) {
     if (!prefix) return;
     const player = el(`${prefix}AudioPlayer`) as HTMLAudioElement | null;
     if (!player) return;
@@ -3071,7 +3080,7 @@ import { audioEngine } from '../../core/audio-engine';
       if (originalFile instanceof Blob) origUrl = _trackObjectUrl(URL.createObjectURL(originalFile));
     } catch (_) {}
 
-    const setActive = (slot: any) => {
+    const setActive = (slot: 'orig' | 'proc') => {
       if (slot === 'orig') {
         origBtn.classList.add('active');
         procBtn.classList.remove('active');
@@ -3081,7 +3090,7 @@ import { audioEngine } from '../../core/audio-engine';
       }
     };
 
-    const switchTo = (slot: any) => {
+    const switchTo = (slot: 'orig' | 'proc') => {
       const targetUrl = slot === 'orig' ? origUrl : processedUrl;
       if (!targetUrl) return;
       const wasPlaying = !player.paused;

@@ -9,17 +9,14 @@ import { audioEngine } from '../../core/audio-engine';
 // Usamos `lg()` helper con Record<string, unknown> y accedemos via casting.
 
 // FIX: NO declaramos tipos de LGMDM ni bridges — esto choca con declaraciones
-// globales en otros archivos. Usamos `lg(): any` y optional chaining en runtime.
+// globales en otros archivos. Usamos `lg()` con Record<string, any> y optional
+// chaining en runtime.
 
-// Usamos `any` para lg() porque este módulo cruza muchos bridges (LGMDM.*) que
-// están declarados globalmente en otros archivos. La verificación real es en
-// runtime — si el bridge no existe, retorna undefined y optional chaining lo maneja.
-// TODO(U-2): `lg(): any` es la raíz `any` de este archivo. Migrarla a un slice
-// tipado cascada a 60+ usos `lg().dom/.state/.ui/.api/.audio/.errors/.ai/.params`
-// (varios sin `?.`), requiriendo decidir required-vs-optional por bridge.
-// Migración dedicada pendiente. Los 6 `(window as any).LGMDM` directos (líneas
-// 155, 249, 341, 375, 525, 1322) se migran abajo con `lgmdmRef()`.
-const lg = (): any => ((window as any).LGMDM = (window as any).LGMDM || {});
+// Typed slice of window.LGMDM that allows deep indexing like `any` did, but with
+// a non-`any` return signature at the function boundary.
+type LGMDMNamespace = Record<string, any>;
+
+const lg = (): LGMDMNamespace => (window.LGMDM = window.LGMDM || {}) as LGMDMNamespace;
 
 // Slice local para los 6 accesos directos a `window.LGMDM.reference` (los que
 // NO van por `lg()`). Reusa `ReferenceApiObj` (línea 21). Cast por `unknown`
@@ -32,7 +29,7 @@ interface LgmdmReferenceSlice {
   reference?: ReferenceApiObj;
   [key: string]: unknown;
 }
-const lgmdmRef = () => (window as unknown as Window & { LGMDM?: LgmdmReferenceSlice }).LGMDM;
+const lgmdmRef = () => (window as Window & { LGMDM?: LgmdmReferenceSlice }).LGMDM;
 
 interface ReferenceStateObj {
   file: File | null;

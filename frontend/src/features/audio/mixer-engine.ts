@@ -229,6 +229,16 @@ async function startStemSource(name: string, atPosition: number): Promise<void> 
   chain.source = src;
 }
 
+/**
+ * Inicia el preview local de los stems cargados. Decodifica cualquier
+ * buffer pendiente, conecta las cadenas de cada stem al masterGain y
+ * programa el end-timer según la duración máxima. Emite `lgmdm:playback-started`.
+ *
+ * Guard contra re-entry: si ya está playing, llama `stopPreview(false)`
+ * primero para evitar fuentes duplicadas u orfanas (FIX C8). Si
+ * `teardownMixerEngine` corrió durante los awaits, sale sin marcar
+ * playing (FIX A13).
+ */
 export async function playPreview(): Promise<void> {
   // FIX C8: guard against re-entry — a rapid double-call would start duplicate
   // sources and leave an orphaned RAF. Stop first if already playing.
@@ -267,6 +277,14 @@ export async function playPreview(): Promise<void> {
   tickTransport();
 }
 
+/**
+ * Detiene el preview local. Si `resetToStart` es true, vuelve `position` a 0;
+ * si no, guarda la posición actual (`getPreviewPosition()`) para reanudar
+ * desde ahí. Emite `lgmdm:playback-stopped` solo si efectivamente estaba
+ * reproduciendo.
+ *
+ * @param resetToStart  Si true, vuelve al inicio; si false, mantiene posición.
+ */
 export function stopPreview(resetToStart: boolean): void {
   const wasPlaying = previewEngine.playing;
   if (previewEngine.ctx) {
@@ -284,6 +302,10 @@ export function stopPreview(resetToStart: boolean): void {
   }
 }
 
+/**
+ * Convenience: si está reproduciendo, llama `stopPreview(false)`; si no,
+ * llama `playPreview()`. Pensado para el botón ▶/⏸ de la transport bar.
+ */
 export function togglePreview(): void {
   if (previewEngine.playing) stopPreview(false);
   else void playPreview();
@@ -370,7 +392,10 @@ async function runServerPreview(): Promise<void> {
     target_lufs: parseFloat(cachedEl<HTMLInputElement>('mix-lufs')?.value || '-14'),
     normalize_before_master: cachedEl<HTMLInputElement>('mix-normalize')?.checked ?? true,
     master_limiter_ceiling: parseFloat(cachedEl<HTMLInputElement>('mix-master-ceiling')?.value || '0.95'),
-    chain_params: {},
+    // MAJ-9 (Skill 6 EC-7, DC-3): antes `chain_params: {}` se mandaba vacío
+    // → el backend no podía aplicar EQ/comps/limiter por stem. Reusamos
+    // `stemParams` que ya construimos arriba (per-stem params).
+    chain_params: stemParams,
   };
   const pcmChunks: ArrayBuffer[] = [];
   let sampleRate = 44100, channels = 2;
@@ -412,7 +437,20 @@ async function runServerPreview(): Promise<void> {
       ws.onmessage = (ev) => {
         if (typeof ev.data === 'string') {
           let msg: { event?: string; sample_rate?: number; channels?: number; message?: string };
-          try { msg = JSON.parse(ev.data); } catch { return; }
+          try {
+            const parsed = JSON.parse(ev.data) as unknown;
+            // MAJ-5 (Skill 3 M-3): validar el shape del mensaje del backend
+            // antes de usarlo. Sin guard, un backend comprometido o un proxy
+            // que inyecte `event: 'done'` cerraría el preview sin audio real.
+            if (!parsed || typeof parsed !== 'object') return;
+            const obj = parsed as Record<string, unknown>;
+            const built: { event?: string; sample_rate?: number; channels?: number; message?: string } = {};
+            if (typeof obj.event === 'string') built.event = obj.event;
+            if (typeof obj.sample_rate === 'number') built.sample_rate = obj.sample_rate;
+            if (typeof obj.channels === 'number') built.channels = obj.channels;
+            if (typeof obj.message === 'string') built.message = obj.message;
+            msg = built;
+          } catch { return; }
           if (msg.event === 'chunk') {
             if (typeof msg.sample_rate === 'number') sampleRate = msg.sample_rate;
             if (typeof msg.channels === 'number') channels = msg.channels;
@@ -535,6 +573,12 @@ export function teardownMixerEngine(): void {
 window.addEventListener('beforeunload', teardownMixerEngine, { once: true });
 
 // ── Public surface (consumed by audioTap + master console) ─────
+/**
+ * API pública del mixer engine. Frozen para evitar mutaciones accidentales
+ * del surface; el `addStem` interno es la única vía de mutar `mixerState.stems`.
+ * Consumido por `core/audio-tap.ts` (analysers conectados al masterGain) y por
+ * `features/canvas/master-console.ts` (transport bar).
+ */
 export const mixerEngine = Object.freeze({
   mixerState,
   previewEngine,
@@ -629,6 +673,12 @@ interface CreateMixerLibraryServiceCtx {
 
 let _stemLibrary: MixerLibraryItem[] = [];
 let _stemLibraryLoaded = false;
+let _stemLibraryLoadedAt = 0;
+// MAJ-6 (Skill 1 C2): TTL para tratar 200 OK con `files: []` como soft miss.
+// Si el backend devolvió una librería vacía (race con upload / drift de
+// sesión), esperar STEM_LIB_TTL_MS antes de confiar en el cache. Refetch
+// forzado siempre pasa (force=true).
+const STEM_LIB_TTL_MS = 30_000;
 
 function _freezeStem(_stem: { params: unknown }): void {
   // No-op intencional: el freeze de stems del aporte original no se porta al TS.
@@ -642,16 +692,28 @@ function normalizeStemName(name: string | undefined, fallback: string | undefine
 }
 
 export async function refreshStemLibrary(force: boolean = false): Promise<MixerLibraryItem[]> {
-  if (_stemLibraryLoaded && !force) return _stemLibrary;
+  // MAJ-6 (Skill 1 C2): si tenemos un cache cargado con stems, devolvemos
+  // inmediatamente. Si está marcado como cargado pero VACÍO y todavía no
+  // pasó el TTL, lo tratamos como soft miss (200 OK con [] puede ser race
+  // del backend / sesión drifted) y refetchamos una vez. Después del TTL,
+  // confiamos en el cache aunque esté vacío (backend legítimamente vacío).
+  if (_stemLibraryLoaded && !force) {
+    const cacheAge = Date.now() - _stemLibraryLoadedAt;
+    if (_stemLibrary.length > 0 || cacheAge >= STEM_LIB_TTL_MS) return _stemLibrary;
+  }
   try {
     const res = await lgmdm().api.apiFetch('/mix/stem-library');
     if (!res.ok) throw new Error(await res.text());
     const data = await res.json() as { files?: MixerLibraryItem[] };
     _stemLibrary = data.files || [];
     _stemLibraryLoaded = true;
+    _stemLibraryLoadedAt = Date.now();
   } catch (err) {
     console.warn('No se pudo cargar la librería de stems:', err);
     _stemLibrary = [];
+    // No marcamos `_stemLibraryLoaded = true` en error: el próximo call
+    // vuelve a intentar. Pero registramos el timestamp para no spamear.
+    _stemLibraryLoadedAt = Date.now();
   }
   return _stemLibrary;
 }

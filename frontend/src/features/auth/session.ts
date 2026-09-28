@@ -31,6 +31,11 @@ function readUser(): AuthUser | null {
 
 export function saveSession(token: string, user: AuthUser): void {
   try {
+    // TODO CRIT-X2: migrar a cookie httpOnly + SameSite=Strict requiere
+    // cooperación con el backend (auth.py emite el token en el body del
+    // /auth/login y el cliente lo reenvía en `Authorization: Bearer`).
+    // Hasta entonces, el JWT queda expuesto a cualquier XSS. La red de
+    // seguridad del frontend es `clearSessionOnXss()` (ver más abajo).
     sessionStorage.setItem(TOKEN_KEY, token);
     sessionStorage.setItem(USER_KEY, JSON.stringify(user));
     cached = { token, user };
@@ -46,6 +51,51 @@ export function clearSession(): void {
   } catch { /* ignore */ }
   cached = null;
 }
+
+/**
+ * Defense-in-depth (CRIT-X2): purga el JWT si un escape gap de innerHTML
+ * lo deja visible en el DOM. Escanea `document.head.innerHTML` y
+ * `document.body.innerHTML` por el valor exacto del token; si aparece,
+ * limpia la sesión y dispara `lgmdm:auth-required` para que la UI redirija
+ * al login.
+ *
+ * LIMITACIONES (no es reemplazo del fix real):
+ *  - Solo detecta tokens que estén en el DOM al momento del escaneo. Si el
+ *    atacante ya exfiltró vía fetch/XHR, el daño está hecho.
+ *  - El costo del escaneo es O(|DOM|); se throttle a 5s para no entorpecer
+ *    la app durante renders pesados.
+ *  - El fix definitivo es httpOnly + SameSite=Strict, emitido por el
+ *    backend (ver TODO en `saveSession`).
+ */
+export function clearSessionOnXss(): void {
+  if (typeof document === 'undefined') return;
+  try {
+    const token = sessionStorage.getItem(TOKEN_KEY);
+    if (!token) return;
+    const head = document.head?.innerHTML || '';
+    const body = document.body?.innerHTML || '';
+    if (head.includes(token) || body.includes(token)) {
+      console.warn('[session] XSS escape gap detectado — purgando token');
+      clearSession();
+      window.dispatchEvent(new CustomEvent('lgmdm:auth-required', {
+        detail: { status: 401, reason: 'xss-detected' },
+      }));
+    }
+  } catch (err) {
+    console.debug('[session] clearSessionOnXss failed:', err);
+  }
+}
+
+let xssWatchdogId: ReturnType<typeof setInterval> | null = null;
+function installXssWatchdog(): void {
+  if (xssWatchdogId !== null) return;
+  if (typeof document === 'undefined') return;
+  if (typeof setInterval !== 'function') return;
+  // 5s es suficiente: si un escape gap se cuela al DOM, lo cazamos antes
+  // del siguiente polling de actividad.
+  xssWatchdogId = setInterval(() => clearSessionOnXss(), 5000);
+}
+installXssWatchdog();
 
 export function getSession(): Session | null {
   if (cached) return cached;

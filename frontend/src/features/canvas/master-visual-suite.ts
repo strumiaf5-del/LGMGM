@@ -1738,6 +1738,16 @@ interface MetricsShape {
     updateCrestFactor(metrics);
   }
 
+  /**
+   * Inicializa el visual suite (chassis, meters, knobs, waterfall, etc.).
+   * Idempotente — un flag `visualSuiteBound` en `window.LGMDM` evita
+   * re-registrar listeners tras un HMR reload. Resetea el latch de
+   * teardown para permitir cycle init→teardown→init sin dejar el
+   * suite muerto.
+   *
+   * Side effects: crea un AbortController (`visualSuiteController`),
+   * suscribe al `metricsStore`, y arranca el RAF tick de la suite.
+   */
   function initVisualSuite() {
     // Idempotency guard (global) — survives HMR reloads without re-registering
     // listeners or re-subscribing to the metrics store.
@@ -1775,6 +1785,11 @@ interface MetricsShape {
   }
 
   let teardownDone = false;
+  /**
+   * Tear down del visual suite: aborta el AbortController, cancela el RAF,
+   * limpia timers (vfd ticker, jewel flash), desuscribe del metricsStore y
+   * teardown del audioTap. Idempotente (latch `teardownDone`).
+   */
   function teardownVisualSuite() {
     if (teardownDone) return;
     teardownDone = true;

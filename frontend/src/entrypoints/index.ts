@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 // entrypoint for index.html — main mastering console.
 import './../../css/base/reset.css';
 import './../../css/base/tokens.css';
@@ -114,12 +115,25 @@ import '../core/keyboard-shortcuts';
 // (no backend). Injects a fake session into sessionStorage before boot() so
 // getSession() returns a mock user and validateSession() is skipped.
 // Uso: abrí la consola con `index.html?mockauth=1` cuando el backend no está.
-const _mockAuth = (() => {
+//
+// CRIT-X1 (audit): this IIFE must NEVER ship to production. Vite replaces
+// `import.meta.env.DEV` with the literal `false` in production builds, so the
+// `if (DEV)` branch is dead-code-eliminated and the entire block is stripped.
+// Defense-in-depth inside the IIFE:
+//   - `role: 'viewer'` (not `'admin'`) so the shortcut self-does-no-harm even
+//     if someone hand-edits a build.
+//   - Console warning on non-local hosts (no admin grant outside localhost).
+const _mockAuth = import.meta.env.DEV && (() => {
   try {
     const params = new URLSearchParams(window.location.search);
     if (params.get('mockauth') === '1') {
+      const isLocal = location.hostname === 'localhost' || location.hostname.endsWith('.local');
+      if (!isLocal) {
+        console.warn('[mockauth] ?mockauth=1 ignorado fuera de hosts confiables (no localhost / *.local).');
+        return false;
+      }
       sessionStorage.setItem(TOKEN_KEY, 'mock-token');
-      sessionStorage.setItem(USER_KEY, JSON.stringify({ id: 'mock', email: 'mock@local', name: 'Mock', role: 'admin', status: 'approved' }));
+      sessionStorage.setItem(USER_KEY, JSON.stringify({ id: 'mock', email: 'mock@local', name: 'Mock', role: 'viewer', status: 'approved' }));
       return true;
     }
   } catch { /* ignore */ }

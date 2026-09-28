@@ -129,10 +129,12 @@ export function ensureAudioTap(candidate?: AudioNode | HTMLAudioElement): AudioT
       mediaSource = cached ?? (ctx.createMediaElementSource ? ctx.createMediaElementSource(audioEl) : null);
       if (mediaSource) {
         (audioEl as HTMLAudioElement & { _mediaElementSourceNode?: MediaElementAudioSourceNode })._mediaElementSourceNode = mediaSource;
-        masterOut = ctx.createGain();
-        masterOut.gain.value = 1;
-        try { mediaSource.connect(masterOut); } catch { /* ignore */ }
-        try { masterOut.connect(ctx.destination); } catch { /* ignore */ }
+        // FIX CRIT-X3: el GainNode intermedio era decorativo (gain.value=1,
+        // mute nunca llegaba). Conectar `mediaSource → ctx.destination`
+        // directo elimina el nodo sin cambios de comportamiento. `masterOut`
+        // queda en `null`; `teardownAudioTap` ya hace no-op sobre null.
+        masterOut = null;
+        try { mediaSource.connect(ctx.destination); } catch { /* ignore */ }
         source = mediaSource;
         sourceType = 'media-element';
       }

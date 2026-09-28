@@ -264,3 +264,27 @@ body.login-page {
   color: #ff6b81;
   font-weight: 700;
 }
+
+/* MAJ-2 (CSP): extract noscript fullscreen alert styles from index.html:2331-2333
+   to classes — removes the only static `style="..."` attributes in the
+   <noscript> block. Dynamic styles elsewhere (CSS custom properties for
+   step ticks, JS-set .style.display for meter views) must remain inline. */
+.js-required-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 11, 20, 0.95);
+  color: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  font-family: system-ui, sans-serif;
+  z-index: 2147483647;
+}
+.js-required-card {
+  max-width: 480px;
+  text-align: center;
+}
+.js-required-title {
+  color: #52f2bd;
+}
