@@ -663,9 +663,7 @@ import { audioEngine } from '../../core/audio-engine';
     if (state.compliancePresetsLoading) return;
     state.compliancePresetsLoading = true;
     try {
-      const res = await LGMDM.api.apiFetch('/presets', { method: 'GET' });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
+      const data = await LGMDM.api.apiFetch('/presets') as Record<string, { label?: string; target_lufs?: number; target_peak?: number }>;
       const presets = Object.entries(data || {}).map(([name, conf]: [string, any]) => ({
         name,
         label: conf?.label || name,
@@ -2178,7 +2176,7 @@ import { audioEngine } from '../../core/audio-engine';
           try {
             let jobRes;
             try {
-              jobRes = await LGMDM.api.apiFetch(`${apiBase}/job/${jobId}`);
+              jobRes = await LGMDM.api.client.get(`${apiBase}/job/${jobId}`);
             } catch (_) {
               clearInterval(pollInterval); _proIntervals.delete(pollInterval);
               if (status) status.textContent = `❌ Error: fallo de red consultando el job`;

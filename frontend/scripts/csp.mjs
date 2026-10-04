@@ -29,9 +29,13 @@ const CSP_META_RE = /<meta\s+http-equiv="Content-Security-Policy"\s+content="([^
 // Origins to strip from connect-src in production (dev-only).
 const DEV_ORIGINS = [
   'http://127.0.0.1:8000',
+  'http://127.0.0.1:8001',
   'http://localhost:8000',
+  'http://localhost:8001',
   'ws://127.0.0.1:8000',
+  'ws://127.0.0.1:8001',
   'ws://localhost:8000',
+  'ws://localhost:8001',
 ];
 
 async function* walk(dir) {

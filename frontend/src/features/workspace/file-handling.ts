@@ -430,11 +430,22 @@ window.addEventListener('lgmdm:authenticated', () => {
 loadLibraryWhenAuthenticated();
 
 async function loadFileBuffer(f: File): Promise<void> {
-  const lg = lgmdm();
-  if (lg.state) lg.state.cachedFileBuffer = await f.arrayBuffer(); // cachear para reusar en previews
-  const buf = await audioEngine.decode(lg.state?.cachedFileBuffer as ArrayBuffer);
-  drawWaveform(buf);
-  // Un único contexto Web Audio compartido; no crear/cerrar contextos locales.
+  try {
+    const arrayBuffer = await f.arrayBuffer();
+    if (lgmdm().state?.selectedFile !== f) return;
+
+    const decoded = await audioEngine.decode(arrayBuffer);
+    const state = lgmdm().state;
+    if (!state || state.selectedFile !== f) return;
+
+    state.cachedFileBuffer = arrayBuffer;
+    drawWaveform(decoded);
+    // Un único contexto Web Audio compartido; no crear/cerrar contextos locales.
+  } catch (error) {
+    if (lgmdm().state?.selectedFile !== f) return;
+    console.warn('[audio] no se pudo cargar el archivo seleccionado:', error);
+    showToast(`No se pudo leer "${f.name}". Verificá que el archivo esté íntegro.`, 'error', 5000);
+  }
 }
 
 // ── Referencia (track de referencia para matching) ──────────────────────
@@ -480,6 +491,13 @@ function setRefFile(f: File, fromLibraryId: string | null = null): void {
     if (refFileNameEl) {
       refFileNameEl.textContent = `⚠ Archivo de ${(f.size / 1024 / 1024).toFixed(1)} MB — máximo ${MAX_FILE_MB} MB`;
     }
+    return;
+  }
+  if (!ALLOWED_AUDIO_EXT.test(f.name || '')) {
+    const message = `Formato no soportado: ${f.name || 'archivo sin extensión'}`;
+    const refFileNameEl = document.getElementById('refFileName');
+    if (refFileNameEl) refFileNameEl.textContent = `⚠ ${message}`;
+    showToast(message, 'error', 5000);
     return;
   }
 

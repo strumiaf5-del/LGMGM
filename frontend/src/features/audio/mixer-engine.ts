@@ -617,15 +617,15 @@ export const mixerEngine = Object.freeze({
 interface LgmdmMixer {
   mixerEngine?: typeof mixerEngine;
   mixer?: { state: MixerState; previewEngine: PreviewEngine; functions: { playPreview: typeof playPreview; stopPreview: typeof stopPreview; togglePreview: typeof togglePreview } };
-  // `api` es required en este slice porque `refreshStemLibrary`/
-  // `addStemFromLibrary`/`deleteStemFromLibrary` acceden `lgmdm().api.apiFetch(...)`
-  // sin `?.`. A runtime el bridge `LGMDM.api` lo inicializa `core/api.ts` antes
-  // de que estas funciones corran (mismo contrato que el `any` previo).
-  // `apiFetch` se tipa como `Promise<Response>` (no genérico `<T>`) porque los
-  // 3 call sites (`refreshStemLibrary`, `addStemFromLibrary`,
-  // `deleteStemFromLibrary`) usan `res` como `Response` (`.ok`, `.text()`,
-  // `.json()`, `.blob()`). Con `<T>` el tipo se infería `unknown` (TS18046).
-  api: { apiFetch: (endpoint: string, options?: RequestInit) => Promise<Response> };
+  // `apiFetch` devuelve el body JSON; `client` se usa cuando hace falta
+  // conservar el Response (por ejemplo, para leer una descarga binaria).
+  api: {
+    apiFetch: <T>(endpoint: string, options?: RequestInit) => Promise<T>;
+    client: {
+      get: (endpoint: string, options?: RequestInit) => Promise<Response>;
+      delete: (endpoint: string, options?: RequestInit) => Promise<Response>;
+    };
+  };
   errors?: { handleClientError?: (e: unknown, msg: string, ctx: Record<string, unknown>) => void };
   // Index signature: cubre accesos sueltos como `lgmdm().mixerState as {...}`
   // (fallback en `addStemFromLibrary`) sin tener que declarar cada propiedad.
@@ -702,9 +702,7 @@ export async function refreshStemLibrary(force: boolean = false): Promise<MixerL
     if (_stemLibrary.length > 0 || cacheAge >= STEM_LIB_TTL_MS) return _stemLibrary;
   }
   try {
-    const res = await lgmdm().api.apiFetch('/mix/stem-library');
-    if (!res.ok) throw new Error(await res.text());
-    const data = await res.json() as { files?: MixerLibraryItem[] };
+    const data = await lgmdm().api.apiFetch<{ files?: MixerLibraryItem[] }>('/mix/stem-library');
     _stemLibrary = data.files || [];
     _stemLibraryLoaded = true;
     _stemLibraryLoadedAt = Date.now();
@@ -732,7 +730,7 @@ export async function addStemFromLibrary(item: MixerLibraryItem): Promise<void> 
   };
   _freezeStem(state.stems[stemName] as { params: unknown });
   try {
-    const res = await lgmdm().api.apiFetch(`/mix/stem-library/${item.id}/download`);
+    const res = await lgmdm().api.client.get(`/mix/stem-library/${item.id}/download`);
     if (!res.ok) throw new Error(await res.text());
     const blob = await res.blob();
     const file = new File([blob], item.original_filename || `${stemName}.wav`, { type: blob.type });
@@ -746,7 +744,7 @@ export async function addStemFromLibrary(item: MixerLibraryItem): Promise<void> 
 export async function deleteStemFromLibrary(item: MixerLibraryItem): Promise<void> {
   if (!confirm(`¿Borrar "${item.original_filename}" de la librería de stems?`)) return;
   try {
-    const res = await lgmdm().api.apiFetch(`/mix/stem-library/${item.id}`, { method: 'DELETE' });
+    const res = await lgmdm().api.client.delete(`/mix/stem-library/${item.id}`);
     if (!res.ok) throw new Error(await res.text());
     _stemLibrary = _stemLibrary.filter((x) => x.id !== item.id);
   } catch (err) {
